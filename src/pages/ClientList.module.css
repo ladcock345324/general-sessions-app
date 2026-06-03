@@ -1,0 +1,111 @@
+.screen {
+  min-height: 100vh;
+  background: #1E2A3A;
+  color: #f0f2f5;
+  padding-bottom: 40px;
+}
+
+.topBar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 16px 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f0f2f5;
+  letter-spacing: 0.02em;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.signOutBtn {
+  background: none;
+  border: none;
+  color: #4a5a70;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.01em;
+}
+
+.signOutBtn:active {
+  color: #6b7a99;
+}
+
+.addClientBtn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f0f2f5;
+  font-size: 22px;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 2px;
+}
+
+.section {
+  margin-top: 16px;
+}
+
+/* Full-width strip matching the mockup */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px;
+  background: #0f1820;
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #c8d0db;
+}
+
+.sectionCount {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.07);
+  color: #c8d0db;
+  border-radius: 10px;
+  padding: 1px 7px;
+}
+
+/* No card container — rows sit on page bg */
+.list {
+  background: transparent;
+}
+
+.stateMsg {
+  padding: 24px 16px;
+  font-size: 14px;
+  color: #6b7a99;
+}
+
+.emptyMsg {
+  padding: 16px 16px;
+  font-size: 14px;
+  color: #6b7a99;
+}

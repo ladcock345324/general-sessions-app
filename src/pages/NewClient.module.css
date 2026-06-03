@@ -1,0 +1,145 @@
+.screen {
+  min-height: 100vh;
+  background: #1E2A3A;
+  color: #f0f2f5;
+  padding-bottom: 48px;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #16212F;
+  padding: 14px 16px 12px;
+}
+
+.back {
+  background: none;
+  border: none;
+  color: #6b9fd4;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.01em;
+}
+
+.pageTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f0f2f5;
+}
+
+/* Form */
+.form {
+  padding: 20px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7a99;
+}
+
+.input,
+.select {
+  background: #16212F;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #f0f2f5;
+  font-size: 15px;
+  font-family: inherit;
+  padding: 10px 12px;
+  outline: none;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.input::placeholder {
+  color: #3a4a5e;
+}
+
+.input:focus,
+.select:focus {
+  border-color: rgba(94, 150, 200, 0.5);
+}
+
+/* $ prefix on bond field */
+.prefixInput {
+  display: flex;
+  align-items: center;
+  background: #16212F;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.prefixInput:focus-within {
+  border-color: rgba(94, 150, 200, 0.5);
+}
+
+.prefix {
+  padding: 0 0 0 12px;
+  font-size: 15px;
+  color: #6b7a99;
+  flex-shrink: 0;
+}
+
+.inputPrefixed {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding-left: 4px;
+}
+
+.inputPrefixed:focus {
+  border-color: transparent;
+}
+
+/* Error */
+.error {
+  font-size: 13px;
+  color: #f4923a;
+  padding: 2px 0;
+}
+
+/* Save button */
+.saveBtn {
+  background: #1E3A5F;
+  border: 1px solid #3a6ea8;
+  color: #7eb8f7;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.saveBtn:active:not(:disabled) {
+  background: #243f6a;
+}

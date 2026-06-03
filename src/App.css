@@ -1,0 +1,11 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #1E2A3A;
+  color: #f0f2f5;
+}

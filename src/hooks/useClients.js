@@ -1,0 +1,29 @@
+import { useState, useEffect } from 'react'
+import { supabase } from '../supabaseClient'
+
+export function useClients() {
+  const [clients, setClients] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    async function fetchClients() {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .order('last_name', { ascending: true })
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setClients(data ?? [])
+      }
+      setLoading(false)
+    }
+
+    fetchClients()
+  }, [])
+
+  return { clients, loading, error }
+}

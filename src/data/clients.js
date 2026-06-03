@@ -1,0 +1,68 @@
+export const clients = [
+  {
+    id: 1,
+    lastName: 'Martinez',
+    firstName: 'Carlos',
+    gender: 'M',
+    age: 34,
+    oca: null,
+    status: 'active',
+    custodyStatus: 'bonded_out',
+    nextHearing: { day: 'Monday', date: '6/8/2026', time: '9:00 AM' },
+    relievedClosed: false,
+  },
+  {
+    id: 2,
+    lastName: 'Woods-James',
+    firstName: 'Kimberly',
+    gender: 'F',
+    age: 56,
+    oca: '140804',
+    status: 'active',
+    custodyStatus: 'in_custody',
+    nextHearing: { day: 'Sunday', date: '6/7/2026', time: '9:05 AM' },
+    relievedClosed: false,
+    bond: '$5,000',
+    nextEvent: {
+      type: 'Jail Docket',
+      day: 'Sunday',
+      date: '6/7/2026',
+      time: '9:05 AM',
+      courtroom: 'Courtroom 4B',
+      judge: 'A. Walker',
+      note: 'w/ subs',
+    },
+    incidents: [
+      {
+        label: 'Incident: July 2024',
+        cases: [
+          { number: 'GS1041481', charge: 'Domestic Assault', warrant: 'No standalone warrant — see GS1041482', bond: '$1,000 bond' },
+          { number: 'GS1041482', charge: 'Vandalism', warrant: 'Warrant covers both charges', bond: '$1,000 bond' },
+        ],
+      },
+      {
+        label: 'Incident: December 2025',
+        cases: [
+          { number: 'GS1107926', charge: 'Theft ≤$1,000', warrant: 'Warrant on file', bond: '$1,500 bond' },
+          { number: 'GS1107927', charge: 'Vandalism ≤$1,000', warrant: 'Warrant on file', bond: '$1,000 bond' },
+        ],
+      },
+    ],
+    hours: [
+      { date: '6/1/2026', hours: 0.3, description: 'Initial client meeting' },
+    ],
+    priorHistory: null,
+  },
+  {
+    id: 3,
+    lastName: 'Patel',
+    firstName: 'Raj',
+    gender: 'M',
+    age: 41,
+    oca: null,
+    status: 'relieved',
+    custodyStatus: null,
+    nextHearing: null,
+    relievedClosed: true,
+  },
+]

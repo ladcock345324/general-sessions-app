@@ -1,0 +1,101 @@
+.screen {
+  min-height: 100vh;
+  background: #1E2A3A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.card {
+  width: 100%;
+  max-width: 360px;
+  background: #16212F;
+  border-radius: 14px;
+  padding: 32px 24px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f0f2f5;
+  margin: 0 0 4px;
+  letter-spacing: 0.01em;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #6b7a99;
+  margin: 0 0 28px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7a99;
+}
+
+.input {
+  background: #1E2A3A;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  color: #f0f2f5;
+  font-size: 15px;
+  font-family: inherit;
+  padding: 10px 12px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input::placeholder {
+  color: #3a4a5e;
+}
+
+.input:focus {
+  border-color: rgba(94, 150, 200, 0.5);
+}
+
+.error {
+  font-size: 13px;
+  color: #f4923a;
+  padding: 2px 0;
+}
+
+.signInBtn {
+  margin-top: 4px;
+  background: #1E3A5F;
+  border: 1px solid #3a6ea8;
+  color: #7eb8f7;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 11px;
+  border-radius: 9px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  width: 100%;
+}
+
+.signInBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.signInBtn:active:not(:disabled) {
+  background: #243f6a;
+}

@@ -1,0 +1,95 @@
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  gap: 12px;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.dimmed {
+  opacity: 0.5;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-left: 0;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f0f2f5;
+  letter-spacing: 0.01em;
+  margin: 0;
+  padding: 0;
+}
+
+.next {
+  font-size: 13px;
+  color: #9faab8;
+  margin: 0;
+  padding: 0;
+}
+
+.nextEmpty {
+  font-size: 13px;
+}
+
+.right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Custody badges */
+.badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.badgeOrange {
+  background-color: rgba(234, 120, 30, 0.2);
+  color: #f4923a;
+  border: 1px solid rgba(234, 120, 30, 0.4);
+}
+
+.badgeGreen {
+  background-color: rgba(74, 178, 120, 0.15);
+  color: #5ecf90;
+  border: 1px solid rgba(74, 178, 120, 0.35);
+}
+
+/* Relieved badge */
+.relievedBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.relievedLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9faab8;
+  white-space: nowrap;
+}
+
+.closedLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7685;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

@@ -1,0 +1,323 @@
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { supabase } from '../supabaseClient'
+import styles from './CaseView.module.css'
+
+function formatBond(amount) {
+  if (amount == null) return null
+  return '$' + Number(amount).toLocaleString()
+}
+
+// ─── Edit form ───────────────────────────────────────────────────────────────
+
+function EditCaseForm({ caseData, onSaved, onCancel }) {
+  const [form, setForm] = useState({
+    case_number: caseData.case_number ?? '',
+    charge:      caseData.charge      ?? '',
+    bond_amount: caseData.bond_amount != null ? String(caseData.bond_amount) : '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function save() {
+    if (!form.case_number.trim() || !form.charge.trim()) {
+      setError('Case number and charge are required.')
+      return
+    }
+    setSaving(true)
+    setError(null)
+
+    const { error: e } = await supabase
+      .from('cases')
+      .update({
+        case_number: form.case_number.trim(),
+        charge:      form.charge.trim(),
+        bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
+      })
+      .eq('id', caseData.id)
+
+    if (e) { setError(e.message); setSaving(false); return }
+    onSaved(form.case_number.trim())
+  }
+
+  return (
+    <div className={styles.editForm}>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Case Number *</label>
+        <input className={styles.formInput} value={form.case_number} onChange={e => set('case_number', e.target.value)} />
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Charge *</label>
+        <input className={styles.formInput} value={form.charge} onChange={e => set('charge', e.target.value)} />
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Bond Amount</label>
+        <div className={styles.formPrefixInput}>
+          <span className={styles.formPrefix}>$</span>
+          <input
+            className={`${styles.formInput} ${styles.formInputPrefixed}`}
+            type="number" min="0"
+            value={form.bond_amount}
+            onChange={e => set('bond_amount', e.target.value)}
+            placeholder="Optional"
+          />
+        </div>
+      </div>
+      {error && <div className={styles.formError}>{error}</div>}
+      <div className={styles.formActions}>
+        <button className={styles.formSave} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+        <button className={styles.formCancel} onClick={onCancel} disabled={saving}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main page ───────────────────────────────────────────────────────────────
+
+export default function CaseView() {
+  const { caseNumber } = useParams()
+  const navigate = useNavigate()
+
+  const [caseData, setCaseData] = useState(null)
+  const [notes, setNotes] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [editing, setEditing] = useState(false)
+  const [notesSaving, setNotesSaving] = useState(false)
+  const [notesSaved, setNotesSaved] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDeleteCase() {
+    setDeleting(true)
+    const incidentId = caseData.incident_id
+
+    // Get the client_id from the incident before deleting
+    const { data: incident } = await supabase
+      .from('incidents').select('client_id').eq('id', incidentId).single()
+    const clientId = incident?.client_id
+
+    await supabase.from('cases').delete().eq('id', caseData.id)
+
+    // If this was the only case under the incident, delete the incident too
+    const { data: remaining } = await supabase
+      .from('cases').select('id').eq('incident_id', incidentId)
+    if (!remaining?.length) {
+      await supabase.from('incidents').delete().eq('id', incidentId)
+    }
+
+    navigate(clientId ? `/client/${clientId}` : '/')
+  }
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState(null)
+
+  async function handleWarrantUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setUploadError(null)
+
+    const path = `warrants/${caseData.case_number}.pdf`
+
+    // upsert:true replaces an existing file at the same path
+    const { error: uploadErr } = await supabase.storage
+      .from('warrants')
+      .upload(path, file, { contentType: 'application/pdf', upsert: true })
+
+    if (uploadErr) {
+      setUploadError(uploadErr.message)
+      setUploading(false)
+      return
+    }
+
+    const { data: urlData } = supabase.storage.from('warrants').getPublicUrl(path)
+    const publicUrl = urlData.publicUrl
+
+    const { error: updateErr } = await supabase
+      .from('cases')
+      .update({ warrant_url: publicUrl })
+      .eq('id', caseData.id)
+
+    if (updateErr) {
+      setUploadError(updateErr.message)
+      setUploading(false)
+      return
+    }
+
+    setCaseData(prev => ({ ...prev, warrant_url: publicUrl }))
+    setUploading(false)
+    // reset input so re-selecting same file fires onChange again
+    e.target.value = ''
+  }
+
+  useEffect(() => {
+    async function fetchCase() {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('cases')
+        .select('*')
+        .eq('case_number', caseNumber)
+        .single()
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setCaseData(data)
+        setNotes(data.notes ?? '')
+      }
+      setLoading(false)
+    }
+    fetchCase()
+  }, [caseNumber])
+
+  if (loading) {
+    return (
+      <div className={styles.screen}>
+        <header className={styles.header}>
+          <button className={styles.back} onClick={() => navigate(-1)}>‹ Back</button>
+        </header>
+        <div className={styles.placeholder}>Loading…</div>
+      </div>
+    )
+  }
+
+  if (error || !caseData) {
+    return (
+      <div className={styles.screen}>
+        <header className={styles.header}>
+          <button className={styles.back} onClick={() => navigate(-1)}>‹ Back</button>
+        </header>
+        <div className={styles.placeholder}>{error ?? `Case ${caseNumber} not found.`}</div>
+      </div>
+    )
+  }
+
+  const warrantStatus = caseData.warrant_url ? 'Warrant on File' : 'No Warrant'
+
+  function handleSaved(newCaseNumber) {
+    // If the case number changed, navigate to the new URL; otherwise re-fetch in place
+    setEditing(false)
+    if (newCaseNumber !== caseNumber) {
+      navigate(`/case/${newCaseNumber}`, { replace: true })
+    } else {
+      // Re-fetch updated data
+      supabase.from('cases').select('*').eq('case_number', newCaseNumber).single()
+        .then(({ data }) => { if (data) { setCaseData(data) } })
+    }
+  }
+
+  return (
+    <div className={styles.screen}>
+      <div className={styles.caseHeader}>
+        <header className={styles.header}>
+          <button className={styles.back} onClick={() => navigate(-1)}>‹ Back</button>
+          {!editing && (
+            <button className={styles.editBtn} onClick={() => setEditing(true)}>Edit</button>
+          )}
+        </header>
+        <div className={styles.caseNumberLabel}>{caseData.case_number}</div>
+        <div className={styles.charge}>{caseData.charge}</div>
+        <div className={styles.meta}>
+          {warrantStatus} | {formatBond(caseData.bond_amount)} bond
+        </div>
+      </div>
+
+      {editing ? (
+        <EditCaseForm
+          caseData={caseData}
+          onSaved={handleSaved}
+          onCancel={() => setEditing(false)}
+        />
+      ) : (
+        <>
+          <div className={styles.warrantRow}>
+            {caseData.warrant_url && (
+              <button
+                className={styles.warrantBtn}
+                onClick={async () => {
+                  const path = `warrants/${caseData.case_number}.pdf`
+                  const { data, error } = await supabase.storage
+                    .from('warrants')
+                    .createSignedUrl(path, 3600)
+                  if (error) { alert('Could not open warrant: ' + error.message); return }
+                  window.open(data.signedUrl, '_blank')
+                }}
+              >
+                View Warrant
+              </button>
+            )}
+            <label className={`${styles.warrantBtn} ${styles.uploadBtn} ${uploading ? styles.uploadBtnDisabled : ''}`}>
+              {uploading ? 'Uploading…' : caseData.warrant_url ? 'Replace Warrant' : 'Upload Warrant'}
+              <input
+                type="file"
+                accept="application/pdf"
+                className={styles.fileInput}
+                disabled={uploading}
+                onChange={handleWarrantUpload}
+              />
+            </label>
+            {uploadError && <div className={styles.uploadError}>{uploadError}</div>}
+          </div>
+
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>Notes</div>
+            <textarea
+              className={styles.notesInput}
+              value={notes}
+              onChange={e => { setNotes(e.target.value); setNotesSaved(false) }}
+              placeholder="Add notes about this case…"
+              rows={5}
+            />
+            <div className={styles.notesActions}>
+              <button
+                className={styles.notesSaveBtn}
+                disabled={notesSaving}
+                onClick={async () => {
+                  setNotesSaving(true)
+                  await supabase.from('cases').update({ notes }).eq('id', caseData.id)
+                  setNotesSaving(false)
+                  setNotesSaved(true)
+                }}
+              >
+                {notesSaving ? 'Saving…' : 'Save Notes'}
+              </button>
+              {notesSaved && <span className={styles.notesSavedMsg}>Saved</span>}
+            </div>
+          </div>
+
+          {caseData.disposition && (
+            <div className={styles.section}>
+              <div className={styles.sectionLabel}>Disposition</div>
+              <div className={styles.dispositionText}>{caseData.disposition}</div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Delete Case ── */}
+      {!editing && (
+        <div className={styles.deleteCaseSection}>
+          {!showDeleteConfirm ? (
+            <button className={styles.deleteCaseBtn} onClick={() => setShowDeleteConfirm(true)}>
+              Delete Case
+            </button>
+          ) : (
+            <div className={styles.deleteConfirmBox}>
+              <p className={styles.deleteConfirmText}>Delete this case? This cannot be undone.</p>
+              <div className={styles.deleteConfirmActions}>
+                <button className={styles.confirmDeleteYes} onClick={handleDeleteCase} disabled={deleting}>
+                  {deleting ? '…' : 'Yes, Delete'}
+                </button>
+                <button className={styles.confirmDeleteNo} onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
