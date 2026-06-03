@@ -128,11 +128,13 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 - Fetches all clients from Supabase via `useClients` hook
 - Two sections: **Active** (`relieved_as_counsel = false`) and **Relieved as Counsel** (`true`)
 - Both sorted alphabetically by last name
+- Each section header shows a count badge (e.g. "Active 12")
 - Each row: Last name, First name (Gender, Age) #OCA, custody badge
 - **In Custody** (orange badge) / **Bonded Out** (green badge)
 - Relieved rows: dimmed, "Relieved as Counsel" + "CLOSED" badge
 - `+` button top-right → Add Client form
 - "Sign out" small muted text in top-right corner above header
+- `ClientRow` already renders a next-hearing line ("Next: day, date at time") if `nextHearing` data is present — UI stub complete, DB join to `next_events` not yet wired up in `useClients`
 
 ### Add Client (`/client/new`)
 - Fields: Last Name, First Name, Gender, Age, OCA #, Custody Status, Bond Amount, DA Name
@@ -153,7 +155,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
   - Collapsible accordion — each incident shows "Description (Date)" header row
   - Sorted most recent first
   - Expand/collapse state persisted in `sessionStorage` — survives navigate-away and back
-  - Inline description editing: tap "edit incident" → name becomes editable input, save on blur or Enter
+  - Inline editing: tap "edit incident" → both description AND date become editable inputs in the header row; save on blur (focus leaves both) or Enter; Escape cancels
   - "+ add incident" opens inline form (description + date with auto-format)
   - Each expanded incident shows case rows + "+ add a case" at bottom
   - Case rows link to `/case/:caseNumber`
@@ -257,14 +259,14 @@ src/
 ## Coming Next
 
 ### Deployment
-- **Vercel deployment** — connect GitHub repo, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` env vars, deploy
+- **Vercel deployment** — `vercel.json` added (SPA rewrite rule: all paths → `/index.html`); git repo initialized and pushed to GitHub at `ladcock345324/general-sessions-app`; next step: import repo on vercel.com and deploy (no env vars needed — Supabase credentials are hardcoded in `supabaseClient.js`)
 - **PWA / iPhone install** — test Add to Home Screen flow after Vercel deploy; verify service worker and manifest are serving correctly
 
 ### Features
 - **Documents At-Ready section** — per-client document uploads beyond warrants/criminal history (motions, plea agreements, discovery, etc.)
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)
 - **RLS policies** — enable Row Level Security on all tables once auth is stable, so data is locked to the authenticated user
-- **Next hearing on client list** — derive from `next_events` table and display on each client row
+- **Next hearing on client list** — `ClientRow` UI is already built (renders "Next: day, date at time"); need to update `useClients` to join `next_events` and surface `next_hearing_day`, `next_hearing_date`, `next_hearing_time` on each client row
 
 ### Known Issues / Things to Revisit
 - `warrant_status` column still exists in DB but is fully ignored by the UI — could be dropped with a migration
@@ -273,4 +275,5 @@ src/
 - Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
 - No delete for hours entries older than the current session if they lack an `id` (edge case from early prompt()-based implementation — all new entries have IDs)
 - Static files `src/data/clients.js` and `src/data/cases.js` can be deleted
+- `EditIncidentForm` component in `ClientFile.jsx` is defined but never rendered — can be deleted (actual editing uses inline inputs directly inside `IncidentGroup`)
 - No pagination — all clients/cases load at once; fine for current scale
