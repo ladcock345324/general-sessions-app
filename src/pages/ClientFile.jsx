@@ -607,22 +607,93 @@ function AddHoursForm({ clientId, onSaved, onCancel }) {
   )
 }
 
+function EditHoursForm({ entry, onSaved, onCancel }) {
+  const [form, setForm] = useState({
+    entry_date: entry.entry_date,
+    hours: String(entry.hours),
+    description: entry.description,
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function save() {
+    if (!form.entry_date.trim() || !form.description.trim()) {
+      setError('Date and description are required.')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    const { error: e } = await supabase.from('hours').update({
+      entry_date: form.entry_date.trim(),
+      hours: Number(form.hours),
+      description: form.description.trim(),
+    }).eq('id', entry.id)
+    if (e) { setError(e.message); setSaving(false); return }
+    onSaved()
+  }
+
+  return (
+    <div className={styles.inlineForm}>
+      <div className={styles.formTwoCol}>
+        <div className={styles.formRow}>
+          <label className={styles.formLabel}>Date</label>
+          <input className={styles.formInput} value={form.entry_date} onChange={e => set('entry_date', e.target.value)} placeholder="6/2/2026" />
+        </div>
+        <div className={styles.formRow}>
+          <label className={styles.formLabel}>Hours</label>
+          <select className={styles.formSelect} value={form.hours} onChange={e => set('hours', e.target.value)}>
+            {HOURS_OPTIONS.map(h => <option key={h} value={h}>{h}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Description</label>
+        <input className={styles.formInput} value={form.description} onChange={e => set('description', e.target.value)} placeholder="e.g. Court appearance" />
+      </div>
+      {error && <div className={styles.formError}>{error}</div>}
+      <div className={styles.formActions}>
+        <button className={styles.formSave} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+        <button className={styles.formCancel} onClick={onCancel} disabled={saving}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
 function HoursSection({ clientId, hours: initialHours }) {
   const [hours, setHours] = useState(
     [...(initialHours ?? [])].sort((a, b) => new Date(b.entry_date) - new Date(a.entry_date))
   )
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [confirmingId, setConfirmingId] = useState(null)
 
   const total = hours.reduce((sum, e) => sum + Number(e.hours), 0)
 
-  async function handleSaved() {
+  async function refreshHours() {
     const { data } = await supabase
       .from('hours')
       .select('*')
       .eq('client_id', clientId)
       .order('entry_date', { ascending: false })
     if (data) setHours(data)
+  }
+
+  async function handleSaved() {
+    await refreshHours()
     setShowForm(false)
+  }
+
+  async function handleEditSaved() {
+    await refreshHours()
+    setEditingId(null)
+  }
+
+  async function confirmDelete(entry, i) {
+    if (entry.id) await supabase.from('hours').delete().eq('id', entry.id)
+    setHours(prev => prev.filter((_, idx) => idx !== i))
+    setConfirmingId(null)
   }
 
   return (
@@ -643,20 +714,46 @@ function HoursSection({ clientId, hours: initialHours }) {
           <span>Date</span><span>Hours</span><span>Description</span>
         </div>
         {hours.length === 0 && <div className={styles.hoursEmpty}>No entries yet</div>}
-        {hours.map((entry, i) => (
-          <div key={entry.id ?? i} className={styles.hoursRow}>
-            <span>{entry.entry_date}</span>
-            <span className={styles.hoursValue}>{entry.hours}</span>
-            <span>{entry.description}</span>
-            <button
-              className={styles.hoursDeleteBtn}
-              onClick={async () => {
-                if (entry.id) await supabase.from('hours').delete().eq('id', entry.id)
-                setHours(prev => prev.filter((_, idx) => idx !== i))
-              }}
-            >×</button>
-          </div>
-        ))}
+        {hours.map((entry, i) => {
+          if (editingId === entry.id) {
+            return (
+              <div key={entry.id ?? i}>
+                <EditHoursForm
+                  entry={entry}
+                  onSaved={handleEditSaved}
+                  onCancel={() => setEditingId(null)}
+                />
+              </div>
+            )
+          }
+          if (confirmingId === entry.id) {
+            return (
+              <div key={entry.id ?? i} className={styles.hoursConfirmRow}>
+                <span className={styles.hoursConfirmText}>Delete this entry?</span>
+                <div className={styles.hoursConfirmActions}>
+                  <button className={styles.hoursConfirmYes} onClick={() => confirmDelete(entry, i)}>Yes, delete</button>
+                  <button className={styles.hoursConfirmCancel} onClick={() => setConfirmingId(null)}>Cancel</button>
+                </div>
+              </div>
+            )
+          }
+          return (
+            <div
+              key={entry.id ?? i}
+              className={styles.hoursRow}
+              onClick={() => { if (entry.id) setEditingId(entry.id) }}
+              style={{ cursor: 'pointer' }}
+            >
+              <span>{entry.entry_date}</span>
+              <span className={styles.hoursValue}>{entry.hours}</span>
+              <span>{entry.description}</span>
+              <button
+                className={styles.hoursDeleteBtn}
+                onClick={e => { e.stopPropagation(); setConfirmingId(entry.id) }}
+              >×</button>
+            </div>
+          )
+        })}
         {hours.length > 0 && (
           <div className={styles.hoursTotal}>
             <span>Total</span>

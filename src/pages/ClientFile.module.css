@@ -602,6 +602,53 @@
   color: #c97060;
 }
 
+.hoursConfirmRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px;
+  background: rgba(122, 58, 48, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+}
+
+.hoursConfirmText {
+  color: #c97060;
+}
+
+.hoursConfirmActions {
+  display: flex;
+  gap: 8px;
+}
+
+.hoursConfirmYes {
+  background: none;
+  border: 1px solid #7a3a30;
+  color: #c97060;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.hoursConfirmYes:hover {
+  background: rgba(122, 58, 48, 0.4);
+}
+
+.hoursConfirmCancel {
+  background: none;
+  border: 1px solid #3a4a5e;
+  color: #9faab8;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.hoursConfirmCancel:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 /* Criminal history */
 .historyButtons {
   display: flex;
