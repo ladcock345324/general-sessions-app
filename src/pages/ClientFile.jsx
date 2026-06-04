@@ -927,7 +927,7 @@ function CourtroomDocsSection({ clientId }) {
   const atMax = docs.length >= 5
 
   return (
-    <div className={styles.section}>
+    <div style={{ marginTop: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
         <span className={styles.sectionTitle}>Courtroom Documents</span>
         {!showForm && !atMax && (
