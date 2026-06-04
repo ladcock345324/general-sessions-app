@@ -38,10 +38,14 @@ export default function ClientRow({ client, relieved = false, onClick }) {
         }
       </div>
       <div className={styles.right}>
-        {relieved
-          ? <RelivedBadge closed={relievedClosed} />
-          : <CustodyBadge status={custodyStatus} />
-        }
+        {relieved ? (
+          <RelivedBadge closed={relievedClosed} />
+        ) : (
+          <div className={styles.badgeStack}>
+            <CustodyBadge status={custodyStatus} />
+            {relievedClosed && <span className={styles.closedBadge}>CLOSED</span>}
+          </div>
+        )}
       </div>
     </div>
   )
