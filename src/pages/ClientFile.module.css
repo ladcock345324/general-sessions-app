@@ -292,6 +292,8 @@
 .incidentsWrapper {
   margin-top: 8px;
   margin-bottom: 16px;
+  background: #0f1820;
+  color: #c8d0db;
 }
 
 .incidentGroup {
@@ -481,6 +483,8 @@
 /* Hours section */
 .section {
   margin-top: 8px;
+  background: #0f1820;
+  color: #c8d0db;
 }
 
 .sectionHeaderRow {
