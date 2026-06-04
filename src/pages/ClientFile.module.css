@@ -907,23 +907,6 @@
 
 .closeCaseBtn {
   background: none;
-  border: 1px solid rgba(200, 80, 60, 0.35);
-  color: #c97060;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  letter-spacing: 0.02em;
-  width: 100%;
-}
-
-.closeCaseBtn:active {
-  background: rgba(200, 80, 60, 0.08);
-}
-
-.relieveCaseBtn {
-  background: none;
   border: 1px solid rgba(180, 140, 60, 0.35);
   color: #c8a84b;
   font-size: 14px;
@@ -935,8 +918,25 @@
   width: 100%;
 }
 
-.relieveCaseBtn:active {
+.closeCaseBtn:active {
   background: rgba(180, 140, 60, 0.08);
+}
+
+.relieveCaseBtn {
+  background: none;
+  border: 1px solid rgba(200, 80, 60, 0.35);
+  color: #c97060;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  width: 100%;
+}
+
+.relieveCaseBtn:active {
+  background: rgba(200, 80, 60, 0.08);
 }
 
 .reopenCaseBtn {

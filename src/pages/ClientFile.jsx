@@ -1174,27 +1174,6 @@ export default function ClientFile() {
       {/* ── Courtroom Documents ── */}
       <CourtroomDocsSection clientId={id} />
 
-      {/* ── Delete Client ── */}
-      <div className={styles.deleteClientSection}>
-        {!showDeleteConfirm ? (
-          <button className={styles.deleteClientBtn} onClick={() => setShowDeleteConfirm(true)}>
-            Delete Client
-          </button>
-        ) : (
-          <div className={styles.deleteConfirmBox}>
-            <p className={styles.confirmText}>Permanently delete this client and all their data?</p>
-            <div className={styles.confirmActions}>
-              <button className={styles.confirmDeleteYes} onClick={handleDeleteClient} disabled={deleting}>
-                {deleting ? '…' : 'Yes, Delete'}
-              </button>
-              <button className={styles.confirmNo} onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* ── Close / Relieve / Reopen ── */}
       <div className={styles.closeCaseSection}>
         {isRelieved ? (
@@ -1211,14 +1190,14 @@ export default function ClientFile() {
             </div>
           )
         ) : (
-          /* ── Close Case + Relieve as Counsel ── */
+          /* ── Close Case + Relieved as Counsel ── */
           <div className={styles.closeCaseBtnRow}>
             {!showCloseConfirm && !showRelieveConfirm && (
               <>
                 <button className={styles.closeCaseBtn} onClick={() => setShowCloseConfirm(true)}>
                   {isClosed ? 'Reopen Case' : 'Close Case'}
                 </button>
-                <button className={styles.relieveCaseBtn} onClick={() => setShowRelieveConfirm(true)}>Relieve as Counsel</button>
+                <button className={styles.relieveCaseBtn} onClick={() => setShowRelieveConfirm(true)}>Relieved as Counsel</button>
               </>
             )}
             {showCloseConfirm && (
@@ -1233,14 +1212,35 @@ export default function ClientFile() {
               </div>
             )}
             {showRelieveConfirm && (
-              <div className={styles.confirmBox} style={{ borderColor: 'rgba(180, 140, 60, 0.35)' }}>
-                <p className={styles.confirmText}>Relieve as counsel and move to the Relieved section?</p>
+              <div className={styles.confirmBox} style={{ borderColor: 'rgba(200, 80, 60, 0.35)' }}>
+                <p className={styles.confirmText}>Mark as relieved as counsel and move to the Relieved section?</p>
                 <div className={styles.confirmActions}>
                   <button className={styles.confirmYes} onClick={handleRelieve} disabled={closing}>{closing ? '…' : 'Yes, Relieve'}</button>
                   <button className={styles.confirmNo} onClick={() => setShowRelieveConfirm(false)} disabled={closing}>No</button>
                 </div>
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Delete Client ── */}
+      <div className={styles.deleteClientSection} style={{ marginTop: 32 }}>
+        {!showDeleteConfirm ? (
+          <button className={styles.deleteClientBtn} onClick={() => setShowDeleteConfirm(true)}>
+            Delete Client
+          </button>
+        ) : (
+          <div className={styles.deleteConfirmBox}>
+            <p className={styles.confirmText}>Permanently delete this client and all their data?</p>
+            <div className={styles.confirmActions}>
+              <button className={styles.confirmDeleteYes} onClick={handleDeleteClient} disabled={deleting}>
+                {deleting ? '…' : 'Yes, Delete'}
+              </button>
+              <button className={styles.confirmNo} onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
+                Cancel
+              </button>
+            </div>
           </div>
         )}
       </div>
