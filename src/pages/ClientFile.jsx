@@ -39,10 +39,10 @@ function NextEventBlock({ event, onEdit }) {
       {event ? (
         <>
           <div className={styles.nextEventDetail}>
-            {event.docket_type}{event.subpoenas ? ` (${event.subpoenas})` : ''}{'  |  '}{(() => { const d = new Date(event.event_date); const day = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '; return day + event.event_date; })()}{event.event_time ? '  |  ' + event.event_time : ''}
+            {event.docket_type}{event.subpoenas ? ` (${event.subpoenas})` : ''}{'  |  '}{(() => { const d = new Date(event.event_date); const day = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '; return day + event.event_date; })()}{(() => { const t = event.event_time; return (t && /\d:\d{2}\s*(AM|PM)/i.test(t)) ? '  |  ' + t : ''; })()}
           </div>
           <div className={styles.nextEventMeta}>
-            {event.courtroom ? `Courtroom ${event.courtroom}` : ''} | {event.judge}
+            {(() => { const cr = event.courtroom ? `Courtroom ${event.courtroom}` : ''; const jg = event.judge || ''; if (cr && jg) return `${cr}  |  ${jg}`; return cr || jg; })()}
           </div>
         </>
       ) : (
