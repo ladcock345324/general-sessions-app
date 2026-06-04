@@ -24,9 +24,14 @@ export default function ClientRow({ client, relieved = false, onClick }) {
 
   const nameOca = oca ? `${lastName}, ${firstName} (${gender}, ${age}) #${oca}` : `${lastName}, ${firstName} (${gender}, ${age})`
 
-  const nextLine = nextHearing
-    ? `Next: ${nextHearing.day}, ${nextHearing.date} at ${nextHearing.time}`
-    : null
+  let nextLine = null
+  if (nextHearing && nextHearing.date) {
+    const d = new Date(nextHearing.date)
+    const weekday = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '
+    const t = nextHearing.time
+    const validTime = t && /\d:\d{2}\s*(AM|PM)/i.test(t)
+    nextLine = `Next: ${weekday}${nextHearing.date}${validTime ? '  |  ' + t : ''}`
+  }
 
   return (
     <div className={`${styles.row} ${relieved ? styles.dimmed : ''}`} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
