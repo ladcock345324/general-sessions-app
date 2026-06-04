@@ -163,6 +163,15 @@
 .formInput::placeholder { color: #3a4a5e; }
 .formInput:focus, .formSelect:focus { border-color: rgba(94, 150, 200, 0.45); }
 
+/* Native date picker — restore appearance so the calendar icon shows,
+   and force dark color-scheme so browser renders light text on dark bg */
+.formInput[type="date"],
+.incidentNameInput[type="date"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  color-scheme: dark;
+}
+
 .formHint {
   font-size: 11px;
   color: #4a5a70;

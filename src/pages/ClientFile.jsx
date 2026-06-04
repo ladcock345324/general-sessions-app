@@ -11,6 +11,22 @@ function formatBond(amount) {
   return '$' + Number(amount).toLocaleString()
 }
 
+// Convert "M/D/YYYY" → "YYYY-MM-DD" for <input type="date">
+function toDateInput(mdy) {
+  if (!mdy) return ''
+  const parts = mdy.split('/')
+  if (parts.length !== 3) return ''
+  const [m, d, y] = parts
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+}
+
+// Convert "YYYY-MM-DD" → "M/D/YYYY" for storage and display
+function fromDateInput(iso) {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  return `${Number(m)}/${Number(d)}/${y}`
+}
+
 // ─── Next Event block ────────────────────────────────────────────────────────
 
 function NextEventBlock({ event, onEdit }) {
@@ -146,11 +162,6 @@ function NextEventForm({ clientId, existing, onSaved, onCancel }) {
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
-  function handleDateChange(e) {
-    const formatted = formatDateInput(e.target.value)
-    set('event_date', formatted)
-  }
-
   function handleTimeChange(e) {
     const formatted = formatTimeInput(e.target.value)
     set('event_time', formatted)
@@ -206,11 +217,10 @@ function NextEventForm({ clientId, existing, onSaved, onCancel }) {
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Date</label>
           <input
+            type="date"
             className={styles.formInput}
-            value={form.event_date}
-            onChange={handleDateChange}
-            placeholder="MM/DD/YYYY"
-            inputMode="numeric"
+            value={toDateInput(form.event_date)}
+            onChange={e => set('event_date', fromDateInput(e.target.value))}
           />
         </div>
         <div className={styles.formRow}>
@@ -297,11 +307,10 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Date *</label>
         <input
+          type="date"
           className={styles.formInput}
-          value={form.incident_date}
-          onChange={e => set('incident_date', formatDateInput(e.target.value))}
-          placeholder="MM/DD/YYYY"
-          inputMode="numeric"
+          value={toDateInput(form.incident_date)}
+          onChange={e => set('incident_date', fromDateInput(e.target.value))}
         />
       </div>
       {error && <div className={styles.formError}>{error}</div>}
@@ -435,7 +444,7 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
   function startEdit(e) {
     e.stopPropagation()
     setEditDesc(incident.incident_description ?? '')
-    setEditDate(incident.incident_date ?? '')
+    setEditDate(toDateInput(incident.incident_date ?? ''))
     setEditing(true)
   }
 
@@ -443,7 +452,7 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
     if (committingRef.current) return
     committingRef.current = true
     const newDesc = editDesc.trim()
-    const newDate = editDate.trim()
+    const newDate = fromDateInput(editDate)
     const unchanged = newDesc === (incident.incident_description ?? '') &&
                       newDate === (incident.incident_date ?? '')
     if (!newDate || unchanged) {
@@ -494,9 +503,9 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
                 onKeyDown={onKeyDown}
               />
               <input
+                type="date"
                 className={`${styles.incidentNameInput} ${styles.incidentDateInput}`}
                 value={editDate}
-                placeholder="Date"
                 onChange={e => setEditDate(e.target.value)}
                 onKeyDown={onKeyDown}
               />
@@ -585,7 +594,7 @@ function AddHoursForm({ clientId, onSaved, onCancel }) {
       <div className={styles.formTwoCol}>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Date</label>
-          <input className={styles.formInput} value={form.entry_date} onChange={e => set('entry_date', e.target.value)} placeholder="6/2/2026" />
+          <input type="date" className={styles.formInput} value={toDateInput(form.entry_date)} onChange={e => set('entry_date', fromDateInput(e.target.value))} />
         </div>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Hours</label>
@@ -639,7 +648,7 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
       <div className={styles.formTwoCol}>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Date</label>
-          <input className={styles.formInput} value={form.entry_date} onChange={e => set('entry_date', e.target.value)} placeholder="6/2/2026" />
+          <input type="date" className={styles.formInput} value={toDateInput(form.entry_date)} onChange={e => set('entry_date', fromDateInput(e.target.value))} />
         </div>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Hours</label>
