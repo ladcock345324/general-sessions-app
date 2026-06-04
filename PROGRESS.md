@@ -183,6 +183,46 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 - Pre-populated with live Supabase data including DA Name
 - Updates record, returns to client file
 
+### Next Event Block
+- Display format: `Jail Docket  |  Thursday 7/16/2026  |  9:00 AM` — pipes with double spaces on each side, no comma between weekday and date, no "at" before time
+- Weekday name derived automatically from `event_date` via `new Date()` + `toLocaleDateString('en-US', { weekday: 'long' })`
+- Time field uses native `<input type="time">` picker; defaults to 9:00 AM on new event; time is optional — if blank, time portion is omitted from display entirely (no stray "AM")
+- Courtroom / judge line uses a smart pipe: only shown when both values are present; if only one is set, shown alone; if neither, nothing rendered
+- Date fields throughout Add/Edit Next Event form use native `<input type="date">` picker; converts between `YYYY-MM-DD` (input) and `M/D/YYYY` (storage/display)
+
+### Hours Section
+- All 6 date inputs across the app replaced with native `<input type="date">` pickers; `toDateInput` / `fromDateInput` helpers handle `M/D/YYYY` ↔ `YYYY-MM-DD` conversion
+- Delete confirmation: clicking × shows inline "Delete this entry?" prompt with Yes/Cancel; no immediate delete
+- Row edit: tapping a row opens a pre-populated inline edit form (same layout as add form); Cancel button labeled "Back"
+
+### Client List / Client Row
+- Next hearing shown on each row, pulled from `next_events` via join in `useClients`; format: `Next: Thursday 7/16/2026  |  9:00 AM`; styled in `#6b9fd4` blue; time omitted if blank
+- All three badges (In Custody, Bonded Out, CLOSED) have reduced vertical padding (`1px` top/bottom) for a compact pill shape
+- CLOSED badge is a gray pill (`rgba(74,74,74,0.5)` bg, `#c0c0c0` text) shown beneath the custody badge for active clients with `relieved_closed = true`
+- CLOSED badge in Relieved as Counsel section uses identical gray pill styling
+
+### Close Case / Relieve as Counsel (separated)
+- **Close Case**: sets `relieved_closed = true` only — client stays in Active list; stays on page (uses `refetch()`)
+- **Relieved as Counsel**: separate button that sets `relieved_as_counsel = true` only — moves client to Relieved section
+- **Reopen Case**: clears both flags (unchanged behavior)
+- Bottom action buttons reordered top-to-bottom: Close/Reopen Case (yellow `#c8a84b`) → Relieved as Counsel (orange `#c97060`) → Delete Client (unchanged red), with 4× extra spacing above Delete Client
+
+### Incidents
+- All incidents default to collapsed on every client file page load — sessionStorage persistence removed
+
+### Courtroom Documents Section
+- New section below Criminal History on each client file page
+- Requires a `courtroom_documents` table in Supabase: `id` (uuid PK), `client_id` (uuid FK → clients), `name` (text), `file_url` (text)
+- Files stored in `warrants` bucket at `courtroom-docs/[client_id]/[timestamp]_[filename]`
+- Up to 5 documents per client; `+` button hidden and "Maximum 5 documents reached." shown when at cap
+- Each document shown as a tappable blue tile — opens via 1-hour signed URL in new tab
+- Per-document **rename**: inline input with Save/Cancel
+- Per-document **delete**: × button → inline confirmation ("Delete this document?") → removes from Storage and DB
+- Section header styled identically to Incidents/Hours/Criminal History (dark `#0f1820` bar); content area background inherits page navy `#1E2A3A`
+
+### Criminal History
+- View and Replace/Upload buttons are equal size and laid out with `justify-content: space-between` — View on left, Replace flush to right edge
+
 ### Case View (`/case/:caseNumber`)
 - Header: case number, charge, warrant status (derived from `warrant_url`), bond amount
 - **Upload Warrant** / **Replace Warrant** button — uploads PDF to Supabase Storage
@@ -272,17 +312,14 @@ src/
 - **PWA / iPhone install** — test Add to Home Screen flow; verify service worker and manifest are serving correctly on the production Vercel URL
 
 ### Features
-- **Documents At-Ready section** — per-client document uploads beyond warrants/criminal history (motions, plea agreements, discovery, etc.)
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)
 - **RLS policies** — enable Row Level Security on all tables once auth is stable, so data is locked to the authenticated user
-- **Next hearing on client list** — `ClientRow` UI is already built (renders "Next: day, date at time"); need to update `useClients` to join `next_events` and surface `next_hearing_day`, `next_hearing_date`, `next_hearing_time` on each client row
 
 ### Known Issues / Things to Revisit
 - `warrant_status` column still exists in DB but is fully ignored by the UI — could be dropped with a migration
 - `da_name` column still exists on `cases` table but is no longer shown anywhere in the UI — could be dropped
 - `criminal_history` (text) column on `clients` is legacy and unused — could be dropped
 - Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
-- No delete for hours entries older than the current session if they lack an `id` (edge case from early prompt()-based implementation — all new entries have IDs)
 - Static files `src/data/clients.js` and `src/data/cases.js` can be deleted
 - `EditIncidentForm` component in `ClientFile.jsx` is defined but never rendered — can be deleted (actual editing uses inline inputs directly inside `IncidentGroup`)
 - No pagination — all clients/cases load at once; fine for current scale
