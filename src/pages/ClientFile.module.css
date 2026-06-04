@@ -496,13 +496,13 @@
   padding: 5px 16px;
 }
 
-/* Dark strip header — matches client list Active/Relieved bars */
-.darkStripHeader {
+/* Exact copy of ClientList.module.css .sectionHeader */
+.clientListSectionHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: #0f1820;
+  gap: 8px;
   padding: 5px 16px;
+  background: #0f1820;
 }
 
 .sectionTitle {

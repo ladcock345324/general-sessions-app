@@ -627,7 +627,7 @@ function HoursSection({ clientId, hours: initialHours }) {
 
   return (
     <div className={styles.section}>
-      <div className={styles.darkStripHeader}>
+      <div className={styles.clientListSectionHeader}>
         <span className={styles.sectionTitle}>Hours</span>
         {!showForm && <button className={styles.addBtn} onClick={() => setShowForm(true)}>+</button>}
       </div>
@@ -713,7 +713,7 @@ function CriminalHistorySection({ clientId, initialUrl }) {
 
   return (
     <div className={styles.section}>
-      <div className={styles.darkStripHeader}>
+      <div className={styles.clientListSectionHeader}>
         <span className={styles.sectionTitle}>Criminal History</span>
       </div>
       <div className={styles.historyButtons}>
@@ -852,7 +852,7 @@ export default function ClientFile() {
 
       {/* ── Incidents ── */}
       <div className={styles.incidentsWrapper}>
-        <div className={styles.darkStripHeader}>
+        <div className={styles.clientListSectionHeader}>
           <span className={styles.sectionTitle}>Incidents</span>
           {!showIncidentForm && (
             <button className={styles.incidentSectionAddBtn} onClick={() => setShowIncidentForm(true)}>+ add incident</button>
