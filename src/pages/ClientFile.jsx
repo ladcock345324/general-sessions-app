@@ -655,7 +655,7 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
       {error && <div className={styles.formError}>{error}</div>}
       <div className={styles.formActions}>
         <button className={styles.formSave} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-        <button className={styles.formCancel} onClick={onCancel} disabled={saving}>Cancel</button>
+        <button className={styles.formCancel} onClick={onCancel} disabled={saving}>Back</button>
       </div>
     </div>
   )
