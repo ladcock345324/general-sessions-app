@@ -39,7 +39,7 @@ function NextEventBlock({ event, onEdit }) {
       {event ? (
         <>
           <div className={styles.nextEventDetail}>
-            {event.docket_type}{event.subpoenas ? ` (${event.subpoenas})` : ''}{'  |  '}{(() => { const d = new Date(event.event_date); const day = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '; return day + event.event_date; })()}{'  |  '}{(() => { const m = event.event_time ? event.event_time.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i) : null; if (!m) return event.event_time; const h = m[1]; const min = m[2] || '00'; const ampm = m[3].toUpperCase(); return `${h}:${min} ${ampm}`; })()}
+            {event.docket_type}{event.subpoenas ? ` (${event.subpoenas})` : ''}{'  |  '}{(() => { const d = new Date(event.event_date); const day = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '; return day + event.event_date; })()}{event.event_time ? '  |  ' + event.event_time : ''}
           </div>
           <div className={styles.nextEventMeta}>
             {event.courtroom ? `Courtroom ${event.courtroom}` : ''} | {event.judge}
@@ -54,7 +54,7 @@ function NextEventBlock({ event, onEdit }) {
 
 // ─── Next Event form ─────────────────────────────────────────────────────────
 
-const EMPTY_EVENT = { docket_type: 'Jail Docket', reason: '', event_date: '', event_time: 'AM', courtroom: '', judge: '', subpoenas: 'w/ subs' }
+const EMPTY_EVENT = { docket_type: 'Jail Docket', reason: '', event_date: '', event_time: '9:00 AM', courtroom: '', judge: '', subpoenas: 'w/ subs' }
 
 const COURTROOMS = ['', '3A', '3B', '3C', '4B', '4C', '4D', '5C', '5D']
 
@@ -125,18 +125,28 @@ function formatDateInput(raw) {
   return month + '/' + day + '/' + year
 }
 
-// Format raw digits → H:MM AM/PM as user types
-function formatTimeInput(raw) {
-  // Preserve AM/PM suffix if already present
-  const upper = raw.toUpperCase()
-  const isPM = upper.includes('P')
-  const suffix = isPM ? ' PM' : ' AM'
-  const digits = raw.replace(/\D/g, '').slice(0, 4)
-  if (digits.length === 0) return suffix.trim()
-  if (digits.length <= 2) return digits + suffix
-  const h = digits.slice(0, digits.length - 2)
-  const m = digits.slice(-2)
-  return h + ':' + m + suffix
+// Convert "H:MM AM/PM" or "HH:MM AM/PM" → "HH:MM" for <input type="time">
+function toTimeInput(ampm) {
+  if (!ampm) return ''
+  const m = ampm.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (!m) return ''
+  let h = parseInt(m[1], 10)
+  const min = m[2]
+  const period = m[3].toUpperCase()
+  if (period === 'AM' && h === 12) h = 0
+  if (period === 'PM' && h !== 12) h += 12
+  return `${String(h).padStart(2, '0')}:${min}`
+}
+
+// Convert "HH:MM" → "H:MM AM/PM" for storage and display
+function fromTimeInput(hhmm) {
+  if (!hhmm) return ''
+  const [hStr, min] = hhmm.split(':')
+  let h = parseInt(hStr, 10)
+  const period = h >= 12 ? 'PM' : 'AM'
+  if (h === 0) h = 12
+  else if (h > 12) h -= 12
+  return `${h}:${min} ${period}`
 }
 
 function NextEventForm({ clientId, existing, onSaved, onCancel }) {
@@ -162,14 +172,9 @@ function NextEventForm({ clientId, existing, onSaved, onCancel }) {
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
-  function handleTimeChange(e) {
-    const formatted = formatTimeInput(e.target.value)
-    set('event_time', formatted)
-  }
-
   async function save() {
-    if (!form.event_date.trim() || !form.event_time.trim()) {
-      setError('Date and time are required.')
+    if (!form.event_date.trim()) {
+      setError('Date is required.')
       return
     }
     setSaving(true)
@@ -226,11 +231,10 @@ function NextEventForm({ clientId, existing, onSaved, onCancel }) {
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Time</label>
           <input
+            type="time"
             className={styles.formInput}
-            value={form.event_time}
-            onChange={handleTimeChange}
-            placeholder="9:00 AM"
-            inputMode="numeric"
+            value={toTimeInput(form.event_time)}
+            onChange={e => set('event_time', fromTimeInput(e.target.value))}
           />
         </div>
       </div>
