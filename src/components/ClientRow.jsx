@@ -14,7 +14,7 @@ function RelivedBadge({ closed }) {
   return (
     <div className={styles.relievedBadge}>
       <span className={styles.relievedLabel}>Relieved as Counsel</span>
-      {closed && <span className={styles.closedLabel}>CLOSED</span>}
+      {closed && <span className={styles.closedBadge}>CLOSED</span>}
     </div>
   )
 }

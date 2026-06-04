@@ -60,10 +60,10 @@
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.07em;
-  padding: 2px 7px;
+  padding: 1px 7px;
   border-radius: 20px;
   background-color: rgba(74, 74, 74, 0.5);
-  color: #b0b0b0;
+  color: #c0c0c0;
   border: 1px solid rgba(160, 160, 160, 0.25);
   white-space: nowrap;
 }
@@ -72,7 +72,7 @@
 .badge {
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 1px 10px;
   border-radius: 20px;
   letter-spacing: 0.03em;
   white-space: nowrap;
@@ -105,10 +105,3 @@
   white-space: nowrap;
 }
 
-.closedLabel {
-  font-size: 10px;
-  font-weight: 700;
-  color: #6b7685;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
