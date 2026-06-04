@@ -432,9 +432,8 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
 // ─── Incident group ──────────────────────────────────────────────────────────
 
 function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseAdded }) {
-  const storageKey = `incident-open-${clientId}-${initialIncident.id}`
   const [incident, setIncident] = useState(initialIncident)
-  const [open, setOpen] = useState(() => sessionStorage.getItem(storageKey) === '1')
+  const [open, setOpen] = useState(false)
   const [showAddCase, setShowAddCase] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editDesc, setEditDesc] = useState('')
@@ -493,7 +492,7 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
     <div className={styles.incidentGroup}>
       <div
         className={styles.incidentHeader}
-        onClick={() => { if (!editing) { setOpen(o => { const next = !o; sessionStorage.setItem(storageKey, next ? '1' : '0'); return next }); setShowAddCase(false) } }}
+        onClick={() => { if (!editing) { setOpen(o => !o); setShowAddCase(false) } }}
       >
         <div className={styles.incidentHeaderLeft}>
           {editing ? (
