@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useClientFile } from '../hooks/useClientFile'
@@ -847,6 +847,173 @@ function CriminalHistorySection({ clientId, initialUrl }) {
   )
 }
 
+// ─── Courtroom Documents section ─────────────────────────────────────────────
+
+function CourtroomDocsSection({ clientId }) {
+  const [docs, setDocs] = useState([])
+  const [showForm, setShowForm] = useState(false)
+  const [formName, setFormName] = useState('')
+  const [formFile, setFormFile] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState(null)
+  const [renamingId, setRenamingId] = useState(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    fetchDocs()
+  }, [clientId])
+
+  async function fetchDocs() {
+    const { data } = await supabase
+      .from('courtroom_documents')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('id', { ascending: true })
+    if (data) setDocs(data)
+  }
+
+  async function handleSave() {
+    if (!formName.trim()) { setFormError('Document name is required.'); return }
+    if (!formFile) { setFormError('Please select a PDF file.'); return }
+    setSaving(true)
+    setFormError(null)
+
+    const safeName = formFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `courtroom-docs/${clientId}/${Date.now()}_${safeName}`
+
+    const { error: uploadErr } = await supabase.storage
+      .from('warrants')
+      .upload(path, formFile, { contentType: 'application/pdf', upsert: true })
+
+    if (uploadErr) { setFormError(uploadErr.message); setSaving(false); return }
+
+    const { error: insertErr } = await supabase
+      .from('courtroom_documents')
+      .insert({ client_id: clientId, name: formName.trim(), file_url: path })
+
+    if (insertErr) { setFormError(insertErr.message); setSaving(false); return }
+
+    setFormName('')
+    setFormFile(null)
+    setShowForm(false)
+    setSaving(false)
+    fetchDocs()
+  }
+
+  async function handleView(doc) {
+    const { data, error } = await supabase.storage.from('warrants').createSignedUrl(doc.file_url, 3600)
+    if (error) { alert('Could not open file: ' + error.message); return }
+    window.open(data.signedUrl, '_blank')
+  }
+
+  async function handleRename(doc) {
+    if (!renameValue.trim()) return
+    await supabase.from('courtroom_documents').update({ name: renameValue.trim() }).eq('id', doc.id)
+    setRenamingId(null)
+    fetchDocs()
+  }
+
+  async function handleDelete(doc) {
+    setDeleting(true)
+    await supabase.storage.from('warrants').remove([doc.file_url])
+    await supabase.from('courtroom_documents').delete().eq('id', doc.id)
+    setConfirmDeleteId(null)
+    setDeleting(false)
+    fetchDocs()
+  }
+
+  const atMax = docs.length >= 5
+
+  return (
+    <div className={styles.section}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
+        <span className={styles.sectionTitle}>Courtroom Documents</span>
+        {!showForm && !atMax && (
+          <button className={styles.addBtn} onClick={() => setShowForm(true)}>+</button>
+        )}
+      </div>
+
+      {showForm && (
+        <div className={styles.inlineForm}>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Document Name *</label>
+            <input
+              className={styles.formInput}
+              value={formName}
+              onChange={e => setFormName(e.target.value)}
+              placeholder="e.g. Motion to Suppress"
+            />
+          </div>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>File (PDF) *</label>
+            <input
+              type="file"
+              accept="application/pdf"
+              className={styles.formInput}
+              onChange={e => setFormFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+          {formError && <div className={styles.formError}>{formError}</div>}
+          <div className={styles.formActions}>
+            <button className={styles.formSave} onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+            <button className={styles.formCancel} onClick={() => { setShowForm(false); setFormName(''); setFormFile(null); setFormError(null) }} disabled={saving}>Back</button>
+          </div>
+        </div>
+      )}
+
+      <div className={styles.cdocList}>
+        {docs.length === 0 && !showForm && (
+          <div className={styles.cdocEmpty}>No courtroom documents uploaded.</div>
+        )}
+        {docs.map(doc => (
+          <div key={doc.id} className={styles.cdocItem}>
+            {/* Tile */}
+            <button className={styles.cdocTile} onClick={() => handleView(doc)}>
+              {doc.name}
+            </button>
+
+            {/* Rename */}
+            {renamingId === doc.id ? (
+              <div className={styles.cdocRenameRow}>
+                <input
+                  className={styles.cdocRenameInput}
+                  value={renameValue}
+                  onChange={e => setRenameValue(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleRename(doc); if (e.key === 'Escape') setRenamingId(null) }}
+                  autoFocus
+                />
+                <button className={styles.cdocRenameAction} onClick={() => handleRename(doc)}>Save</button>
+                <button className={styles.cdocRenameCancel} onClick={() => setRenamingId(null)}>Cancel</button>
+              </div>
+            ) : (
+              /* Delete confirm or normal controls */
+              confirmDeleteId === doc.id ? (
+                <div className={styles.cdocConfirmRow}>
+                  <span className={styles.cdocConfirmText}>Delete this document?</span>
+                  <div className={styles.cdocConfirmActions}>
+                    <button className={styles.hoursConfirmYes} onClick={() => handleDelete(doc)} disabled={deleting}>{deleting ? '…' : 'Yes, delete'}</button>
+                    <button className={styles.hoursConfirmCancel} onClick={() => setConfirmDeleteId(null)} disabled={deleting}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.cdocControls}>
+                  <button className={styles.cdocRenameBtn} onClick={() => { setRenamingId(doc.id); setRenameValue(doc.name) }}>rename</button>
+                  <button className={styles.hoursDeleteBtn} onClick={() => setConfirmDeleteId(doc.id)}>×</button>
+                </div>
+              )
+            )}
+          </div>
+        ))}
+        {atMax && (
+          <div className={styles.cdocMaxMsg}>Maximum 5 documents reached.</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function ClientFile() {
@@ -1003,6 +1170,9 @@ export default function ClientFile() {
 
       {/* ── Criminal History ── */}
       <CriminalHistorySection clientId={id} initialUrl={client.criminal_history_url} />
+
+      {/* ── Courtroom Documents ── */}
+      <CourtroomDocsSection clientId={id} />
 
       {/* ── Delete Client ── */}
       <div className={styles.deleteClientSection}>

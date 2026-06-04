@@ -715,6 +715,137 @@
   display: none;
 }
 
+/* Courtroom Documents */
+.cdocList {
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cdocEmpty {
+  font-size: 13px;
+  color: #3a4a5e;
+  padding: 2px 0;
+}
+
+.cdocMaxMsg {
+  font-size: 12px;
+  color: #4a5a70;
+  padding: 4px 0;
+}
+
+.cdocItem {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cdocTile {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #1E3A5F;
+  border: 1px solid #3a6ea8;
+  color: #7eb8f7;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+
+.cdocTile:active {
+  background: #243f6a;
+}
+
+.cdocControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 4px;
+}
+
+.cdocRenameBtn {
+  background: none;
+  border: none;
+  color: #5a8fc0;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.02em;
+}
+
+.cdocRenameBtn:hover {
+  color: #7eb8f7;
+}
+
+.cdocRenameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 4px;
+}
+
+.cdocRenameInput {
+  flex: 1;
+  background: #1E2A3A;
+  border: 1px solid rgba(94, 150, 200, 0.45);
+  border-radius: 5px;
+  color: #f0f2f5;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 4px 8px;
+  outline: none;
+}
+
+.cdocRenameAction {
+  background: none;
+  border: 1px solid rgba(94, 150, 200, 0.45);
+  color: #6b9fd4;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cdocRenameAction:hover {
+  background: rgba(94, 150, 200, 0.1);
+}
+
+.cdocRenameCancel {
+  background: none;
+  border: 1px solid #3a4a5e;
+  color: #9faab8;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cdocRenameCancel:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cdocConfirmRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px;
+  font-size: 13px;
+}
+
+.cdocConfirmText {
+  color: #c97060;
+  font-size: 12px;
+}
+
+.cdocConfirmActions {
+  display: flex;
+  gap: 8px;
+}
+
 /* Delete Client */
 .deleteClientSection {
   padding: 8px 16px 0;
