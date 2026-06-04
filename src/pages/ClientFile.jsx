@@ -23,7 +23,7 @@ function NextEventBlock({ event, onEdit }) {
       {event ? (
         <>
           <div className={styles.nextEventDetail}>
-            {event.docket_type}{event.subpoenas ? ` (${event.subpoenas})` : ''} | {event.event_date} at {event.event_time}
+            {event.docket_type}{event.subpoenas ? ` (${event.subpoenas})` : ''} | {(() => { const d = new Date(event.event_date); const day = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ', '; return day + event.event_date; })()} at {(() => { const m = event.event_time ? event.event_time.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i) : null; if (!m) return event.event_time; const h = m[1]; const min = m[2] || '00'; const ampm = m[3].toUpperCase(); return `${h}:${min} ${ampm}`; })()}
           </div>
           <div className={styles.nextEventMeta}>
             {event.courtroom ? `Courtroom ${event.courtroom}` : ''} | {event.judge}
