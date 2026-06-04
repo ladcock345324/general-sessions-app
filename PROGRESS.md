@@ -118,6 +118,15 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Deployment
+- **Production URL:** `https://general-sessions-app.vercel.app` — auto-deploys on every push to `main`
+- **GitHub repo:** `ladcock345324/general-sessions-app` — Vercel is connected to this repo/branch
+- **vercel.json** — SPA rewrite rule (all paths → `/index.html`) + explicit cache-control headers:
+  - `index.html` → `no-cache, no-store, must-revalidate` (always fetches latest)
+  - `/assets/*` → `public, max-age=31536000, immutable` (hashed filenames, safe to cache forever)
+- **Supabase credentials** are hardcoded in `src/supabaseClient.js` — no env vars needed in Vercel
+- ⚠️ Preview URLs (containing a hash segment like `4jtwv04l6` in the hostname) are **immutable snapshots** of a specific deployment — never use these for testing current changes; always use the production URL above
+
 ### Authentication
 - Login page at `/login` — email/password via `supabase.auth.signInWithPassword()`
 - All routes protected by `RequireAuth` — redirects to `/login` if no session
@@ -163,6 +172,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
   - Running total at bottom
   - `+` button opens inline form (date defaults to today, hours dropdown 0.1–0.9)
   - Saves to Supabase, sorted most recent first
+- **Section headers** (Incidents, Hours, Criminal History) use inline styles (`background: #0f1820`, matching the Active/Relieved As Counsel dark strips on the client list) — implemented as inline styles rather than CSS module classes due to a Vite CSS module build artifact issue
 - **Criminal History** section: Upload/Replace/View Criminal History PDF
 - **Edit Client** button → Edit Client form (same fields as Add including DA Name)
 - **Close Case** button → confirms → sets `relieved_as_counsel + relieved_closed = true`
@@ -259,8 +269,7 @@ src/
 ## Coming Next
 
 ### Deployment
-- **Vercel deployment** — `vercel.json` added (SPA rewrite rule: all paths → `/index.html`); git repo initialized and pushed to GitHub at `ladcock345324/general-sessions-app`; next step: import repo on vercel.com and deploy (no env vars needed — Supabase credentials are hardcoded in `supabaseClient.js`)
-- **PWA / iPhone install** — test Add to Home Screen flow after Vercel deploy; verify service worker and manifest are serving correctly
+- **PWA / iPhone install** — test Add to Home Screen flow; verify service worker and manifest are serving correctly on the production Vercel URL
 
 ### Features
 - **Documents At-Ready section** — per-client document uploads beyond warrants/criminal history (motions, plea agreements, discovery, etc.)
