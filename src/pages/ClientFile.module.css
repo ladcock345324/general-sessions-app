@@ -662,9 +662,8 @@
 /* Criminal history */
 .historyButtons {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
   padding: 10px 16px;
   background: #1E2A3A;
 }
@@ -677,10 +676,12 @@
   color: #7eb8f7;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
   padding: 9px 20px;
   border-radius: 8px;
   cursor: pointer;
   letter-spacing: 0.02em;
+  box-sizing: border-box;
 }
 
 .historyViewBtn:active {
@@ -695,10 +696,12 @@
   color: #9faab8;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
   padding: 9px 20px;
   border-radius: 8px;
   cursor: pointer;
   letter-spacing: 0.02em;
+  box-sizing: border-box;
 }
 
 .historyUploadBtn:active {
