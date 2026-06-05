@@ -66,7 +66,8 @@
 }
 
 .caseNumberItem {
-  font-size: 0.72em;
+  font-size: 0.65em;
+  font-weight: bold;
   color: #6b9fd4;
   cursor: pointer;
   user-select: text;
