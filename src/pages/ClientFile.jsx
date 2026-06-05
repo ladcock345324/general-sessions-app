@@ -54,8 +54,8 @@ function NextEventBlock({ event, onEdit }) {
           <div className={styles.nextEventMeta}>
             {(() => {
               const segments = [
-                ...(event.courtroom ? [`Courtroom ${event.courtroom}`] : []),
                 ...(event.reason ? [event.reason] : []),
+                ...(event.courtroom ? [`Courtroom ${event.courtroom}`] : []),
                 ...(event.judge ? [event.judge] : []),
               ]
               return segments.join('  |  ')
