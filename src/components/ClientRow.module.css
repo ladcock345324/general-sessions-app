@@ -39,6 +39,12 @@
   padding: 0;
 }
 
+.pipe {
+  font-size: 1.08em;
+  margin: 0 0.35em;
+  line-height: 1;
+}
+
 .nextEmpty {
   font-size: 13px;
 }

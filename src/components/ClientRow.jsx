@@ -24,27 +24,33 @@ export default function ClientRow({ client, relieved = false, onClick }) {
 
   const nameOca = oca ? `${lastName}, ${firstName} (${gender}, ${age}) #${oca}` : `${lastName}, ${firstName} (${gender}, ${age})`
 
-  let nextLine = null
+  let nextSegments = null
   if (nextHearing && nextHearing.date) {
     const d = new Date(nextHearing.date)
     const weekday = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ', '
     const t = nextHearing.time
     const validTime = t && /\d:\d{2}\s*(AM|PM)/i.test(t)
-    const segments = [
+    nextSegments = [
       `${weekday}${nextHearing.date}`,
       ...(validTime ? [t] : []),
       ...(nextHearing.docket_type ? [nextHearing.docket_type] : []),
       ...(nextHearing.courtroom ? [`Courtroom ${nextHearing.courtroom}`] : []),
     ]
-    nextLine = segments.join('  |  ')
   }
 
   return (
     <div className={`${styles.row} ${relieved ? styles.dimmed : ''}`} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
       <div className={styles.info}>
         <span className={styles.name}>{nameOca}</span>
-        {nextLine
-          ? <span className={styles.next}><span style={{ textDecoration: 'underline' }}>Next:</span> {nextLine}</span>
+        {nextSegments
+          ? (
+            <span className={styles.next}>
+              <span style={{ textDecoration: 'underline' }}>Next:</span>{' '}
+              {nextSegments.map((seg, i) => (
+                <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
+              ))}
+            </span>
+          )
           : <span className={styles.nextEmpty}>&nbsp;</span>
         }
       </div>

@@ -73,6 +73,12 @@
   padding: 4px 16px 0;
 }
 
+.pipe {
+  font-size: 1.08em;
+  margin: 0 0.35em;
+  line-height: 1;
+}
+
 /* Badges */
 .badge {
   font-size: 12px;

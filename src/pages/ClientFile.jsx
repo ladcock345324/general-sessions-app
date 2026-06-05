@@ -48,7 +48,9 @@ function NextEventBlock({ event, onEdit }) {
                 day + event.event_date,
                 ...(t && /\d:\d{2}\s*(AM|PM)/i.test(t) ? [t] : []),
               ]
-              return parts.join('  |  ')
+              return parts.map((p, i) => (
+                <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{p}</span>
+              ))
             })()}
           </div>
           <div className={styles.nextEventMeta}>
@@ -58,7 +60,9 @@ function NextEventBlock({ event, onEdit }) {
                 ...(event.courtroom ? [`Courtroom ${event.courtroom}`] : []),
                 ...(event.judge ? [event.judge] : []),
               ]
-              return segments.join('  |  ')
+              return segments.map((s, i) => (
+                <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{s}</span>
+              ))
             })()}
           </div>
         </>
@@ -584,7 +588,7 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
                 <span className={styles.caseNumber}>{c.case_number}</span>
                 <span className={styles.caseCharge}>{c.charge}</span>
                 <span className={styles.caseMeta}>
-                  {c.warrant_url ? 'Warrant on File' : 'No Warrant'} | {formatBond(c.bond_amount)} bond
+                  {c.warrant_url ? 'Warrant on File' : 'No Warrant'}<span className={styles.pipe}>|</span>{formatBond(c.bond_amount)} bond
                 </span>
               </div>
               <span className={styles.caseChevron}>›</span>
@@ -1161,7 +1165,9 @@ export default function ClientFile() {
         </div>
         {(bond || client.da_name) && (
           <div className={styles.bondLine}>
-            {[bond && `Bond: ${bond}`, client.da_name && `DA: ${client.da_name}`].filter(Boolean).join(' | ')}
+            {[bond && `Bond: ${bond}`, client.da_name && `DA: ${client.da_name}`].filter(Boolean).map((seg, i) => (
+              <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
+            ))}
           </div>
         )}
       </div>

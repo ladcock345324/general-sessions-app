@@ -220,7 +220,7 @@ export default function CaseView() {
         <div className={styles.caseNumberLabel}>{caseData.case_number}</div>
         <div className={styles.charge}>{caseData.charge}</div>
         <div className={styles.meta}>
-          {warrantStatus} | {formatBond(caseData.bond_amount)} bond
+          {warrantStatus}<span className={styles.pipe}>|</span>{formatBond(caseData.bond_amount)} bond
         </div>
       </div>
 

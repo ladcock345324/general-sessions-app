@@ -29,6 +29,12 @@
   letter-spacing: 0.01em;
 }
 
+.pipe {
+  font-size: 1.08em;
+  margin: 0 0.35em;
+  line-height: 1;
+}
+
 .editBtn {
   background: none;
   border: none;
