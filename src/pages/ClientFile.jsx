@@ -1206,7 +1206,7 @@ export default function ClientFile() {
         </div>
         {(bond || client.da_name) && (
           <div className={styles.bondLine}>
-            {[bond && `Bond: ${bond}`, client.da_name && `DA: ${client.da_name}`].filter(Boolean).map((seg, i) => (
+            {[bond && `Bond: ${bond}`, client.da_name && `ADA: ${client.da_name}`].filter(Boolean).map((seg, i) => (
               <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
             ))}
           </div>

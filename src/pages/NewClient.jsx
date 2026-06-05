@@ -153,7 +153,7 @@ export default function NewClient() {
         </div>
 
         <div className={styles.row}>
-          <label className={styles.label}>DA Name</label>
+          <label className={styles.label}>Assistant DA Name</label>
           <input
             className={styles.input}
             type="text"
