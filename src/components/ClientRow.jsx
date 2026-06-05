@@ -71,15 +71,19 @@ export default function ClientRow({ client, relieved = false, onClick }) {
       </div>
       {caseNumbers && caseNumbers.length > 0 && (
         <div className={styles.caseNumberStack}>
-          {caseNumbers.map(c => (
-            <span
-              key={c.id}
-              className={styles.caseNumberItem}
-              {...tapHandlers(() => navigate(`/case/${c.case_number}`))}
-            >
-              {c.case_number}
-            </span>
-          ))}
+          {caseNumbers.map(c => {
+            const start = { x: 0, y: 0 }
+            return (
+              <span
+                key={c.id}
+                className={styles.caseNumberItem}
+                onPointerDown={e => { e.stopPropagation(); start.x = e.clientX; start.y = e.clientY }}
+                onPointerUp={e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number}`) }}
+              >
+                {c.case_number}
+              </span>
+            )
+          })}
         </div>
       )}
       <div className={styles.right}>
