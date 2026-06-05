@@ -1,5 +1,18 @@
 import styles from './ClientRow.module.css'
 
+// Returns onPointerDown/onPointerUp props that only fire `handler` when the
+// pointer moved less than 5px — distinguishes a tap from a drag-to-select.
+function tapHandlers(handler) {
+  if (!handler) return {}
+  const start = { x: 0, y: 0 }
+  return {
+    onPointerDown: e => { start.x = e.clientX; start.y = e.clientY },
+    onPointerUp:   e => {
+      if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) handler()
+    },
+  }
+}
+
 function CustodyBadge({ status }) {
   if (status === 'in_custody') {
     return <span className={`${styles.badge} ${styles.badgeOrange}`}>In Custody</span>
@@ -39,7 +52,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
   }
 
   return (
-    <div className={`${styles.row} ${relieved ? styles.dimmed : ''}`} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
+    <div className={`${styles.row} ${relieved ? styles.dimmed : ''}`} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
       <div className={styles.info}>
         <span className={styles.name}>{nameOca}</span>
         {nextSegments

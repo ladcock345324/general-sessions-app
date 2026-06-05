@@ -4,6 +4,20 @@ import { supabase } from '../supabaseClient'
 import { useClientFile } from '../hooks/useClientFile'
 import styles from './ClientFile.module.css'
 
+// ─── Tap-safe click helper ───────────────────────────────────────────────────
+// Returns onPointerDown/onPointerUp props that only fire `handler` when the
+// pointer moved less than 5px — distinguishes a tap from a drag-to-select.
+function tapHandlers(handler) {
+  if (!handler) return {}
+  const start = { x: 0, y: 0 }
+  return {
+    onPointerDown: e => { start.x = e.clientX; start.y = e.clientY },
+    onPointerUp:   e => {
+      if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) handler()
+    },
+  }
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function formatBond(amount) {
@@ -583,7 +597,7 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
             <div className={styles.noCasesMsg}>No cases yet</div>
           )}
           {(incident.cases ?? []).map(c => (
-            <div key={c.id} className={styles.caseRow} onClick={() => onCaseTap(c.case_number)}>
+            <div key={c.id} className={styles.caseRow} {...tapHandlers(() => onCaseTap(c.case_number))} style={{ cursor: 'pointer', userSelect: 'text' }}>
               <div className={styles.caseInfo}>
                 <span className={styles.caseNumber}>{c.case_number}</span>
                 <span className={styles.caseCharge}>{c.charge}</span>
