@@ -832,10 +832,12 @@ function HoursSection({ clientId, hours: initialHours }) {
 
 // ─── Criminal History section ────────────────────────────────────────────────
 
-function CriminalHistorySection({ clientId, initialUrl }) {
+function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
   const [url, setUrl] = useState(initialUrl ?? null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   async function handleUpload(e) {
     const file = e.target.files?.[0]
@@ -872,29 +874,53 @@ function CriminalHistorySection({ clientId, initialUrl }) {
     window.open(data.signedUrl, '_blank')
   }
 
+  async function handleDelete() {
+    setDeleting(true)
+    const path = `criminal-history/${clientId}.pdf`
+    await supabase.storage.from('warrants').remove([path])
+    await supabase.from('clients').update({ criminal_history_url: null }).eq('id', clientId)
+    setUrl(null)
+    setShowDeleteConfirm(false)
+    setDeleting(false)
+    onDeleted()
+  }
+
   return (
     <div className={styles.section}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
         <span className={styles.sectionTitle}>Criminal History</span>
       </div>
-      <div className={styles.historyButtons}>
-        {url && (
-          <button className={styles.historyViewBtn} onClick={handleView}>
-            View Criminal History
-          </button>
-        )}
-        <label className={`${styles.historyUploadBtn} ${uploading ? styles.historyUploadDisabled : ''}`}>
-          {uploading ? 'Uploading…' : url ? 'Replace Criminal History' : 'Upload Criminal History'}
-          <input
-            type="file"
-            accept="application/pdf"
-            className={styles.fileInputHidden}
-            disabled={uploading}
-            onChange={handleUpload}
-          />
-        </label>
-        {uploadError && <div className={styles.formError}>{uploadError}</div>}
-      </div>
+      {showDeleteConfirm ? (
+        <div className={styles.hoursConfirmRow}>
+          <span className={styles.hoursConfirmText}>Delete criminal history?</span>
+          <div className={styles.hoursConfirmActions}>
+            <button className={styles.hoursConfirmYes} onClick={handleDelete} disabled={deleting}>{deleting ? '…' : 'Yes, delete'}</button>
+            <button className={styles.hoursConfirmCancel} onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div className={styles.historyButtons}>
+          {url && (
+            <button className={styles.historyViewBtn} onClick={handleView}>
+              View Criminal History
+            </button>
+          )}
+          <label className={`${styles.historyUploadBtn} ${uploading ? styles.historyUploadDisabled : ''}`}>
+            {uploading ? 'Uploading…' : url ? 'Replace Criminal History' : 'Upload Criminal History'}
+            <input
+              type="file"
+              accept="application/pdf"
+              className={styles.fileInputHidden}
+              disabled={uploading}
+              onChange={handleUpload}
+            />
+          </label>
+          {url && (
+            <button className={styles.hoursDeleteBtn} onClick={() => setShowDeleteConfirm(true)}>×</button>
+          )}
+          {uploadError && <div className={styles.formError}>{uploadError}</div>}
+        </div>
+      )}
     </div>
   )
 }
@@ -1224,7 +1250,7 @@ export default function ClientFile() {
       <HoursSection clientId={id} hours={hours} />
 
       {/* ── Criminal History ── */}
-      <CriminalHistorySection clientId={id} initialUrl={client.criminal_history_url} />
+      <CriminalHistorySection clientId={id} initialUrl={client.criminal_history_url} onDeleted={refetch} />
 
       {/* ── Courtroom Documents ── */}
       <CourtroomDocsSection clientId={id} />
