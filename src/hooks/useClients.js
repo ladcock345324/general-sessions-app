@@ -11,7 +11,7 @@ export function useClients() {
       setLoading(true)
       const { data, error } = await supabase
         .from('clients')
-        .select('*, next_events(event_date, event_time, docket_type, courtroom, reason, judge)')
+        .select('*, next_events(event_date, event_time, docket_type, courtroom, reason, judge), incidents(cases(id, case_number))')
         .order('last_name', { ascending: true })
 
       if (error) {

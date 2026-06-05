@@ -6,8 +6,16 @@ import styles from './ClientList.module.css'
 
 const byLastName = (a, b) => a.last_name.localeCompare(b.last_name)
 
+// Strip leading non-digits and parse as integer for numeric sort
+function caseNumericKey(caseNumber) {
+  return parseInt((caseNumber ?? '').replace(/^\D+/, ''), 10) || 0
+}
+
 // Map Supabase row → shape ClientRow expects
 function toRowProps(client) {
+  const allCases = (client.incidents ?? []).flatMap(inc => inc.cases ?? [])
+  const caseNumbers = [...allCases].sort((a, b) => caseNumericKey(a.case_number) - caseNumericKey(b.case_number))
+
   return {
     id: client.id,
     lastName: client.last_name,
@@ -26,6 +34,7 @@ function toRowProps(client) {
         }
       : null,
     relievedClosed: client.relieved_closed ?? false,
+    caseNumbers,
   }
 }
 

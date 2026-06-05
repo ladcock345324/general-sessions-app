@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import styles from './ClientRow.module.css'
 
 // Returns onPointerDown/onPointerUp props that only fire `handler` when the
@@ -33,7 +34,8 @@ function RelivedBadge({ closed }) {
 }
 
 export default function ClientRow({ client, relieved = false, onClick }) {
-  const { lastName, firstName, gender, age, oca, custodyStatus, nextHearing, relievedClosed } = client
+  const navigate = useNavigate()
+  const { lastName, firstName, gender, age, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers } = client
 
   const nameOca = oca ? `${lastName}, ${firstName} (${gender}, ${age}) #${oca}` : `${lastName}, ${firstName} (${gender}, ${age})`
 
@@ -67,6 +69,19 @@ export default function ClientRow({ client, relieved = false, onClick }) {
           : <span className={styles.nextEmpty}>&nbsp;</span>
         }
       </div>
+      {caseNumbers && caseNumbers.length > 0 && (
+        <div className={styles.caseNumberStack}>
+          {caseNumbers.map(c => (
+            <span
+              key={c.id}
+              className={styles.caseNumberItem}
+              {...tapHandlers(() => navigate(`/case/${c.case_number}`))}
+            >
+              {c.case_number}
+            </span>
+          ))}
+        </div>
+      )}
       <div className={styles.right}>
         {relieved ? (
           <RelivedBadge closed={relievedClosed} />

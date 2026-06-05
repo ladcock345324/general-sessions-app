@@ -49,6 +49,25 @@
   font-size: 13px;
 }
 
+.caseNumberStack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  align-self: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+
+.caseNumberItem {
+  font-size: 0.72em;
+  color: #6b9fd4;
+  cursor: pointer;
+  user-select: text;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 .right {
   flex-shrink: 0;
   display: flex;
