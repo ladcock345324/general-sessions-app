@@ -33,9 +33,8 @@ export default function ClientRow({ client, relieved = false, onClick }) {
     const segments = [
       `${weekday}${nextHearing.date}`,
       ...(validTime ? [t] : []),
+      ...(nextHearing.docket_type ? [nextHearing.docket_type] : []),
       ...(nextHearing.courtroom ? [`Courtroom ${nextHearing.courtroom}`] : []),
-      ...(nextHearing.reason ? [nextHearing.reason] : []),
-      ...(nextHearing.judge ? [nextHearing.judge] : []),
     ]
     nextLine = `Next: ${segments.join('  |  ')}`
   }

@@ -19,11 +19,10 @@ function toRowProps(client) {
     custodyStatus: client.custody_status,
     nextHearing: (client.next_events && client.next_events.length > 0)
       ? {
-          date:      client.next_events[0].event_date,
-          time:      client.next_events[0].event_time,
-          courtroom: client.next_events[0].courtroom,
-          reason:    client.next_events[0].reason,
-          judge:     client.next_events[0].judge,
+          date:        client.next_events[0].event_date,
+          time:        client.next_events[0].event_time,
+          docket_type: client.next_events[0].docket_type,
+          courtroom:   client.next_events[0].courtroom,
         }
       : null,
     relievedClosed: client.relieved_closed ?? false,
