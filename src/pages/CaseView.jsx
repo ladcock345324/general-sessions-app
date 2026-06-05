@@ -96,7 +96,7 @@ export default function CaseView() {
 
     // Get the client_id from the incident before deleting
     const { data: incident } = await supabase
-      .from('incidents').select('client_id').eq('id', incidentId).single()
+      .from('incidents').select('client_id').eq('id', incidentId).maybeSingle()
     const clientId = incident?.client_id
 
     await supabase.from('cases').delete().eq('id', caseData.id)
@@ -159,7 +159,7 @@ export default function CaseView() {
         .from('cases')
         .select('*')
         .eq('case_number', caseNumber)
-        .single()
+        .maybeSingle()
 
       if (error) {
         setError(error.message)
@@ -203,7 +203,7 @@ export default function CaseView() {
       navigate(`/case/${newCaseNumber}`, { replace: true })
     } else {
       // Re-fetch updated data
-      supabase.from('cases').select('*').eq('case_number', newCaseNumber).single()
+      supabase.from('cases').select('*').eq('case_number', newCaseNumber).maybeSingle()
         .then(({ data }) => { if (data) { setCaseData(data) } })
     }
   }

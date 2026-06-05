@@ -316,7 +316,7 @@
   align-items: center;
   justify-content: space-between;
   background: #16212F;
-  padding: 9px 16px;
+  padding: 9px 12px 9px 16px;
   cursor: pointer;
   user-select: none;
 }
@@ -333,13 +333,30 @@
   min-width: 0;
 }
 
-.incidentName {
+.incidentNameRow {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.incidentDatePart {
+  flex-shrink: 0;
+  white-space: nowrap;
   font-size: 13px;
   font-weight: 600;
   color: #c8d0dc;
-  white-space: nowrap;
+}
+
+.incidentDescPart {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c8d0dc;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .incidentEditInputs {
@@ -388,16 +405,37 @@
   color: #6b9fd4;
 }
 
-.incidentChevron {
-  font-size: 18px;
-  color: #3a4a5e;
+.incidentDeleteBtn {
+  background: none;
+  border: none;
+  color: #5a3030;
+  font-size: 16px;
   line-height: 1;
-  display: inline-block;
-  transition: transform 0.18s ease;
+  cursor: pointer;
+  padding: 0 0 0 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
 }
 
-.incidentChevronOpen {
-  transform: rotate(90deg);
+.incidentDeleteBtn:hover {
+  color: #c97060;
+}
+
+.incidentConfirmRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px;
+  background: rgba(122, 58, 48, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+}
+
+.incidentConfirmText {
+  color: #c97060;
 }
 
 .incidentBody {

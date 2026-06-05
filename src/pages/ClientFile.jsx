@@ -39,10 +39,27 @@ function NextEventBlock({ event, onEdit }) {
       {event ? (
         <>
           <div className={styles.nextEventDetail}>
-            {event.docket_type}{event.subpoenas ? ` (${event.subpoenas})` : ''}{'  |  '}{(() => { const d = new Date(event.event_date); const day = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '; return day + event.event_date; })()}{(() => { const t = event.event_time; return (t && /\d:\d{2}\s*(AM|PM)/i.test(t)) ? '  |  ' + t : ''; })()}
+            {(() => {
+              const d = new Date(event.event_date)
+              const day = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '
+              const t = event.event_time
+              const parts = [
+                (event.docket_type || '') + (event.subpoenas ? ` (${event.subpoenas})` : ''),
+                day + event.event_date,
+                ...(t && /\d:\d{2}\s*(AM|PM)/i.test(t) ? [t] : []),
+              ]
+              return parts.join('  |  ')
+            })()}
           </div>
           <div className={styles.nextEventMeta}>
-            {(() => { const cr = event.courtroom ? `Courtroom ${event.courtroom}` : ''; const jg = event.judge || ''; if (cr && jg) return `${cr}  |  ${jg}`; return cr || jg; })()}
+            {(() => {
+              const segments = [
+                ...(event.courtroom ? [`Courtroom ${event.courtroom}`] : []),
+                ...(event.reason ? [event.reason] : []),
+                ...(event.judge ? [event.judge] : []),
+              ]
+              return segments.join('  |  ')
+            })()}
           </div>
         </>
       ) : (
@@ -431,18 +448,16 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
 
 // ─── Incident group ──────────────────────────────────────────────────────────
 
-function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseAdded }) {
+function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseAdded, onDeleted }) {
   const [incident, setIncident] = useState(initialIncident)
   const [open, setOpen] = useState(false)
   const [showAddCase, setShowAddCase] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editDesc, setEditDesc] = useState('')
   const [editDate, setEditDate] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const committingRef = useRef(false)
-
-  const displayName = incident.incident_description
-    ? `${incident.incident_description} (${incident.incident_date})`
-    : incident.incident_date
 
   function startEdit(e) {
     e.stopPropagation()
@@ -478,14 +493,39 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
       commitEdit()
     }
     if (e.key === 'Escape') {
-      committingRef.current = true  // block the blur that follows
+      committingRef.current = true
       setEditing(false)
     }
   }
 
-  // Commit only when focus leaves both inputs entirely
   function onEditContainerBlur(e) {
     if (!e.currentTarget.contains(e.relatedTarget)) commitEdit()
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    await supabase.from('cases').delete().eq('incident_id', incident.id)
+    await supabase.from('incidents').delete().eq('id', incident.id)
+    setDeleting(false)
+    onDeleted(incident.id)
+  }
+
+  if (showDeleteConfirm) {
+    return (
+      <div className={styles.incidentGroup}>
+        <div className={styles.incidentConfirmRow}>
+          <span className={styles.incidentConfirmText}>Delete this incident?</span>
+          <div className={styles.hoursConfirmActions}>
+            <button className={styles.hoursConfirmYes} onClick={handleDelete} disabled={deleting}>
+              {deleting ? '…' : 'Yes, delete'}
+            </button>
+            <button className={styles.hoursConfirmCancel} onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -498,23 +538,28 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
           {editing ? (
             <div className={styles.incidentEditInputs} onBlur={onEditContainerBlur} onClick={e => e.stopPropagation()}>
               <input
+                type="date"
+                className={`${styles.incidentNameInput} ${styles.incidentDateInput}`}
+                value={editDate}
+                autoFocus
+                onChange={e => setEditDate(e.target.value)}
+                onKeyDown={onKeyDown}
+              />
+              <input
                 className={styles.incidentNameInput}
                 value={editDesc}
-                autoFocus
                 placeholder="Description"
                 onChange={e => setEditDesc(e.target.value)}
                 onKeyDown={onKeyDown}
               />
-              <input
-                type="date"
-                className={`${styles.incidentNameInput} ${styles.incidentDateInput}`}
-                value={editDate}
-                onChange={e => setEditDate(e.target.value)}
-                onKeyDown={onKeyDown}
-              />
             </div>
           ) : (
-            <span className={styles.incidentName}>{displayName}</span>
+            <div className={styles.incidentNameRow}>
+              <span className={styles.incidentDatePart}>{incident.incident_date}</span>
+              {incident.incident_description && (
+                <span className={styles.incidentDescPart}>&nbsp;—&nbsp;{incident.incident_description}</span>
+              )}
+            </div>
           )}
           {open && !editing && (
             <button className={styles.incidentEditBtn} onClick={startEdit}>
@@ -522,7 +567,10 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
             </button>
           )}
         </div>
-        <span className={`${styles.incidentChevron} ${open ? styles.incidentChevronOpen : ''}`}>›</span>
+        <button
+          className={styles.incidentDeleteBtn}
+          onClick={e => { e.stopPropagation(); setShowDeleteConfirm(true) }}
+        >×</button>
       </div>
 
       {open && (
@@ -1158,6 +1206,7 @@ export default function ClientFile() {
             incident={incident}
             onCaseTap={num => navigate(`/case/${num}`)}
             onCaseAdded={refetch}
+            onDeleted={refetch}
           />
         ))}
         {sortedIncidents.length === 0 && !showIncidentForm && (

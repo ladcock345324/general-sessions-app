@@ -18,7 +18,13 @@ function toRowProps(client) {
     status: client.relieved_as_counsel ? 'relieved' : 'active',
     custodyStatus: client.custody_status,
     nextHearing: (client.next_events && client.next_events.length > 0)
-      ? { date: client.next_events[0].event_date, time: client.next_events[0].event_time }
+      ? {
+          date:      client.next_events[0].event_date,
+          time:      client.next_events[0].event_time,
+          courtroom: client.next_events[0].courtroom,
+          reason:    client.next_events[0].reason,
+          judge:     client.next_events[0].judge,
+        }
       : null,
     relievedClosed: client.relieved_closed ?? false,
   }

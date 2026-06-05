@@ -30,7 +30,14 @@ export default function ClientRow({ client, relieved = false, onClick }) {
     const weekday = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '
     const t = nextHearing.time
     const validTime = t && /\d:\d{2}\s*(AM|PM)/i.test(t)
-    nextLine = `Next: ${weekday}${nextHearing.date}${validTime ? '  |  ' + t : ''}`
+    const segments = [
+      `${weekday}${nextHearing.date}`,
+      ...(validTime ? [t] : []),
+      ...(nextHearing.courtroom ? [`Courtroom ${nextHearing.courtroom}`] : []),
+      ...(nextHearing.reason ? [nextHearing.reason] : []),
+      ...(nextHearing.judge ? [nextHearing.judge] : []),
+    ]
+    nextLine = `Next: ${segments.join('  |  ')}`
   }
 
   return (
