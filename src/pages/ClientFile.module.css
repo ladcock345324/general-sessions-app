@@ -605,7 +605,7 @@
   display: grid;
   grid-template-columns: 90px 60px 1fr 28px;
   align-items: center;
-  padding: 9px 16px;
+  padding: 9px 12px 9px 16px;
   font-size: 13px;
   color: #c8d0dc;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -649,6 +649,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  justify-self: end;
   transition: color 0.15s;
 }
 
