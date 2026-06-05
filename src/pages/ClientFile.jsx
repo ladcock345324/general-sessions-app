@@ -900,23 +900,24 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
         </div>
       ) : (
         <div className={styles.historyButtons}>
-          {url && (
-            <button className={styles.historyViewBtn} onClick={handleView}>
-              View Criminal History
-            </button>
-          )}
-          <label className={`${styles.historyUploadBtn} ${uploading ? styles.historyUploadDisabled : ''}`}>
-            {uploading ? 'Uploading…' : url ? 'Replace Criminal History' : 'Upload Criminal History'}
-            <input
-              type="file"
-              accept="application/pdf"
-              className={styles.fileInputHidden}
-              disabled={uploading}
-              onChange={handleUpload}
-            />
-          </label>
-          {url && (
-            <button className={styles.hoursDeleteBtn} onClick={() => setShowDeleteConfirm(true)}>×</button>
+          {url ? (
+            <>
+              <button className={styles.historyViewBtn} onClick={handleView}>
+                View Criminal History
+              </button>
+              <button className={styles.hoursDeleteBtn} onClick={() => setShowDeleteConfirm(true)}>×</button>
+            </>
+          ) : (
+            <label className={`${styles.historyUploadBtn} ${uploading ? styles.historyUploadDisabled : ''}`}>
+              {uploading ? 'Uploading…' : 'Upload Criminal History'}
+              <input
+                type="file"
+                accept="application/pdf"
+                className={styles.fileInputHidden}
+                disabled={uploading}
+                onChange={handleUpload}
+              />
+            </label>
           )}
           {uploadError && <div className={styles.formError}>{uploadError}</div>}
         </div>
