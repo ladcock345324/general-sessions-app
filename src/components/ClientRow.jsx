@@ -27,7 +27,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
   let nextLine = null
   if (nextHearing && nextHearing.date) {
     const d = new Date(nextHearing.date)
-    const weekday = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '
+    const weekday = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ', '
     const t = nextHearing.time
     const validTime = t && /\d:\d{2}\s*(AM|PM)/i.test(t)
     const segments = [
@@ -36,7 +36,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
       ...(nextHearing.docket_type ? [nextHearing.docket_type] : []),
       ...(nextHearing.courtroom ? [`Courtroom ${nextHearing.courtroom}`] : []),
     ]
-    nextLine = `Next: ${segments.join('  |  ')}`
+    nextLine = segments.join('  |  ')
   }
 
   return (
@@ -44,7 +44,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
       <div className={styles.info}>
         <span className={styles.name}>{nameOca}</span>
         {nextLine
-          ? <span className={styles.next}>{nextLine}</span>
+          ? <span className={styles.next}><span style={{ textDecoration: 'underline' }}>Next:</span> {nextLine}</span>
           : <span className={styles.nextEmpty}>&nbsp;</span>
         }
       </div>
