@@ -143,7 +143,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 - Relieved rows: dimmed, "Relieved as Counsel" + "CLOSED" badge
 - `+` button top-right → Add Client form
 - "Sign out" small muted text in top-right corner above header
-- `ClientRow` already renders a next-hearing line ("Next: day, date at time") if `nextHearing` data is present — UI stub complete, DB join to `next_events` not yet wired up in `useClients`
+- Each row shows next hearing info below the name line, pulled from `next_events` via join in `useClients`; styled in `#6b9fd4` blue
 
 ### Add Client (`/client/new`)
 - Fields: Last Name, First Name, Gender, Age, OCA #, Custody Status, Bond Amount, DA Name
@@ -155,8 +155,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
   - Docket type, reason (if set), date/time, courtroom (prefixed "Courtroom"), judge
 - **Add/Edit Next Event** inline form:
   - Docket Type + Reason dropdowns side by side
-  - Date field: auto-formats digits to MM/DD/YYYY with smart single/double-digit month+day detection
-  - Time field: auto-formats digits to H:MM AM/PM
+  - Date field: native `<input type="date">` picker; converts between YYYY-MM-DD (input) and M/D/YYYY (storage/display)
+  - Time field: native `<input type="time">` picker; defaults to 9:00 AM; optional
   - Courtroom: dropdown (3A, 3B, 3C, 4B, 4C, 4D, 5C, 5D)
   - Judge: dropdown of named judges + "Other" with custom text input
   - Subpoenas: dropdown
@@ -175,7 +175,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 - **Section headers** (Incidents, Hours, Criminal History) use inline styles (`background: #0f1820`, matching the Active/Relieved As Counsel dark strips on the client list) — implemented as inline styles rather than CSS module classes due to a Vite CSS module build artifact issue
 - **Criminal History** section: Upload/Replace/View Criminal History PDF
 - **Edit Client** button → Edit Client form (same fields as Add including DA Name)
-- **Close Case** button → confirms → sets `relieved_as_counsel + relieved_closed = true`
+- **Close Case** button → confirms → sets `relieved_closed = true` only — client stays in Active list. **Relieve as Counsel** is a separate button that sets `relieved_as_counsel = true`
 - **Reopen Case** button (shown when already relieved) → reverses both flags
 - **Delete Client** button (muted red) → confirmation → deletes client + all related records
 
@@ -268,6 +268,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | Hours value / Saved confirmation | green `#5ecf90` |
 | Section headers (client list) | background `#0f1820`, text `#c8d0db` |
 | Delete buttons | muted red `#7a3a30` border / `#c97060` text |
+| Close/Reopen Case button | yellow `#c8a84b` |
+| Relieved as Counsel button | orange `#c87060` |
 
 ---
 
