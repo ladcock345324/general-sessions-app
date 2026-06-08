@@ -59,7 +59,8 @@
 .caseTable {
   display: grid;
   grid-template-columns: 90px auto;
-  width: 100%;
+  width: 280px;
+  flex-shrink: 0;
 }
 
 .caseTableRow {
