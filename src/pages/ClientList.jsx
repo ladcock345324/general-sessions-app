@@ -1,4 +1,3 @@
-import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useClients } from '../hooks/useClients'
@@ -42,40 +41,16 @@ function toRowProps(client) {
 export default function ClientList() {
   const navigate = useNavigate()
   const { clients, loading, error } = useClients()
-  const measureRef = useRef(null)
-  const [tableWidth, setTableWidth] = useState(null)
 
-  useEffect(() => {
-    if (!clients.length || !measureRef.current) return
-    const span = measureRef.current
-    let maxW = 0
-    for (const client of clients) {
-      const allCases = (client.incidents ?? []).flatMap(inc => inc.cases ?? [])
-      for (const c of allCases) {
-        const charge = c.charge_abbrev || c.charge || ''
-        // Case number + separator: 10px / 700 (matches .caseNum + .caseSep)
-        span.style.fontSize = '10px'
-        span.style.fontWeight = '700'
-        span.textContent = `${c.case_number} | `
-        const w1 = span.getBoundingClientRect().width
-        // Charge: 8.8px (0.88em of 10px) / 500 (matches .caseCharge)
-        span.style.fontSize = '8.8px'
-        span.style.fontWeight = '500'
-        span.textContent = charge
-        const w2 = span.getBoundingClientRect().width
-        if (w1 + w2 > maxW) maxW = w1 + w2
-      }
-    }
-    if (maxW > 0) setTableWidth(Math.ceil(maxW) + 4)
-  }, [clients])
+  const longestCaseNumber = clients
+    .flatMap(c => (c.incidents ?? []).flatMap(inc => inc.cases ?? []))
+    .reduce((longest, c) => ((c.case_number ?? '').length > longest.length ? (c.case_number ?? '') : longest), '')
 
   const active = clients.filter(c => !c.relieved_as_counsel).sort(byLastName).map(toRowProps)
   const relieved = clients.filter(c => c.relieved_as_counsel).sort(byLastName).map(toRowProps)
 
   return (
     <div className={styles.screen}>
-      {/* Hidden span for measuring longest case row string */}
-      <span ref={measureRef} style={{ visibility: 'hidden', position: 'absolute', whiteSpace: 'nowrap', fontFamily: 'inherit', pointerEvents: 'none' }} />
       <div className={styles.topBar}>
         <button className={styles.signOutBtn} onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
@@ -106,7 +81,7 @@ export default function ClientList() {
                     <ClientRow
                       key={client.id}
                       client={client}
-                      tableWidth={tableWidth}
+                      longestCaseNumber={longestCaseNumber}
                       onClick={() => navigate(`/client/${client.id}`)}
                     />
                   ))
@@ -126,7 +101,7 @@ export default function ClientList() {
                     key={client.id}
                     client={client}
                     relieved
-                    tableWidth={tableWidth}
+                    longestCaseNumber={longestCaseNumber}
                     onClick={() => navigate(`/client/${client.id}`)}
                   />
                 ))}

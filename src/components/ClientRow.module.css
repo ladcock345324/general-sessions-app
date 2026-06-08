@@ -57,36 +57,42 @@
 }
 
 .caseTable {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1px;
+  display: grid;
+  grid-template-columns: min-content auto;
+  column-gap: 3px;
+  row-gap: 1px;
+  font-size: 10px;
 }
 
-.caseTableRow {
-  font-size: 10px;
-  line-height: 1.5;
+.caseSizer {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
   white-space: nowrap;
-  cursor: pointer;
-  user-select: text;
-  text-align: left;
-  width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  pointer-events: none;
+  line-height: 0;
 }
 
 .caseNum {
+  font-size: 10px;
   font-weight: 700;
   color: #6b9fd4;
-}
-
-.caseSep {
-  color: #4a5a70;
-  font-weight: 400;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: text;
+  line-height: 1.5;
 }
 
 .caseCharge {
-  font-size: 0.88em;
+  font-size: 8.8px;
   font-weight: 500;
   color: #4a5a70;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: text;
+  line-height: 1.5;
 }
 
 .right {
