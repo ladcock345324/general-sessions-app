@@ -1359,7 +1359,7 @@ export default function ClientFile() {
       {/* ── Client header ── */}
       <div className={styles.clientHeader}>
         <header className={styles.header}>
-          <button className={styles.back} onClick={() => navigate(-1)}>‹ Back</button>
+          <button className={styles.back} onClick={() => navigate('/')}>‹ Back</button>
           <button className={styles.editBtn} onClick={() => navigate(`/client/${id}/edit`)}>Edit</button>
         </header>
         <div className={styles.nameRow}>
