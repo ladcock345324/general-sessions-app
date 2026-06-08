@@ -14,17 +14,15 @@ function tapHandlers(handler) {
   }
 }
 
-function CustodyBadge({ status }) {
-  if (status === 'in_custody') {
-    return <span className={`${styles.badge} ${styles.badgeRed}`}>In Custody</span>
-  }
-  if (status === 'bonded_out') {
-    return <span className={`${styles.badge} ${styles.badgeGreen}`}>Bonded Out</span>
-  }
-  if (status === 'out') {
-    return <span className={`${styles.badge} ${styles.badgeGreen}`}>Out</span>
-  }
-  return null
+function CustodyBadge({ status, muted }) {
+  const label =
+    status === 'in_custody' ? 'In Custody' :
+    status === 'bonded_out' ? 'Bonded Out' :
+    status === 'out'        ? 'Out'         : null
+  if (!label) return null
+  const colorClass = muted ? styles.badgeGray :
+    status === 'in_custody' ? styles.badgeRed : styles.badgeGreen
+  return <span className={`${styles.badge} ${colorClass}`}>{label}</span>
 }
 
 function RelivedBadge({ closed }) {
@@ -95,7 +93,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
             <RelivedBadge closed={relievedClosed} />
           ) : (
             <div className={styles.badgeStack}>
-              <CustodyBadge status={custodyStatus} />
+              <CustodyBadge status={custodyStatus} muted={!!relievedClosed} />
               {relievedClosed && <span className={styles.closedBadge}>CLOSED</span>}
             </div>
           )}

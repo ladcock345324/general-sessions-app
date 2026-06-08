@@ -110,6 +110,12 @@
   white-space: nowrap;
 }
 
+.badgeGray {
+  background-color: rgba(74, 74, 74, 0.5);
+  color: #c0c0c0;
+  border: 1px solid rgba(160, 160, 160, 0.25);
+}
+
 .badgeRed {
   background-color: rgba(140, 40, 40, 0.25);
   color: #b85555;
