@@ -73,21 +73,17 @@ export default function ClientRow({ client, relieved = false, longestCaseNumber 
       <div className={styles.rowRight}>
         {caseNumbers && caseNumbers.length > 0 && (
           <div className={styles.caseTable}>
-            {longestCaseNumber && (
-              <>
-                <span className={styles.caseSizer} aria-hidden="true">{longestCaseNumber}</span>
-                <span className={styles.caseSizer} aria-hidden="true" />
-              </>
-            )}
-            {caseNumbers.flatMap(c => {
+            {caseNumbers.map(c => {
               const start = { x: 0, y: 0 }
               const charge = c.charge_abbrev || c.charge || ''
               const pd = e => { e.stopPropagation(); start.x = e.clientX; start.y = e.clientY }
               const pu = e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number}`) }
-              return [
-                <span key={`n-${c.id}`} className={styles.caseNum} onPointerDown={pd} onPointerUp={pu}>{c.case_number}</span>,
-                <span key={`ch-${c.id}`} className={styles.caseCharge} onPointerDown={pd} onPointerUp={pu}>| {charge}</span>,
-              ]
+              return (
+                <div key={c.id} className={styles.caseTableRow} onPointerDown={pd} onPointerUp={pu}>
+                  <span className={styles.caseNum} style={{ width: `${longestCaseNumber.length}ch` }}>{c.case_number}</span>
+                  <span className={styles.caseCharge}> | {charge}</span>
+                </div>
+              )
             })}
           </div>
         )}
