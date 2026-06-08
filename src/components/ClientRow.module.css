@@ -60,7 +60,7 @@
   grid-template-columns: 56px auto;
   width: 280px;
   position: absolute;
-  right: 110px;
+  right: 98px;
   top: 50%;
   transform: translateY(-50%);
 }
