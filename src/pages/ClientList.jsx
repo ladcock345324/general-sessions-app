@@ -96,7 +96,6 @@ export default function ClientList() {
                     key={client.id}
                     client={client}
                     relieved
-                    longestCaseNumber={longestCaseNumber}
                     onClick={() => navigate(`/client/${client.id}`)}
                   />
                 ))}
