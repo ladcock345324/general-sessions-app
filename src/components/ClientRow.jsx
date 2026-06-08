@@ -70,33 +70,31 @@ export default function ClientRow({ client, relieved = false, onClick }) {
           : <span className={styles.nextEmpty}>&nbsp;</span>
         }
       </div>
-      <div className={styles.rowRight}>
-        {caseNumbers && caseNumbers.length > 0 && (
-          <div className={styles.caseTable}>
-            {caseNumbers.map(c => {
-              const start = { x: 0, y: 0 }
-              const charge = c.charge_abbrev || c.charge || ''
-              const pd = e => { e.stopPropagation(); start.x = e.clientX; start.y = e.clientY }
-              const pu = e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number}`) }
-              return (
-                <div key={c.id} className={styles.caseTableRow} onPointerDown={pd} onPointerUp={pu}>
-                  <span className={styles.caseNum}>{c.case_number}</span>
-                  <span className={styles.caseCharge}>| {charge}</span>
-                </div>
-              )
-            })}
+      {caseNumbers && caseNumbers.length > 0 && (
+        <div className={styles.caseTable}>
+          {caseNumbers.map(c => {
+            const start = { x: 0, y: 0 }
+            const charge = c.charge_abbrev || c.charge || ''
+            const pd = e => { e.stopPropagation(); start.x = e.clientX; start.y = e.clientY }
+            const pu = e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number}`) }
+            return (
+              <div key={c.id} className={styles.caseTableRow} onPointerDown={pd} onPointerUp={pu}>
+                <span className={styles.caseNum}>{c.case_number}</span>
+                <span className={styles.caseCharge}>| {charge}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      <div className={styles.right}>
+        {relieved ? (
+          <RelivedBadge closed={relievedClosed} />
+        ) : (
+          <div className={styles.badgeStack}>
+            <CustodyBadge status={custodyStatus} muted={!!relievedClosed} />
+            {relievedClosed && <span className={styles.closedBadge}>CLOSED</span>}
           </div>
         )}
-        <div className={styles.right}>
-          {relieved ? (
-            <RelivedBadge closed={relievedClosed} />
-          ) : (
-            <div className={styles.badgeStack}>
-              <CustodyBadge status={custodyStatus} muted={!!relievedClosed} />
-              {relievedClosed && <span className={styles.closedBadge}>CLOSED</span>}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )
