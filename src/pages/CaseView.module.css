@@ -113,6 +113,11 @@
   pointer-events: none;
 }
 
+.uploadBtnDragOver {
+  border-color: rgba(94, 150, 200, 0.6);
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .fileInput {
   display: none;
 }

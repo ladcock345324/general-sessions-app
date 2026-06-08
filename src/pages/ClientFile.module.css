@@ -759,6 +759,11 @@
   pointer-events: none;
 }
 
+.historyUploadBtnDragOver {
+  border-color: rgba(94, 150, 200, 0.6);
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .fileInputHidden {
   display: none;
 }

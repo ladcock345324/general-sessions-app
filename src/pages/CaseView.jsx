@@ -112,44 +112,43 @@ export default function CaseView() {
   }
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
+  const [warrantDragOver, setWarrantDragOver] = useState(false)
+
+  async function uploadWarrantFile(file) {
+    setUploading(true)
+    setUploadError(null)
+    const path = `warrants/${caseData.case_number}.pdf`
+    const { error: uploadErr } = await supabase.storage
+      .from('warrants')
+      .upload(path, file, { contentType: 'application/pdf', upsert: true })
+    if (uploadErr) { setUploadError(uploadErr.message); setUploading(false); return }
+    const { data: urlData } = supabase.storage.from('warrants').getPublicUrl(path)
+    const { error: updateErr } = await supabase
+      .from('cases')
+      .update({ warrant_url: urlData.publicUrl })
+      .eq('id', caseData.id)
+    if (updateErr) { setUploadError(updateErr.message); setUploading(false); return }
+    setCaseData(prev => ({ ...prev, warrant_url: urlData.publicUrl }))
+    setUploading(false)
+  }
 
   async function handleWarrantUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploading(true)
-    setUploadError(null)
-
-    const path = `warrants/${caseData.case_number}.pdf`
-
-    // upsert:true replaces an existing file at the same path
-    const { error: uploadErr } = await supabase.storage
-      .from('warrants')
-      .upload(path, file, { contentType: 'application/pdf', upsert: true })
-
-    if (uploadErr) {
-      setUploadError(uploadErr.message)
-      setUploading(false)
-      return
-    }
-
-    const { data: urlData } = supabase.storage.from('warrants').getPublicUrl(path)
-    const publicUrl = urlData.publicUrl
-
-    const { error: updateErr } = await supabase
-      .from('cases')
-      .update({ warrant_url: publicUrl })
-      .eq('id', caseData.id)
-
-    if (updateErr) {
-      setUploadError(updateErr.message)
-      setUploading(false)
-      return
-    }
-
-    setCaseData(prev => ({ ...prev, warrant_url: publicUrl }))
-    setUploading(false)
-    // reset input so re-selecting same file fires onChange again
+    await uploadWarrantFile(file)
     e.target.value = ''
+  }
+
+  function handleWarrantDragOver(e) { e.preventDefault(); setWarrantDragOver(true) }
+  function handleWarrantDragEnter(e) { e.preventDefault(); setWarrantDragOver(true) }
+  function handleWarrantDragLeave() { setWarrantDragOver(false) }
+  async function handleWarrantDrop(e) {
+    e.preventDefault()
+    setWarrantDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (!file) return
+    if (file.type !== 'application/pdf') { setUploadError('Only PDF files are accepted.'); return }
+    await uploadWarrantFile(file)
   }
 
   useEffect(() => {
@@ -248,7 +247,13 @@ export default function CaseView() {
                 View Warrant
               </button>
             )}
-            <label className={`${styles.warrantBtn} ${styles.uploadBtn} ${uploading ? styles.uploadBtnDisabled : ''}`}>
+            <label
+              className={`${styles.warrantBtn} ${styles.uploadBtn} ${uploading ? styles.uploadBtnDisabled : ''} ${warrantDragOver ? styles.uploadBtnDragOver : ''}`}
+              onDragOver={handleWarrantDragOver}
+              onDragEnter={handleWarrantDragEnter}
+              onDragLeave={handleWarrantDragLeave}
+              onDrop={handleWarrantDrop}
+            >
               {uploading ? 'Uploading…' : caseData.warrant_url ? 'Replace Warrant' : 'Upload Warrant'}
               <input
                 type="file"

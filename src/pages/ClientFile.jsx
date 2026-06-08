@@ -854,33 +854,43 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
   const [uploadError, setUploadError] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [historyDragOver, setHistoryDragOver] = useState(false)
 
-  async function handleUpload(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  async function uploadHistoryFile(file) {
     setUploading(true)
     setUploadError(null)
-
     const path = `criminal-history/${clientId}.pdf`
-
     const { error: uploadErr } = await supabase.storage
       .from('warrants')
       .upload(path, file, { contentType: 'application/pdf', upsert: true })
-
     if (uploadErr) { setUploadError(uploadErr.message); setUploading(false); return }
-
     const { data: urlData } = await supabase.storage.from('warrants').getPublicUrl(path)
-
     const { error: updateErr } = await supabase
       .from('clients')
       .update({ criminal_history_url: urlData.publicUrl })
       .eq('id', clientId)
-
     if (updateErr) { setUploadError(updateErr.message); setUploading(false); return }
-
     setUrl(urlData.publicUrl)
     setUploading(false)
+  }
+
+  async function handleUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await uploadHistoryFile(file)
     e.target.value = ''
+  }
+
+  function handleHistoryDragOver(e) { e.preventDefault(); setHistoryDragOver(true) }
+  function handleHistoryDragEnter(e) { e.preventDefault(); setHistoryDragOver(true) }
+  function handleHistoryDragLeave() { setHistoryDragOver(false) }
+  async function handleHistoryDrop(e) {
+    e.preventDefault()
+    setHistoryDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (!file) return
+    if (file.type !== 'application/pdf') { setUploadError('Only PDF files are accepted.'); return }
+    await uploadHistoryFile(file)
   }
 
   async function handleView() {
@@ -924,7 +934,13 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
               <button className={styles.hoursDeleteBtn} onClick={() => setShowDeleteConfirm(true)}>×</button>
             </>
           ) : (
-            <label className={`${styles.historyUploadBtn} ${uploading ? styles.historyUploadDisabled : ''}`}>
+            <label
+              className={`${styles.historyUploadBtn} ${uploading ? styles.historyUploadDisabled : ''} ${historyDragOver ? styles.historyUploadBtnDragOver : ''}`}
+              onDragOver={handleHistoryDragOver}
+              onDragEnter={handleHistoryDragEnter}
+              onDragLeave={handleHistoryDragLeave}
+              onDrop={handleHistoryDrop}
+            >
               {uploading ? 'Uploading…' : 'Upload Criminal History'}
               <input
                 type="file"
