@@ -15,6 +15,9 @@
 .clientHeader {
   background: #16212F;
   padding-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* Header / back */
