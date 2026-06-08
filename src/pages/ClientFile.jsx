@@ -627,6 +627,142 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
   )
 }
 
+// ─── Personal Notes section ──────────────────────────────────────────────────
+
+function PersonalNotesSection({ clientId, initialNote }) {
+  const [note, setNote] = useState(initialNote ?? null)
+  const [open, setOpen] = useState(false)
+  const [mode, setMode] = useState('idle') // 'idle' | 'add' | 'edit' | 'confirmDelete'
+  const [draftText, setDraftText] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  // When a note exists and the bar is clicked (not a button), toggle view/collapsed
+  function handleBarClick() {
+    if (mode !== 'idle') return
+    if (note) setOpen(o => !o)
+  }
+
+  function startAdd(e) {
+    e.stopPropagation()
+    setDraftText('')
+    setMode('add')
+    setOpen(true)
+  }
+
+  function startEdit(e) {
+    e.stopPropagation()
+    setDraftText(note.note ?? '')
+    setMode('edit')
+  }
+
+  function cancelEdit() {
+    setMode(note ? 'idle' : 'idle')
+    if (!note) setOpen(false)
+  }
+
+  async function saveNote() {
+    const text = draftText.trim()
+    if (!text) return
+    setSaving(true)
+    if (mode === 'add') {
+      const { data, error } = await supabase
+        .from('personal_notes')
+        .insert({ client_id: clientId, note: text })
+        .select()
+        .single()
+      if (!error) { setNote(data); setOpen(true) }
+    } else {
+      const { data, error } = await supabase
+        .from('personal_notes')
+        .update({ note: text, updated_at: new Date().toISOString() })
+        .eq('id', note.id)
+        .select()
+        .single()
+      if (!error) setNote(data)
+    }
+    setSaving(false)
+    setMode('idle')
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'Escape') { e.preventDefault(); cancelEdit() }
+  }
+
+  async function confirmDelete() {
+    setSaving(true)
+    await supabase.from('personal_notes').delete().eq('id', note.id)
+    setNote(null)
+    setOpen(false)
+    setMode('idle')
+    setSaving(false)
+  }
+
+  const isAddOrEdit = mode === 'add' || mode === 'edit'
+
+  return (
+    <div className={styles.personalNotesSection}>
+      {/* ── Header bar ── */}
+      <div
+        className={styles.personalNotesBar}
+        onClick={handleBarClick}
+        style={{ cursor: note && !isAddOrEdit ? 'pointer' : 'default' }}
+      >
+        {isAddOrEdit ? (
+          /* Inline editor inside the bar */
+          <div className={styles.pnEditWrapper} onClick={e => e.stopPropagation()}>
+            <textarea
+              className={styles.pnTextarea}
+              value={draftText}
+              autoFocus
+              rows={3}
+              onChange={e => setDraftText(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="Enter a note…"
+            />
+            <div className={styles.pnEditActions}>
+              <button className={styles.pnSaveBtn} onClick={saveNote} disabled={saving}>
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+              <button className={styles.pnCancelBtn} onClick={cancelEdit} disabled={saving}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : mode === 'confirmDelete' ? (
+          <div className={styles.pnConfirmRow} onClick={e => e.stopPropagation()}>
+            <span className={styles.pnConfirmText}>Delete this note?</span>
+            <div className={styles.pnConfirmActions}>
+              <button className={styles.hoursConfirmYes} onClick={confirmDelete} disabled={saving}>
+                {saving ? '…' : 'Yes, delete'}
+              </button>
+              <button className={styles.hoursConfirmCancel} onClick={() => setMode('idle')}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : open && note ? (
+          /* View mode — note text + edit + delete */
+          <div className={styles.pnViewRow}>
+            <span className={styles.pnNoteText}>{note.note}</span>
+            <div className={styles.pnViewActions} onClick={e => e.stopPropagation()}>
+              <button className={styles.pnEditBtn} onClick={startEdit}>edit</button>
+              <button className={styles.incidentDeleteBtn} onClick={e => { e.stopPropagation(); setMode('confirmDelete') }}>×</button>
+            </div>
+          </div>
+        ) : (
+          /* Default collapsed state */
+          <>
+            <span className={styles.sectionTitle}>Personal Notes</span>
+            {!note && (
+              <button className={styles.addBtn} onClick={startAdd}>+</button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Hours section ───────────────────────────────────────────────────────────
 
 const HOURS_OPTIONS = ['0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9']
@@ -1130,7 +1266,7 @@ function CourtroomDocsSection({ clientId }) {
 export default function ClientFile() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { client, incidents, nextEvent, hours, loading, error, refetch } = useClientFile(id)
+  const { client, incidents, nextEvent, hours, personalNote, loading, error, refetch } = useClientFile(id)
 
   const [showEventForm, setShowEventForm] = useState(false)
   const [showIncidentForm, setShowIncidentForm] = useState(false)
@@ -1250,6 +1386,9 @@ export default function ClientFile() {
           />
         )}
       </div>
+
+      {/* ── Personal Notes ── */}
+      <PersonalNotesSection clientId={id} initialNote={personalNote} />
 
       {/* ── Incidents ── */}
       <div className={styles.incidentsWrapper}>
