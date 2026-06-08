@@ -16,6 +16,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px 6px;
+  position: relative;
 }
 
 .back {
@@ -47,10 +48,15 @@
 }
 
 .clientName {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 15px;
   font-weight: 700;
   color: #f0f2f5;
   letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .caseNumberLabel {
