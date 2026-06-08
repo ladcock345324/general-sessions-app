@@ -144,6 +144,11 @@
   border: 1px solid rgba(50, 140, 90, 0.4);
 }
 
+/* caseLine: invisible on desktop (children remain absolutely positioned) */
+.caseLine {
+  display: contents;
+}
+
 /* Relieved badge */
 .relievedBadge {
   display: flex;
@@ -157,5 +162,51 @@
   font-weight: 600;
   color: #9faab8;
   white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 3px;
+    padding: 10px 14px;
+  }
+
+  .info {
+    padding-right: 0;
+  }
+
+  .caseLine {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .caseTable {
+    position: static;
+    transform: none;
+    width: auto;
+    flex: 1;
+    min-width: 0;
+    grid-template-columns: max-content auto;
+  }
+
+  .caseNum {
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .caseCharge {
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .right {
+    position: static;
+    transform: none;
+    flex-shrink: 0;
+  }
 }
 
