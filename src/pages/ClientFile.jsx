@@ -1364,8 +1364,9 @@ export default function ClientFile() {
               </div>
             )}
           </div>
-          {client.custody_status === 'in_custody' && <span className={`${styles.badge} ${styles.badgeOrange}`}>In Custody</span>}
+          {client.custody_status === 'in_custody' && <span className={`${styles.badge} ${styles.badgeRed}`}>In Custody</span>}
           {client.custody_status === 'bonded_out' && <span className={`${styles.badge} ${styles.badgeGreen}`}>Bonded Out</span>}
+          {client.custody_status === 'out' && <span className={`${styles.badge} ${styles.badgeGreen}`}>Out</span>}
         </div>
       </div>
 

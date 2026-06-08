@@ -16,10 +16,13 @@ function tapHandlers(handler) {
 
 function CustodyBadge({ status }) {
   if (status === 'in_custody') {
-    return <span className={`${styles.badge} ${styles.badgeOrange}`}>In Custody</span>
+    return <span className={`${styles.badge} ${styles.badgeRed}`}>In Custody</span>
   }
   if (status === 'bonded_out') {
     return <span className={`${styles.badge} ${styles.badgeGreen}`}>Bonded Out</span>
+  }
+  if (status === 'out') {
+    return <span className={`${styles.badge} ${styles.badgeGreen}`}>Out</span>
   }
   return null
 }

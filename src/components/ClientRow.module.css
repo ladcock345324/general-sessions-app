@@ -110,16 +110,16 @@
   white-space: nowrap;
 }
 
-.badgeOrange {
-  background-color: rgba(234, 120, 30, 0.2);
-  color: #f4923a;
-  border: 1px solid rgba(234, 120, 30, 0.4);
+.badgeRed {
+  background-color: rgba(140, 40, 40, 0.25);
+  color: #b85555;
+  border: 1px solid rgba(140, 40, 40, 0.45);
 }
 
 .badgeGreen {
-  background-color: rgba(74, 178, 120, 0.15);
-  color: #5ecf90;
-  border: 1px solid rgba(74, 178, 120, 0.35);
+  background-color: rgba(50, 140, 90, 0.2);
+  color: #3d9e6a;
+  border: 1px solid rgba(50, 140, 90, 0.4);
 }
 
 /* Relieved badge */
