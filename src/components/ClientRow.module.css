@@ -57,7 +57,7 @@
 
 .caseTable {
   display: grid;
-  grid-template-columns: 62px auto;
+  grid-template-columns: 56px auto;
   width: 280px;
   position: absolute;
   right: 110px;
