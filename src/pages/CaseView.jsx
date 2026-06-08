@@ -156,7 +156,7 @@ export default function CaseView() {
       setLoading(true)
       const { data, error } = await supabase
         .from('cases')
-        .select('*')
+        .select('*, incidents(client_id, clients(first_name, last_name))')
         .eq('case_number', caseNumber)
         .maybeSingle()
 
@@ -216,6 +216,15 @@ export default function CaseView() {
             <button className={styles.editBtn} onClick={() => setEditing(true)}>Edit</button>
           )}
         </header>
+        {(() => {
+          const client = caseData.incidents?.clients
+          if (!client) return null
+          return (
+            <div className={styles.clientName}>
+              {client.last_name}, {client.first_name}
+            </div>
+          )
+        })()}
         <div className={styles.caseNumberLabel}>{caseData.case_number}</div>
         <div className={styles.charge}>{caseData.charge}</div>
         <div className={styles.meta}>
