@@ -34,7 +34,7 @@ function RelivedBadge({ closed }) {
   )
 }
 
-export default function ClientRow({ client, relieved = false, tableWidth, onClick }) {
+export default function ClientRow({ client, relieved = false, longestCaseNumber = '', onClick }) {
   const navigate = useNavigate()
   const { lastName, firstName, gender, age, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers } = client
 
