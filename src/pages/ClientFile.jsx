@@ -1395,7 +1395,7 @@ export default function ClientFile() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
           <span className={styles.sectionTitle}>Incidents</span>
           {!showIncidentForm && (
-            <button className={styles.incidentSectionAddBtn} onClick={() => setShowIncidentForm(true)}>+ add incident</button>
+            <button className={styles.addBtn} onClick={() => setShowIncidentForm(true)}>+</button>
           )}
         </div>
         {showIncidentForm && (
