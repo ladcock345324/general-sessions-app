@@ -212,19 +212,19 @@ export default function CaseView() {
       <div className={styles.caseHeader}>
         <header className={styles.header}>
           <button className={styles.back} onClick={() => navigate(-1)}>‹ Back</button>
+          {(() => {
+            const client = caseData.incidents?.clients
+            if (!client) return null
+            return (
+              <div className={styles.clientName}>
+                {client.last_name}, {client.first_name}
+              </div>
+            )
+          })()}
           {!editing && (
             <button className={styles.editBtn} onClick={() => setEditing(true)}>Edit</button>
           )}
         </header>
-        {(() => {
-          const client = caseData.incidents?.clients
-          if (!client) return null
-          return (
-            <div className={styles.clientName}>
-              {client.last_name}, {client.first_name}
-            </div>
-          )
-        })()}
         <div className={styles.caseNumberLabel}>{caseData.case_number}</div>
         <div className={styles.charge}>{caseData.charge}</div>
         <div className={styles.meta}>
