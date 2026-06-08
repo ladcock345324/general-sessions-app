@@ -73,6 +73,19 @@
   user-select: text;
   line-height: 1.4;
   white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.caseChargeItem {
+  font-size: 0.95em;
+  font-weight: 500;
+  color: #4a5a70;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 76px;
 }
 
 .right {

@@ -83,6 +83,9 @@ export default function ClientRow({ client, relieved = false, onClick }) {
                   onPointerUp={e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number}`) }}
                 >
                   {c.case_number}
+                  {(c.charge_abbrev || c.charge) && (
+                    <span className={styles.caseChargeItem}>{c.charge_abbrev || c.charge}</span>
+                  )}
                 </span>
               )
             })}
