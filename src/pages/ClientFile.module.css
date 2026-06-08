@@ -257,6 +257,20 @@
 
 .formCancel:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.formClear {
+  flex: 1;
+  background: rgba(140, 40, 40, 0.18);
+  border: 1px solid rgba(140, 40, 40, 0.4);
+  color: #b85555;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.formClear:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .nextEvent {
   margin: 0;
   background: #1E3A5F;

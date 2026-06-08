@@ -184,7 +184,7 @@ function fromTimeInput(hhmm) {
   return `${h}:${min} ${period}`
 }
 
-function NextEventForm({ clientId, existing, onSaved, onCancel }) {
+function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
   const existingJudge = existing?.judge ?? ''
   const judgeInList = JUDGES.includes(existingJudge)
 
@@ -206,6 +206,14 @@ function NextEventForm({ clientId, existing, onSaved, onCancel }) {
   const [error, setError] = useState(null)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function clear() {
+    setSaving(true)
+    setError(null)
+    const { error: e } = await supabase.from('next_events').delete().eq('client_id', clientId)
+    if (e) { setError(e.message); setSaving(false); return }
+    onCleared()
+  }
 
   async function save() {
     if (!form.event_date.trim()) {
@@ -307,6 +315,7 @@ function NextEventForm({ clientId, existing, onSaved, onCancel }) {
       <div className={styles.formActions}>
         <button className={styles.formSave} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
         <button className={styles.formCancel} onClick={onCancel} disabled={saving}>Cancel</button>
+        {existing && <button className={styles.formClear} onClick={clear} disabled={saving}>Clear</button>}
       </div>
     </div>
   )
@@ -1382,6 +1391,7 @@ export default function ClientFile() {
             existing={nextEvent}
             onSaved={() => { setShowEventForm(false); refetch() }}
             onCancel={() => setShowEventForm(false)}
+            onCleared={() => { setShowEventForm(false); refetch() }}
           />
         )}
       </div>
