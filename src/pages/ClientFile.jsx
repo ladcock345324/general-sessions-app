@@ -1218,17 +1218,19 @@ export default function ClientFile() {
           <button className={styles.editBtn} onClick={() => navigate(`/client/${id}/edit`)}>Edit</button>
         </header>
         <div className={styles.nameRow}>
-          <h1 className={styles.name}>{nameDisplay}</h1>
+          <div className={styles.nameRowLeft}>
+            <h1 className={styles.name}>{nameDisplay}</h1>
+            {(bond || client.da_name) && (
+              <div className={styles.bondLine}>
+                {[bond && `Bond: ${bond}`, client.da_name && `ADA: ${client.da_name}`].filter(Boolean).map((seg, i) => (
+                  <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
+                ))}
+              </div>
+            )}
+          </div>
           {client.custody_status === 'in_custody' && <span className={`${styles.badge} ${styles.badgeOrange}`}>In Custody</span>}
           {client.custody_status === 'bonded_out' && <span className={`${styles.badge} ${styles.badgeGreen}`}>Bonded Out</span>}
         </div>
-        {(bond || client.da_name) && (
-          <div className={styles.bondLine}>
-            {[bond && `Bond: ${bond}`, client.da_name && `ADA: ${client.da_name}`].filter(Boolean).map((seg, i) => (
-              <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ── Next Event ── */}
