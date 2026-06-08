@@ -10,7 +10,6 @@ const EMPTY = {
   age: '',
   oca: '',
   custody_status: 'in_custody',
-  bond_amount: '',
   da_name: '',
 }
 
@@ -40,7 +39,6 @@ export default function NewClient() {
       age: form.age ? Number(form.age) : null,
       oca: form.oca.trim() || null,
       custody_status: form.custody_status,
-      bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
       da_name: form.da_name.trim() || null,
       relieved_as_counsel: false,
       relieved_closed: false,
@@ -136,21 +134,6 @@ export default function NewClient() {
             <option value="bonded_out">Bonded Out</option>
             <option value="out">Out</option>
           </select>
-        </div>
-
-        <div className={styles.row}>
-          <label className={styles.label}>Bond Amount</label>
-          <div className={styles.prefixInput}>
-            <span className={styles.prefix}>$</span>
-            <input
-              className={`${styles.input} ${styles.inputPrefixed}`}
-              type="number"
-              min="0"
-              value={form.bond_amount}
-              onChange={e => set('bond_amount', e.target.value)}
-              placeholder="Optional"
-            />
-          </div>
         </div>
 
         <div className={styles.row}>

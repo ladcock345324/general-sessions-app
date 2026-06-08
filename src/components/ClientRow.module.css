@@ -56,36 +56,37 @@
   flex-shrink: 0;
 }
 
-.caseNumberStack {
-  width: 76px;
+.caseTable {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
-  text-align: right;
+  gap: 1px;
 }
 
-.caseNumberItem {
-  font-size: 0.65em;
-  font-weight: bold;
-  color: #6b9fd4;
+.caseTableRow {
+  font-size: 10px;
+  line-height: 1.5;
+  white-space: nowrap;
   cursor: pointer;
   user-select: text;
-  line-height: 1.4;
-  white-space: nowrap;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  text-align: left;
+  width: 100%;
 }
 
-.caseChargeItem {
-  font-size: 0.95em;
+.caseNum {
+  font-weight: 700;
+  color: #6b9fd4;
+}
+
+.caseSep {
+  color: #4a5a70;
+  font-weight: 400;
+}
+
+.caseCharge {
+  font-size: 0.88em;
   font-weight: 500;
   color: #4a5a70;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 76px;
 }
 
 .right {

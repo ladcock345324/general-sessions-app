@@ -31,7 +31,6 @@ export default function EditClient() {
         age: data.age != null ? String(data.age) : '',
         oca: data.oca ?? '',
         custody_status: data.custody_status ?? 'in_custody',
-        bond_amount: data.bond_amount != null ? String(data.bond_amount) : '',
         da_name: data.da_name ?? '',
       })
     }
@@ -60,7 +59,6 @@ export default function EditClient() {
         age: form.age ? Number(form.age) : null,
         oca: form.oca.trim() || null,
         custody_status: form.custody_status,
-        bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
         da_name: form.da_name.trim() || null,
       })
       .eq('id', id)
@@ -164,21 +162,6 @@ export default function EditClient() {
             <option value="bonded_out">Bonded Out</option>
             <option value="out">Out</option>
           </select>
-        </div>
-
-        <div className={styles.row}>
-          <label className={styles.label}>Bond Amount</label>
-          <div className={styles.prefixInput}>
-            <span className={styles.prefix}>$</span>
-            <input
-              className={`${styles.input} ${styles.inputPrefixed}`}
-              type="number"
-              min="0"
-              value={form.bond_amount}
-              onChange={e => set('bond_amount', e.target.value)}
-              placeholder="Optional"
-            />
-          </div>
         </div>
 
         <div className={styles.row}>

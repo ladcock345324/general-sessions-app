@@ -1,3 +1,4 @@
+import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useClients } from '../hooks/useClients'
@@ -41,12 +42,32 @@ function toRowProps(client) {
 export default function ClientList() {
   const navigate = useNavigate()
   const { clients, loading, error } = useClients()
+  const measureRef = useRef(null)
+  const [tableWidth, setTableWidth] = useState(null)
+
+  useEffect(() => {
+    if (!clients.length || !measureRef.current) return
+    const span = measureRef.current
+    let maxW = 0
+    for (const client of clients) {
+      const allCases = (client.incidents ?? []).flatMap(inc => inc.cases ?? [])
+      for (const c of allCases) {
+        const charge = c.charge_abbrev || c.charge || ''
+        span.textContent = `${c.case_number} | ${charge}`
+        const w = span.getBoundingClientRect().width
+        if (w > maxW) maxW = w
+      }
+    }
+    if (maxW > 0) setTableWidth(Math.ceil(maxW) + 4)
+  }, [clients])
 
   const active = clients.filter(c => !c.relieved_as_counsel).sort(byLastName).map(toRowProps)
   const relieved = clients.filter(c => c.relieved_as_counsel).sort(byLastName).map(toRowProps)
 
   return (
     <div className={styles.screen}>
+      {/* Hidden span for measuring longest case row string */}
+      <span ref={measureRef} style={{ visibility: 'hidden', position: 'absolute', whiteSpace: 'nowrap', fontSize: '10px', fontFamily: 'inherit', fontWeight: 700, pointerEvents: 'none' }} />
       <div className={styles.topBar}>
         <button className={styles.signOutBtn} onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
@@ -77,6 +98,7 @@ export default function ClientList() {
                     <ClientRow
                       key={client.id}
                       client={client}
+                      tableWidth={tableWidth}
                       onClick={() => navigate(`/client/${client.id}`)}
                     />
                   ))
@@ -96,6 +118,7 @@ export default function ClientList() {
                     key={client.id}
                     client={client}
                     relieved
+                    tableWidth={tableWidth}
                     onClick={() => navigate(`/client/${client.id}`)}
                   />
                 ))}

@@ -1341,7 +1341,7 @@ export default function ClientFile() {
     ? `${client.last_name}, ${client.first_name} (${client.gender}, ${client.age}) #${client.oca}`
     : `${client.last_name}, ${client.first_name} (${client.gender}, ${client.age})`
 
-  const bond = formatBond(client.bond_amount)
+  const totalBond = incidents.flatMap(inc => inc.cases ?? []).reduce((sum, c) => sum + (Number(c.bond_amount) || 0), 0)
   const sortedIncidents = [...incidents].sort((a, b) => new Date(b.incident_date) - new Date(a.incident_date))
 
   return (
@@ -1356,13 +1356,11 @@ export default function ClientFile() {
         <div className={styles.nameRow}>
           <div className={styles.nameRowLeft}>
             <h1 className={styles.name}>{nameDisplay}</h1>
-            {(bond || client.da_name) && (
-              <div className={styles.bondLine}>
-                {[bond && `Bond: ${bond}`, client.da_name && `ADA: ${client.da_name}`].filter(Boolean).map((seg, i) => (
-                  <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
-                ))}
-              </div>
-            )}
+            <div className={styles.bondLine}>
+              {[`Total Bond: $${totalBond.toLocaleString()}`, client.da_name && `ADA: ${client.da_name}`].filter(Boolean).map((seg, i) => (
+                <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
+              ))}
+            </div>
           </div>
           {client.custody_status === 'in_custody' && <span className={`${styles.badge} ${styles.badgeRed}`}>In Custody</span>}
           {client.custody_status === 'bonded_out' && <span className={`${styles.badge} ${styles.badgeGreen}`}>Bonded Out</span>}

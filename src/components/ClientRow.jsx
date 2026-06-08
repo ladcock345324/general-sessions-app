@@ -34,7 +34,7 @@ function RelivedBadge({ closed }) {
   )
 }
 
-export default function ClientRow({ client, relieved = false, onClick }) {
+export default function ClientRow({ client, relieved = false, tableWidth, onClick }) {
   const navigate = useNavigate()
   const { lastName, firstName, gender, age, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers } = client
 
@@ -72,21 +72,21 @@ export default function ClientRow({ client, relieved = false, onClick }) {
       </div>
       <div className={styles.rowRight}>
         {caseNumbers && caseNumbers.length > 0 && (
-          <div className={styles.caseNumberStack}>
+          <div className={styles.caseTable} style={tableWidth ? { width: tableWidth } : undefined}>
             {caseNumbers.map(c => {
               const start = { x: 0, y: 0 }
+              const charge = c.charge_abbrev || c.charge || ''
               return (
-                <span
+                <div
                   key={c.id}
-                  className={styles.caseNumberItem}
+                  className={styles.caseTableRow}
                   onPointerDown={e => { e.stopPropagation(); start.x = e.clientX; start.y = e.clientY }}
                   onPointerUp={e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number}`) }}
                 >
-                  {c.case_number}
-                  {(c.charge_abbrev || c.charge) && (
-                    <span className={styles.caseChargeItem}>{c.charge_abbrev || c.charge}</span>
-                  )}
-                </span>
+                  <span className={styles.caseNum}>{c.case_number}</span>
+                  <span className={styles.caseSep}> | </span>
+                  <span className={styles.caseCharge}>{charge}</span>
+                </div>
               )
             })}
           </div>
