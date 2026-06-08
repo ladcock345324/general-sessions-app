@@ -81,7 +81,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
               return (
                 <div key={c.id} className={styles.caseTableRow} onPointerDown={pd} onPointerUp={pu}>
                   <span className={styles.caseNum}>{c.case_number}</span>
-                  <span className={styles.caseCharge}> | {charge}</span>
+                  <span className={styles.caseCharge}>| {charge}</span>
                 </div>
               )
             })}
