@@ -42,10 +42,6 @@ export default function ClientList() {
   const navigate = useNavigate()
   const { clients, loading, error } = useClients()
 
-  const longestCaseNumber = clients
-    .flatMap(c => (c.incidents ?? []).flatMap(inc => inc.cases ?? []))
-    .reduce((longest, c) => ((c.case_number ?? '').length > longest.length ? (c.case_number ?? '') : longest), '')
-
   const active = clients.filter(c => !c.relieved_as_counsel).sort(byLastName).map(toRowProps)
   const relieved = clients.filter(c => c.relieved_as_counsel).sort(byLastName).map(toRowProps)
 
@@ -81,7 +77,6 @@ export default function ClientList() {
                     <ClientRow
                       key={client.id}
                       client={client}
-                      longestCaseNumber={longestCaseNumber}
                       onClick={() => navigate(`/client/${client.id}`)}
                     />
                   ))

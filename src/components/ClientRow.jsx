@@ -34,7 +34,7 @@ function RelivedBadge({ closed }) {
   )
 }
 
-export default function ClientRow({ client, relieved = false, longestCaseNumber = '', onClick }) {
+export default function ClientRow({ client, relieved = false, onClick }) {
   const navigate = useNavigate()
   const { lastName, firstName, gender, age, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers } = client
 
@@ -80,7 +80,7 @@ export default function ClientRow({ client, relieved = false, longestCaseNumber 
               const pu = e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number}`) }
               return (
                 <div key={c.id} className={styles.caseTableRow} onPointerDown={pd} onPointerUp={pu}>
-                  <span className={styles.caseNum} style={{ width: `${longestCaseNumber.length}ch` }}>{c.case_number}</span>
+                  <span className={styles.caseNum}>{c.case_number}</span>
                   <span className={styles.caseCharge}> | {charge}</span>
                 </div>
               )
