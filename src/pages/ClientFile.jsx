@@ -563,10 +563,12 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
                 onChange={e => setEditDate(e.target.value)}
                 onKeyDown={onKeyDown}
               />
-              <input
+              <textarea
                 className={styles.incidentNameInput}
                 value={editDesc}
                 placeholder="Description"
+                rows={3}
+                style={{ resize: 'none' }}
                 onChange={e => setEditDesc(e.target.value)}
                 onKeyDown={onKeyDown}
               />
