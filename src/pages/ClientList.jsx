@@ -53,9 +53,17 @@ export default function ClientList() {
       const allCases = (client.incidents ?? []).flatMap(inc => inc.cases ?? [])
       for (const c of allCases) {
         const charge = c.charge_abbrev || c.charge || ''
-        span.textContent = `${c.case_number} | ${charge}`
-        const w = span.getBoundingClientRect().width
-        if (w > maxW) maxW = w
+        // Case number + separator: 10px / 700 (matches .caseNum + .caseSep)
+        span.style.fontSize = '10px'
+        span.style.fontWeight = '700'
+        span.textContent = `${c.case_number} | `
+        const w1 = span.getBoundingClientRect().width
+        // Charge: 8.8px (0.88em of 10px) / 500 (matches .caseCharge)
+        span.style.fontSize = '8.8px'
+        span.style.fontWeight = '500'
+        span.textContent = charge
+        const w2 = span.getBoundingClientRect().width
+        if (w1 + w2 > maxW) maxW = w1 + w2
       }
     }
     if (maxW > 0) setTableWidth(Math.ceil(maxW) + 4)
@@ -67,7 +75,7 @@ export default function ClientList() {
   return (
     <div className={styles.screen}>
       {/* Hidden span for measuring longest case row string */}
-      <span ref={measureRef} style={{ visibility: 'hidden', position: 'absolute', whiteSpace: 'nowrap', fontSize: '10px', fontFamily: 'inherit', fontWeight: 700, pointerEvents: 'none' }} />
+      <span ref={measureRef} style={{ visibility: 'hidden', position: 'absolute', whiteSpace: 'nowrap', fontFamily: 'inherit', pointerEvents: 'none' }} />
       <div className={styles.topBar}>
         <button className={styles.signOutBtn} onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
