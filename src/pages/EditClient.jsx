@@ -69,7 +69,7 @@ export default function EditClient() {
       return
     }
 
-    navigate(`/client/${id}`)
+    navigate(`/client/${id}`, { replace: true })
   }
 
   if (!form) {
