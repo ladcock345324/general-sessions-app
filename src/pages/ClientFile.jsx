@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useClientFile } from '../hooks/useClientFile'
+import { extractPdfText } from '../extractPdfText'
 import styles from './ClientFile.module.css'
 
 // ─── Tap-safe click helper ───────────────────────────────────────────────────
@@ -1023,6 +1024,12 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
       .eq('id', clientId)
     if (updateErr) { setUploadError(updateErr.message); setUploading(false); return }
     setUrl(urlData.publicUrl)
+    // Background text extraction — never blocks or errors the upload
+    extractPdfText(file).then(text => {
+      if (text) {
+        supabase.from('clients').update({ criminal_history_text: text }).eq('id', clientId)
+      }
+    }).catch(() => {})
     setUploading(false)
   }
 
@@ -1152,9 +1159,11 @@ function CourtroomDocsSection({ clientId }) {
 
     if (uploadErr) { setFormError(uploadErr.message); setSaving(false); return }
 
-    const { error: insertErr } = await supabase
+    const { data: insertData, error: insertErr } = await supabase
       .from('courtroom_documents')
       .insert({ client_id: clientId, name: formName.trim(), file_url: path })
+      .select('id')
+      .single()
 
     if (insertErr) { setFormError(insertErr.message); setSaving(false); return }
 
@@ -1163,6 +1172,16 @@ function CourtroomDocsSection({ clientId }) {
     setShowForm(false)
     setSaving(false)
     fetchDocs()
+
+    // Background text extraction — never blocks or errors the upload
+    if (insertData?.id) {
+      const fileRef = formFile
+      extractPdfText(fileRef).then(text => {
+        if (text) {
+          supabase.from('courtroom_documents').update({ extracted_text: text }).eq('id', insertData.id)
+        }
+      }).catch(() => {})
+    }
   }
 
   async function handleView(doc) {

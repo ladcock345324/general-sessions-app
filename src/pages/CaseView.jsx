@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
+import { extractPdfText } from '../extractPdfText'
 import styles from './CaseView.module.css'
 
 function formatBond(amount) {
@@ -135,6 +136,12 @@ export default function CaseView() {
       .eq('id', caseData.id)
     if (updateErr) { setUploadError(updateErr.message); setUploading(false); return }
     setCaseData(prev => ({ ...prev, warrant_url: urlData.publicUrl }))
+    // Background text extraction — never blocks or errors the upload
+    extractPdfText(file).then(text => {
+      if (text) {
+        supabase.from('cases').update({ warrant_text: text }).eq('id', caseData.id)
+      }
+    }).catch(() => {})
     setUploading(false)
   }
 
