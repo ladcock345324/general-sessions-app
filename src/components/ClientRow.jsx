@@ -1,15 +1,23 @@
 import { useNavigate } from 'react-router-dom'
 import styles from './ClientRow.module.css'
 
-// Returns onPointerDown/onPointerUp props that only fire `handler` when the
-// pointer moved less than 5px — distinguishes a tap from a drag-to-select.
+// Returns pointer event props that fire `handler` on tap but not on:
+//   - drag (pointer moved > 5px)
+//   - long press on touch (finger held >= 300ms — lets browser select text)
 function tapHandlers(handler) {
   if (!handler) return {}
-  const start = { x: 0, y: 0 }
+  const state = { x: 0, y: 0, t: 0, touch: false }
   return {
-    onPointerDown: e => { start.x = e.clientX; start.y = e.clientY },
-    onPointerUp:   e => {
-      if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) handler()
+    onPointerDown: e => {
+      state.x = e.clientX
+      state.y = e.clientY
+      state.touch = e.pointerType === 'touch'
+      state.t = state.touch ? Date.now() : 0
+    },
+    onPointerUp: e => {
+      if (Math.abs(e.clientX - state.x) >= 5 || Math.abs(e.clientY - state.y) >= 5) return
+      if (state.touch && Date.now() - state.t >= 300) return
+      handler()
     },
   }
 }
