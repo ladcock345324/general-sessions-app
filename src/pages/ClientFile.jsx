@@ -1024,12 +1024,17 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
       .eq('id', clientId)
     if (updateErr) { setUploadError(updateErr.message); setUploading(false); return }
     setUrl(urlData.publicUrl)
-    // Background text extraction — never blocks or errors the upload
-    extractPdfText(file).then(text => {
-      if (text) {
-        supabase.from('clients').update({ criminal_history_text: text }).eq('id', clientId)
-      }
-    }).catch(() => {})
+    // Text extraction — .then() must be async so the await executes the query
+    // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
+    extractPdfText(file).then(async text => {
+      console.log('[criminal_history_text] extracted length:', text?.length ?? 0)
+      const { error: textErr } = await supabase
+        .from('clients')
+        .update({ criminal_history_text: text ?? null })
+        .eq('id', clientId)
+      if (textErr) console.error('[criminal_history_text] PATCH failed:', textErr.message)
+      else console.log('[criminal_history_text] PATCH succeeded')
+    }).catch(err => console.error('[criminal_history_text] extraction error:', err))
     setUploading(false)
   }
 
@@ -1173,14 +1178,19 @@ function CourtroomDocsSection({ clientId }) {
     setSaving(false)
     fetchDocs()
 
-    // Background text extraction — never blocks or errors the upload
+    // Text extraction — .then() must be async so the await executes the query
+    // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
     if (insertData?.id) {
       const fileRef = formFile
-      extractPdfText(fileRef).then(text => {
-        if (text) {
-          supabase.from('courtroom_documents').update({ extracted_text: text }).eq('id', insertData.id)
-        }
-      }).catch(() => {})
+      extractPdfText(fileRef).then(async text => {
+        console.log('[extracted_text] extracted length:', text?.length ?? 0)
+        const { error: textErr } = await supabase
+          .from('courtroom_documents')
+          .update({ extracted_text: text ?? null })
+          .eq('id', insertData.id)
+        if (textErr) console.error('[extracted_text] PATCH failed:', textErr.message)
+        else console.log('[extracted_text] PATCH succeeded')
+      }).catch(err => console.error('[extracted_text] extraction error:', err))
     }
   }
 
