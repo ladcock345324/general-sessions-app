@@ -136,11 +136,18 @@ export default function CaseView() {
       .eq('id', caseData.id)
     if (updateErr) { setUploadError(updateErr.message); setUploading(false); return }
     setCaseData(prev => ({ ...prev, warrant_url: urlData.publicUrl }))
-    // Text extraction — always fires a separate PATCH so warrant_text is updated
-    // even when extraction returns null (scanned PDF, no text layer, etc.)
-    extractPdfText(file).then(text => {
-      supabase.from('cases').update({ warrant_text: text ?? null }).eq('id', caseData.id)
-    }).catch(() => {})
+    // Text extraction — separate PATCH after extraction completes.
+    // .then() must be async so the await actually executes the Supabase query
+    // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
+    extractPdfText(file).then(async text => {
+      console.log('[warrant_text] extracted length:', text?.length ?? 0)
+      const { error: textErr } = await supabase
+        .from('cases')
+        .update({ warrant_text: text ?? null })
+        .eq('id', caseData.id)
+      if (textErr) console.error('[warrant_text] PATCH failed:', textErr.message)
+      else console.log('[warrant_text] PATCH succeeded')
+    }).catch(err => console.error('[warrant_text] extraction error:', err))
     setUploading(false)
   }
 
