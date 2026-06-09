@@ -46,6 +46,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `relieved_closed` | boolean | shows CLOSED badge when true |
 | `criminal_history` | text | legacy text field (unused — pending drop) |
 | `criminal_history_url` | text | Supabase Storage public URL for criminal history PDF |
+| `criminal_history_text` | text | extracted text from criminal history PDF — populated on upload |
 
 ### `next_events`
 | Column | Type | Notes |
@@ -88,8 +89,20 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `disposition` | text | null = open; shown when set |
 | `status` | text | default "open" |
 | `warrant_status` | text | legacy — UI derives status from `warrant_url` (pending drop) |
+| `warrant_text` | text | extracted text from warrant PDF — populated on upload |
 
 > Warrant status is derived purely from `warrant_url`: "Warrant on File" if set, "No Warrant" if null.
+
+### `courtroom_documents`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | auto |
+| `client_id` | uuid FK → clients | |
+| `name` | text | display label (e.g. "Motion to Suppress") |
+| `file_url` | text | Supabase Storage path (not full URL) — e.g. `courtroom-docs/[client_id]/[ts]_[filename]` |
+| `extracted_text` | text | extracted text from the PDF — populated on upload |
+
+> Up to 5 documents per client. Viewed via `createSignedUrl` (1-hour TTL). Stored in the `warrants` bucket under `courtroom-docs/` prefix.
 
 ### `hours`
 | Column | Type | Notes |
@@ -118,8 +131,9 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 |---|---|---|
 | `warrants` | `warrants/[case_number].pdf` | Case warrant PDFs |
 | `warrants` | `criminal-history/[client_id].pdf` | Criminal history PDFs |
+| `warrants` | `courtroom-docs/[client_id]/[timestamp]_[filename]` | Courtroom document PDFs |
 
-> Bucket is named `warrants` but serves both use cases via path prefixes.
+> Bucket is named `warrants` but serves all three use cases via path prefixes.
 > Files are uploaded with `upsert: true` (replace on re-upload).
 > Viewed via `createSignedUrl` (1-hour TTL) opened in a new tab — not public URLs.
 
@@ -278,6 +292,7 @@ src/
   AuthContext.jsx          # Supabase auth session context
   RequireAuth.jsx          # Route guard — redirects to /login if no session
   supabaseClient.js        # Supabase client singleton
+  extractPdfText.js        # PDF text extraction utility — pdfjs-dist v6 + CDN worker
   seed.js                  # One-time seed script (node src/seed.js)
 
   hooks/
@@ -303,6 +318,29 @@ src/
 
 ---
 
+## Claude Integration
+
+### Supabase MCP
+- The Supabase MCP connector is connected to Claude chat (claude.ai) — Claude can directly query all database tables and read client data by asking natural language questions (e.g. "list all in-custody clients", "show warrant text for case GS1041482")
+- No additional setup needed; MCP reads from the same Supabase project (`afhzkqjrciyoeizrpaxt`)
+
+### PDF Text Extraction
+- Fully implemented and working across all three upload types: warrant PDFs, criminal history PDFs, and courtroom documents
+- **New database columns:**
+  - `warrant_text` (text) on `cases` table
+  - `criminal_history_text` (text) on `clients` table
+  - `extracted_text` (text) on `courtroom_documents` table
+  - Migration SQL: `supabase_migration_pdf_text.sql` in repo root
+- **New utility:** `src/extractPdfText.js` — uses pdfjs-dist v6 with a CDN-hosted worker from `unpkg.com/pdfjs-dist@6.0.227/build/pdf.worker.min.mjs` to extract text from PDF ArrayBuffers. cdnjs does not yet carry pdfjs-dist v6.x.
+- **Upload handlers updated:**
+  - Warrant upload in `CaseView.jsx` → writes to `cases.warrant_text`
+  - Criminal history upload in `ClientFile.jsx` → writes to `clients.criminal_history_text`
+  - Courtroom document upload in `ClientFile.jsx` → writes to `courtroom_documents.extracted_text`
+- Text extraction fires automatically on every new PDF upload as a fire-and-forget operation after the storage upload and primary URL update succeed — never blocks or errors the upload itself
+- **Key bug fixed:** Supabase JS v2's `PostgrestFilterBuilder` is lazy — the HTTP request only fires when the Promise is `await`ed. All three PATCH calls were inside non-`async` `.then()` callbacks, so the query builders were constructed and garbage-collected without ever sending a request. Fix: make each `.then()` callback `async` and `await` the Supabase call.
+
+---
+
 ## Coming Next
 
 ### DB Cleanup
@@ -319,3 +357,5 @@ src/
 ### Known Issues / Things to Revisit
 - Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
 - No pagination — all clients/cases load at once; fine for current scale
+- Diagnostic `console.warn`/`console.log` statements from PDF text extraction (`extractPdfText.js` and all three upload handlers) are still present — should be removed in a future cleanup pass once extraction is confirmed stable
+- All PDFs uploaded before today's session have `null` text columns (`warrant_text`, `criminal_history_text`, `extracted_text`) — must be re-uploaded once to populate extracted text
