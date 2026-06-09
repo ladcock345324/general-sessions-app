@@ -18,15 +18,17 @@ export async function extractPdfText(file) {
   try {
     const arrayBuffer = await file.arrayBuffer()
     pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+    console.warn('[extractPdfText] loaded PDF, pages:', pdfDoc.numPages)
     const pages = []
     for (let i = 1; i <= pdfDoc.numPages; i++) {
       const page = await pdfDoc.getPage(i)
       const content = await page.getTextContent()
+      console.warn('[extractPdfText] page', i, '— text items:', content.items.length)
       pages.push(content.items.map(item => item.str).join(' '))
     }
     return pages.join('\n').trim() || null
   } catch (err) {
-    console.error('[extractPdfText] failed:', err)
+    console.warn('[extractPdfText] failed:', err)
     return null
   } finally {
     try { await pdfDoc?.destroy() } catch {}

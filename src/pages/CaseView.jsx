@@ -136,11 +136,10 @@ export default function CaseView() {
       .eq('id', caseData.id)
     if (updateErr) { setUploadError(updateErr.message); setUploading(false); return }
     setCaseData(prev => ({ ...prev, warrant_url: urlData.publicUrl }))
-    // Background text extraction — never blocks or errors the upload
+    // Text extraction — always fires a separate PATCH so warrant_text is updated
+    // even when extraction returns null (scanned PDF, no text layer, etc.)
     extractPdfText(file).then(text => {
-      if (text) {
-        supabase.from('cases').update({ warrant_text: text }).eq('id', caseData.id)
-      }
+      supabase.from('cases').update({ warrant_text: text ?? null }).eq('id', caseData.id)
     }).catch(() => {})
     setUploading(false)
   }
