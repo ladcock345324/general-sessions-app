@@ -40,12 +40,11 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `gender` | text | "M" or "F" |
 | `age` | int | |
 | `oca` | text | optional OCA # |
-| `custody_status` | text | `"in_custody"` or `"bonded_out"` |
-| `bond_amount` | numeric | optional |
+| `custody_status` | text | `"in_custody"`, `"bonded_out"`, or `"out"` |
 | `da_name` | text | DA assigned to this client — shown on client file header |
 | `relieved_as_counsel` | boolean | `true` = relieved section; `false` = active |
 | `relieved_closed` | boolean | shows CLOSED badge when true |
-| `criminal_history` | text | legacy text field (not actively used in UI) |
+| `criminal_history` | text | legacy text field (unused — pending drop) |
 | `criminal_history_url` | text | Supabase Storage public URL for criminal history PDF |
 
 ### `next_events`
@@ -81,16 +80,16 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `incident_id` | uuid FK → incidents | |
 | `case_number` | text | e.g. "GS1041482" |
 | `charge` | text | required |
+| `charge_abbrev` | text | optional short label shown in client list and case rows |
 | `warrant_url` | text | Supabase Storage signed URL for warrant PDF |
 | `bond_amount` | numeric | 0 displays as "$0 bond" |
-| `da_name` | text | legacy — no longer shown in UI (DA moved to client level) |
+| `da_name` | text | legacy — no longer shown in UI (pending drop) |
 | `notes` | text | free-text, editable on case view with Save button |
 | `disposition` | text | null = open; shown when set |
 | `status` | text | default "open" |
-| `warrant_status` | text | legacy — UI now derives status from `warrant_url` |
+| `warrant_status` | text | legacy — UI derives status from `warrant_url` (pending drop) |
 
 > Warrant status is derived purely from `warrant_url`: "Warrant on File" if set, "No Warrant" if null.
-> `warrant_status` column still exists in DB but is ignored by the UI.
 
 ### `hours`
 | Column | Type | Notes |
@@ -100,6 +99,16 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `entry_date` | text | e.g. "6/1/2026" |
 | `hours` | numeric | selected from 0.1–0.9 dropdown |
 | `description` | text | |
+
+### `personal_notes`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | auto |
+| `client_id` | uuid FK → clients | unique — one note per client |
+| `note` | text | free-text personal note |
+| `updated_at` | timestamptz | auto-updated on save |
+
+> One row per client (maybeSingle query). Fetched in `useClientFile`.
 
 ---
 
@@ -138,99 +147,84 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 - Two sections: **Active** (`relieved_as_counsel = false`) and **Relieved as Counsel** (`true`)
 - Both sorted alphabetically by last name
 - Each section header shows a count badge (e.g. "Active 12")
-- Each row: Last name, First name (Gender, Age) #OCA, custody badge
-- **In Custody** (orange badge) / **Bonded Out** (green badge)
-- Relieved rows: dimmed, "Relieved as Counsel" + "CLOSED" badge
+- Each row shows: name, next hearing (blue), case numbers + charge abbrevs, custody badge
+- **Case table** in each row: two-column grid (`56px auto`), `position: absolute` right-anchored so all case number left edges are flush; charge_abbrev shown if set, falls back to charge
+- Badge colors: **In Custody** → muted crimson (`#b85555`); **Bonded Out** / **Out** → muted green (`#3d9e6a`); **CLOSED** / relieved clients → gray
+- Active clients with `relieved_closed = true` show all custody badges in gray (same as CLOSED badge)
 - `+` button top-right → Add Client form
-- "Sign out" small muted text in top-right corner above header
-- Each row shows next hearing info below the name line, pulled from `next_events` via join in `useClients`; styled in `#6b9fd4` blue
+- **Mobile layout** (`max-width: 768px`): 3-line stacked layout — name, next event, case table + badge on same line. Desktop layout unchanged.
 
 ### Add Client (`/client/new`)
-- Fields: Last Name, First Name, Gender, Age, OCA #, Custody Status, Bond Amount, DA Name
+- Fields: Last Name, First Name, Gender, Age, OCA #, Custody Status (In Custody / Bonded Out / Out), DA Name
 - Inserts into `clients` table, redirects to client list
 
 ### Client File (`/client/:id`)
-- **Header:** full name, custody badge, bond amount, DA name on same line as bond (`Bond: $X | DA: Ms. Smith`)
+- **Header:** full name, custody badge, Total Bond (summed from all associated cases), DA name
+- **Back button** navigates directly to `/` (not history-based)
+- **Edit button** navigates to `/client/:id/edit`
 - **Next Event block** (blue `#1E3A5F`): "NEXT EVENT" label + Edit button integrated into blue block
   - Docket type, reason (if set), date/time, courtroom (prefixed "Courtroom"), judge
-- **Add/Edit Next Event** inline form:
-  - Docket Type + Reason dropdowns side by side
-  - Date field: native `<input type="date">` picker; converts between YYYY-MM-DD (input) and M/D/YYYY (storage/display)
-  - Time field: native `<input type="time">` picker; defaults to 9:00 AM; optional
-  - Courtroom: dropdown (3A, 3B, 3C, 4B, 4C, 4D, 5C, 5D)
-  - Judge: dropdown of named judges + "Other" with custom text input
-  - Subpoenas: dropdown
+  - **Clear button** in the edit form — deletes the `next_events` row for this client, returns block to empty state
+- **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table
 - **Incidents** section:
   - Collapsible accordion — each incident shows "Description (Date)" header row
-  - Sorted most recent first
-  - Expand/collapse state persisted in `sessionStorage` — survives navigate-away and back
-  - Inline editing: tap "edit incident" → both description AND date become editable inputs in the header row; save on blur (focus leaves both) or Enter; Escape cancels
-  - "+ add incident" opens inline form (description + date with auto-format)
+  - Sorted most recent first; case numbers within each incident sorted ascending
+  - Inline editing: tap "edit incident" → description textarea (3 rows) and date become editable; save on blur or Enter; Escape cancels
+  - `+` icon button on section header bar opens inline Add Incident form
   - Each expanded incident shows case rows + "+ add a case" at bottom
   - Case rows link to `/case/:caseNumber`
 - **Hours** table: date, hours (green), description, × delete button per row
   - Running total at bottom
   - `+` button opens inline form (date defaults to today, hours dropdown 0.1–0.9)
   - Saves to Supabase, sorted most recent first
-- **Section headers** (Incidents, Hours, Criminal History) use inline styles (`background: #0f1820`, matching the Active/Relieved As Counsel dark strips on the client list) — implemented as inline styles rather than CSS module classes due to a Vite CSS module build artifact issue
-- **Criminal History** section: Upload/Replace/View Criminal History PDF
-- **Edit Client** button → Edit Client form (same fields as Add including DA Name)
-- **Close Case** button → confirms → sets `relieved_closed = true` only — client stays in Active list. **Relieve as Counsel** is a separate button that sets `relieved_as_counsel = true`
-- **Reopen Case** button (shown when already relieved) → reverses both flags
-- **Delete Client** button (muted red) → confirmation → deletes client + all related records
+- **Section headers** (Incidents, Hours, Personal Notes, Criminal History, Courtroom Documents) use inline styles (`background: #0f1820`)
+- **Criminal History** section: Upload/Replace/View Criminal History PDF; drag-and-drop supported
+- **Courtroom Documents** section: up to 5 documents; rename/delete per document; tappable tiles open via signed URL
+- **Edit Client** button → Edit Client form
+- **Close Case / Relieve as Counsel / Reopen Case / Delete Client** action buttons
 
 ### Edit Client (`/client/:id/edit`)
-- Pre-populated with live Supabase data including DA Name
-- Updates record, returns to client file
+- Pre-populated with live Supabase data
+- Save uses `navigate('/client/:id', { replace: true })` — edit page is replaced in history, so Back from client file returns to client list
 
 ### Next Event Block
-- Display format: `Jail Docket  |  Thursday 7/16/2026  |  9:00 AM` — pipes with double spaces on each side, no comma between weekday and date, no "at" before time
-- Weekday name derived automatically from `event_date` via `new Date()` + `toLocaleDateString('en-US', { weekday: 'long' })`
-- Time field uses native `<input type="time">` picker; defaults to 9:00 AM on new event; time is optional — if blank, time portion is omitted from display entirely (no stray "AM")
-- Courtroom / judge line uses a smart pipe: only shown when both values are present; if only one is set, shown alone; if neither, nothing rendered
-- Date fields throughout Add/Edit Next Event form use native `<input type="date">` picker; converts between `YYYY-MM-DD` (input) and `M/D/YYYY` (storage/display)
-
-### Hours Section
-- All 6 date inputs across the app replaced with native `<input type="date">` pickers; `toDateInput` / `fromDateInput` helpers handle `M/D/YYYY` ↔ `YYYY-MM-DD` conversion
-- Delete confirmation: clicking × shows inline "Delete this entry?" prompt with Yes/Cancel; no immediate delete
-- Row edit: tapping a row opens a pre-populated inline edit form (same layout as add form); Cancel button labeled "Back"
-
-### Client List / Client Row
-- Next hearing shown on each row, pulled from `next_events` via join in `useClients`; format: `Next: Thursday 7/16/2026  |  9:00 AM`; styled in `#6b9fd4` blue; time omitted if blank
-- All three badges (In Custody, Bonded Out, CLOSED) have reduced vertical padding (`1px` top/bottom) for a compact pill shape
-- CLOSED badge is a gray pill (`rgba(74,74,74,0.5)` bg, `#c0c0c0` text) shown beneath the custody badge for active clients with `relieved_closed = true`
-- CLOSED badge in Relieved as Counsel section uses identical gray pill styling
-
-### Close Case / Relieve as Counsel (separated)
-- **Close Case**: sets `relieved_closed = true` only — client stays in Active list; stays on page (uses `refetch()`)
-- **Relieved as Counsel**: separate button that sets `relieved_as_counsel = true` only — moves client to Relieved section
-- **Reopen Case**: clears both flags (unchanged behavior)
-- Bottom action buttons reordered top-to-bottom: Close/Reopen Case (yellow `#c8a84b`) → Relieved as Counsel (orange `#c97060`) → Delete Client (unchanged red), with 4× extra spacing above Delete Client
-
-### Incidents
-- All incidents default to collapsed on every client file page load — sessionStorage persistence removed
-
-### Courtroom Documents Section
-- New section below Criminal History on each client file page
-- Requires a `courtroom_documents` table in Supabase: `id` (uuid PK), `client_id` (uuid FK → clients), `name` (text), `file_url` (text)
-- Files stored in `warrants` bucket at `courtroom-docs/[client_id]/[timestamp]_[filename]`
-- Up to 5 documents per client; `+` button hidden and "Maximum 5 documents reached." shown when at cap
-- Each document shown as a tappable blue tile — opens via 1-hour signed URL in new tab
-- Per-document **rename**: inline input with Save/Cancel
-- Per-document **delete**: × button → inline confirmation ("Delete this document?") → removes from Storage and DB
-- Section header styled identically to Incidents/Hours/Criminal History (dark `#0f1820` bar); content area background inherits page navy `#1E2A3A`
-
-### Criminal History
-- View and Replace/Upload buttons are equal size and laid out with `justify-content: space-between` — View on left, Replace flush to right edge
+- Display format: `Jail Docket  |  Thursday 7/16/2026  |  9:00 AM`
+- Weekday derived from `event_date` via `new Date()` + `toLocaleDateString`
+- Time is optional — omitted from display if blank
+- **Clear button** in edit form deletes the record entirely
 
 ### Case View (`/case/:caseNumber`)
-- Header: case number, charge, warrant status (derived from `warrant_url`), bond amount
-- **Upload Warrant** / **Replace Warrant** button — uploads PDF to Supabase Storage
-- **View Warrant** button (shown when `warrant_url` set) — opens via signed URL in new tab
-- **Notes** textarea with "Save Notes" button + "Saved" confirmation
-- **Disposition** (shown when set)
-- **Edit** button → inline edit form (Case Number, Charge, Bond Amount)
-- **Delete Case** button (muted red) → confirmation → deletes case, cleans up orphaned incident
+- Header shows client name (`LASTNAME, FIRSTNAME`) centered between Back and Edit buttons
+- **Upload Warrant** / **Replace Warrant** — drag-and-drop or tap; uploads PDF to Supabase Storage
+- **View Warrant** button when warrant is on file
+- **Notes** textarea with Save/Saved confirmation
+- **Disposition**, **Edit** (inline form includes `charge_abbrev` field), **Delete Case**
+
+### Incident Editing
+- Date input constrained to `max-width: 160px`
+- Description uses `<textarea rows={3}>` — fully visible while editing
+- Edit inputs stacked vertically (`flex-direction: column`)
+- Hanging indent on two-line descriptions: `padding-left: 1.62em; text-indent: -1.62em`
+
+### Custody Status
+- Three options: `in_custody`, `bonded_out`, `out`
+- "Out" badge styled identically to "Bonded Out" (muted green)
+- All badges muted from original bright colors
+
+### charge_abbrev
+- `cases` table has `charge_abbrev text` column (added via `ALTER TABLE cases ADD COLUMN charge_abbrev text`)
+- Editable in the case edit form in CaseView
+- Client list shows `charge_abbrev` if set, falls back to `charge`
+
+### Total Bond
+- Computed in ClientFile as sum of `bond_amount` across all cases associated with the client
+- Labeled "Total Bond:" in the client header
+- `bond_amount` field removed from Edit Client and New Client forms
+
+### Touch / Long-Press Handling
+- All tappable navigation rows (client rows, case number rows, incident case rows) use a long-press-aware `tapHandlers` helper
+- Touch hold ≥ 300ms suppresses navigation and allows native browser text selection
+- Desktop mouse behavior completely unchanged
 
 ---
 
@@ -263,8 +257,9 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | Dim text / empty states | `#6b7a99` |
 | Blue links/buttons | `#6b9fd4` |
 | Blue accent (next event label) | `#5b9fd4` |
-| In Custody badge | orange `#f4923a` |
-| Bonded Out badge | green `#5ecf90` |
+| In Custody badge | muted crimson `#b85555` |
+| Bonded Out / Out badge | muted green `#3d9e6a` |
+| CLOSED / gray badge | `rgba(74,74,74,0.5)` bg / `#c0c0c0` text |
 | Hours value / Saved confirmation | green `#5ecf90` |
 | Section headers (client list) | background `#0f1820`, text `#c8d0db` |
 | Delete buttons | muted red `#7a3a30` border / `#c97060` text |
@@ -286,8 +281,8 @@ src/
   seed.js                  # One-time seed script (node src/seed.js)
 
   hooks/
-    useClients.js          # Fetches all clients
-    useClientFile.js       # Fetches client + related data; exposes refetch()
+    useClients.js          # Fetches all clients + next_events + cases (with charge_abbrev)
+    useClientFile.js       # Fetches client + incidents + cases + hours + nextEvent + personalNote; exposes refetch()
 
   pages/
     Login.jsx / .module.css
@@ -298,11 +293,11 @@ src/
     CaseView.jsx / .module.css
 
   components/
-    ClientRow.jsx / .module.css   # Single row in client list
+    ClientRow.jsx / .module.css   # Single row in client list; mobile-responsive
 
   data/
-    clients.js             # Static sample data (NOT used in UI)
-    cases.js               # Static sample data (NOT used in UI)
+    clients.js             # Static sample data (NOT used in UI — pending deletion)
+    cases.js               # Static sample data (NOT used in UI — pending deletion)
     index.js               # Placeholder
 ```
 
@@ -310,18 +305,17 @@ src/
 
 ## Coming Next
 
-### Deployment
-- **PWA / iPhone install** — test Add to Home Screen flow; verify service worker and manifest are serving correctly on the production Vercel URL
+### DB Cleanup
+- Drop `warrant_status` column from `cases` (ignored by UI)
+- Drop `da_name` column from `cases` (legacy, no longer shown)
+- Drop `criminal_history` text column from `clients` (legacy, unused)
+- Delete `src/data/clients.js` and `src/data/cases.js` (static files, never used in UI)
+- Remove unused `EditIncidentForm` component from `ClientFile.jsx` (inline editing replaced it)
 
 ### Features
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)
-- **RLS policies** — enable Row Level Security on all tables once auth is stable, so data is locked to the authenticated user
+- **RLS policies** — enable Row Level Security on all tables once auth is stable
 
 ### Known Issues / Things to Revisit
-- `warrant_status` column still exists in DB but is fully ignored by the UI — could be dropped with a migration
-- `da_name` column still exists on `cases` table but is no longer shown anywhere in the UI — could be dropped
-- `criminal_history` (text) column on `clients` is legacy and unused — could be dropped
 - Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
-- Static files `src/data/clients.js` and `src/data/cases.js` can be deleted
-- `EditIncidentForm` component in `ClientFile.jsx` is defined but never rendered — can be deleted (actual editing uses inline inputs directly inside `IncidentGroup`)
 - No pagination — all clients/cases load at once; fine for current scale
