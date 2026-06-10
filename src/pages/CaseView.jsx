@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { supabase } from '../supabaseClient'
 import { extractPdfText } from '../extractPdfText'
 import db from '../localDB'
@@ -89,6 +90,14 @@ export default function CaseView() {
   const [caseData, setCaseData] = useState(null)
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(true)
+
+  const liveCaseNotes = useLiveQuery(
+    () => db.cases.where('case_number').equals(caseNumber).first().then(c => c?.notes ?? ''),
+    [caseNumber]
+  )
+  useEffect(() => {
+    if (liveCaseNotes !== undefined) setNotes(liveCaseNotes)
+  }, [liveCaseNotes])
   const [error, setError] = useState(null)
   const [editing, setEditing] = useState(false)
   const [notesSaving, setNotesSaving] = useState(false)
@@ -180,7 +189,6 @@ export default function CaseView() {
         setError(error.message)
       } else {
         setCaseData(data)
-        setNotes(data.notes ?? '')
       }
       setLoading(false)
     }

@@ -18,12 +18,22 @@ export function useClientFile(clientId) {
 
     allIncidents.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
-    const incidents = await Promise.all(
-      allIncidents.map(async incident => {
-        const cases = await db.cases.where('incident_id').equals(incident.id).toArray()
-        return { ...incident, cases }
-      })
-    )
+    const incidentIds = allIncidents.map(i => i.id)
+    const allCases = incidentIds.length
+      ? await db.cases.where('incident_id').anyOf(incidentIds).toArray()
+      : []
+
+    const casesByIncidentId = new Map()
+    for (const c of allCases) {
+      const list = casesByIncidentId.get(c.incident_id) ?? []
+      list.push(c)
+      casesByIncidentId.set(c.incident_id, list)
+    }
+
+    const incidents = allIncidents.map(incident => ({
+      ...incident,
+      cases: casesByIncidentId.get(incident.id) ?? [],
+    }))
 
     allHours.sort((a, b) => (a.entry_date < b.entry_date ? 1 : a.entry_date > b.entry_date ? -1 : 0))
 
