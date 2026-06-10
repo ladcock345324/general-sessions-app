@@ -18,10 +18,8 @@ export function useClientFile(clientId) {
 
     allIncidents.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
-    const incidentIds = allIncidents.map(i => i.id)
-    const allCases = incidentIds.length
-      ? await db.cases.where('incident_id').anyOf(incidentIds).toArray()
-      : []
+    const incidentIds = new Set(allIncidents.map(i => i.id))
+    const allCases = (await db.cases.toArray()).filter(c => incidentIds.has(c.incident_id))
 
     const casesByIncidentId = new Map()
     for (const c of allCases) {
