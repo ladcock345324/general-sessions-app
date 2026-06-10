@@ -139,11 +139,11 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ## Completed Features
 
 ### UI Polish (2026-06-10)
-- **Indigent status circle** — 14px colored dot inside a 28px transparent hit area (`inline-flex`, centered); cycles gray → red → green → gray on tap; writes offline-first to Dexie then enqueues `addToSyncQueue`; rendered in `ClientRow` (to the right of the name/OCA) and in `ClientFile` header (to the right of the name on line 1); both views stay in sync via `useLiveQuery`; `indigent_status text DEFAULT 'gray'` column added to `clients` table; Dexie schema bumped to v2
-- **ClientFile header layout** — line 1: name + gender/age + indigent circle in a `flex-wrap: nowrap` row; line 2: OCA number in muted `#9faab8` text below (previously OCA was concatenated into the name string)
-- **Mobile custody badge** — font-size, padding, and border-radius reduced 30% on mobile only (`@media max-width: 768px`); badge container uses `position: absolute; right: 14px; top: 50%; transform: translateY(-50%)` on the row so it centers against the full row height rather than just the case-list sub-row; row gets `position: relative` and `padding-right: 76px` to keep content clear
-- **Calendar overlap fix** — in the incident inline edit form, the date `<input>` now renders below the description `<textarea>` instead of above; `autoFocus` moved to the textarea; prevents the native mobile date picker from covering the description field while editing
-- **Case number tap target** — pointer handlers moved from the full `caseTableRow` div onto just the `caseNum` span; only the blue case number text triggers case navigation; charge abbreviation and surrounding whitespace are no longer tappable; `padding: 3px 0` on the span preserves a usable vertical touch target
+- **Indigent status circle** — new `indigent_status text DEFAULT 'gray'` column on `clients` table; Dexie schema bumped to version 2 with `indigent_status` indexed; 14px visible dot inside a 28px transparent hit-area container (`display: inline-flex`, centered); pointer events on the outer container only — inner circle has `pointer-events: none`; cycles gray → red → green → gray on tap; offline-first writes via Dexie + `addToSyncQueue`; renders in `ClientRow` (to the right of the OCA number) and `ClientFile` header (line 1, after name/gender/age); both views stay in sync via `useLiveQuery`
+- **ClientFile header layout** — `nameCore` (`LASTNAME, FIRSTNAME (gender, age)`) and indigent circle on line 1 as `flex-wrap: nowrap`; OCA number on its own line 2 in muted text (`#9faab8`, `0.85em`) — previously OCA was concatenated into the name string
+- **Mobile custody badge** — font-size, padding, and border-radius all reduced 30% on mobile only (inside `@media (max-width: 768px)`); vertically centered against full row height via `position: absolute` on `.right` with `top: 50%; transform: translateY(-50%)`; `.row` gets `position: relative` and `padding-right: 76px` to keep content clear — desktop layout unchanged
+- **Incident edit calendar overlap fix** — date `<input>` moved below description `<textarea>` in the incident inline edit form so the native mobile date picker no longer covers the description field; `autoFocus` moved to the textarea
+- **Case number tap target tightened** — navigation handler moved from the full `caseTableRow` div onto the `caseNum` span only; charge/abbreviation text and surrounding whitespace no longer trigger case navigation; `padding: 3px 0` retained on the span for touch usability
 
 ### Offline Layer — Phase 2 + Text Viewer (2026-06-10)
 - **Reads migrated to Dexie** — `useClients` and `useClientFile` rewritten to use `useLiveQuery` from `dexie-react-hooks`; app loads instantly from IndexedDB; UI auto-updates on any Dexie write; return shapes identical so no UI component changes were needed
@@ -377,5 +377,5 @@ src/
 ### Known Issues / Things to Revisit
 - Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
 - No pagination — all clients/cases load at once; fine for current scale
-- Incident inline edit calendar overlaps description field on mobile (pre-existing layout issue)
+- All PDFs uploaded before the offline layer session have `null` text columns (`warrant_text`, `criminal_history_text`, `extracted_text`) — being resolved manually by re-uploading each PDF; not a code issue
 - Sync status indicator not showing on iPhone PWA (cosmetic — indicator renders but may be hidden behind safe area or PWA chrome)
