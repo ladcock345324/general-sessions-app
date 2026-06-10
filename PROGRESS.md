@@ -16,7 +16,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | Auth | Supabase Auth (email/password) |
 | Storage | Supabase Storage (`warrants` bucket) |
 | PWA | vite-plugin-pwa, workbox-window |
-| Data | Supabase only — static sample files kept but not used in UI |
+| Data | Supabase only — static sample files deleted |
 
 ---
 
@@ -44,7 +44,6 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `da_name` | text | DA assigned to this client — shown on client file header |
 | `relieved_as_counsel` | boolean | `true` = relieved section; `false` = active |
 | `relieved_closed` | boolean | shows CLOSED badge when true |
-| `criminal_history` | text | legacy text field (unused — pending drop) |
 | `criminal_history_url` | text | Supabase Storage public URL for criminal history PDF |
 | `criminal_history_text` | text | extracted text from criminal history PDF — populated on upload |
 
@@ -84,11 +83,9 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `charge_abbrev` | text | optional short label shown in client list and case rows |
 | `warrant_url` | text | Supabase Storage signed URL for warrant PDF |
 | `bond_amount` | numeric | 0 displays as "$0 bond" |
-| `da_name` | text | legacy — no longer shown in UI (pending drop) |
 | `notes` | text | free-text, editable on case view with Save button |
 | `disposition` | text | null = open; shown when set |
 | `status` | text | default "open" |
-| `warrant_status` | text | legacy — UI derives status from `warrant_url` (pending drop) |
 | `warrant_text` | text | extracted text from warrant PDF — populated on upload |
 
 > Warrant status is derived purely from `warrant_url`: "Warrant on File" if set, "No Warrant" if null.
@@ -140,6 +137,13 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### DB Cleanup (2026-06-09)
+- Dropped `warrant_status` column from `cases` (was ignored by UI)
+- Dropped `da_name` column from `cases` (legacy, no longer shown)
+- Dropped `criminal_history` text column from `clients` (legacy, unused)
+- Deleted `src/data/clients.js`, `src/data/cases.js`, `src/data/index.js` (static files, never used in UI)
+- Removed unused `EditIncidentForm` component from `ClientFile.jsx` (inline editing replaced it)
 
 ### Deployment
 - **Production URL:** `https://general-sessions-app.vercel.app` — auto-deploys on every push to `main`
@@ -310,10 +314,7 @@ src/
   components/
     ClientRow.jsx / .module.css   # Single row in client list; mobile-responsive
 
-  data/
-    clients.js             # Static sample data (NOT used in UI — pending deletion)
-    cases.js               # Static sample data (NOT used in UI — pending deletion)
-    index.js               # Placeholder
+  data/                    # (deleted — static sample files removed 2026-06-09)
 ```
 
 ---
@@ -342,13 +343,6 @@ src/
 ---
 
 ## Coming Next
-
-### DB Cleanup
-- Drop `warrant_status` column from `cases` (ignored by UI)
-- Drop `da_name` column from `cases` (legacy, no longer shown)
-- Drop `criminal_history` text column from `clients` (legacy, unused)
-- Delete `src/data/clients.js` and `src/data/cases.js` (static files, never used in UI)
-- Remove unused `EditIncidentForm` component from `ClientFile.jsx` (inline editing replaced it)
 
 ### Features
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)

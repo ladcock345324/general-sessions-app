@@ -378,55 +378,6 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
   )
 }
 
-// ─── Edit Incident form ───────────────────────────────────────────────────────
-
-function EditIncidentForm({ incident, onSaved, onCancel }) {
-  const [form, setForm] = useState({
-    incident_description: incident.incident_description ?? '',
-    incident_date: incident.incident_date ?? '',
-  })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-
-  function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
-
-  async function save() {
-    if (!form.incident_date.trim()) { setError('Date is required.'); return }
-    setSaving(true)
-    setError(null)
-    const { error: e } = await supabase.from('incidents').update({
-      incident_description: form.incident_description.trim() || null,
-      incident_date: form.incident_date.trim(),
-    }).eq('id', incident.id)
-    if (e) { setError(e.message); setSaving(false); return }
-    onSaved({ ...incident, ...form })
-  }
-
-  return (
-    <div className={styles.inlineForm}>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Description</label>
-        <input className={styles.formInput} value={form.incident_description} onChange={e => set('incident_description', e.target.value)} placeholder="e.g. Watch Theft Incident" />
-      </div>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Date *</label>
-        <input
-          className={styles.formInput}
-          value={form.incident_date}
-          onChange={e => set('incident_date', formatDateInput(e.target.value))}
-          placeholder="MM/DD/YYYY"
-          inputMode="numeric"
-        />
-      </div>
-      {error && <div className={styles.formError}>{error}</div>}
-      <div className={styles.formActions}>
-        <button className={styles.formSave} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-        <button className={styles.formCancel} onClick={onCancel} disabled={saving}>Cancel</button>
-      </div>
-    </div>
-  )
-}
-
 // ─── Add Case form (under a specific incident) ────────────────────────────────
 
 const EMPTY_CASE = { case_number: '', charge: '', bond_amount: '' }
