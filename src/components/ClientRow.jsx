@@ -46,7 +46,7 @@ function IndigentCircle({ clientId, status }) {
       }}
     >
       <div style={{
-        width: 18, height: 18, borderRadius: '50%',
+        width: 14, height: 14, borderRadius: '50%',
         backgroundColor: INDIGENT_COLOR[current] ?? INDIGENT_COLOR.gray,
         pointerEvents: 'none',
       }} />
