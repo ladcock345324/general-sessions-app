@@ -36,6 +36,7 @@ function toRowProps(client) {
       : null,
     relievedClosed: client.relieved_closed ?? false,
     caseNumbers,
+    indigentStatus: client.indigent_status ?? 'gray',
   }
 }
 

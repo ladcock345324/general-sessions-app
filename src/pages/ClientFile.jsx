@@ -9,6 +9,33 @@ import { addToSyncQueue } from '../syncManager'
 import styles from './ClientFile.module.css'
 import TextViewerDrawer from '../components/TextViewerDrawer'
 
+// ─── Indigent status circle ──────────────────────────────────────────────────
+
+const INDIGENT_CYCLE = { gray: 'red', red: 'green', green: 'gray' }
+const INDIGENT_COLOR = { gray: '#6b7a99', red: '#b85555', green: '#3d9e6a' }
+
+function IndigentCircle({ clientId, status }) {
+  const current = status ?? 'gray'
+  function handleClick(e) {
+    e.stopPropagation()
+    const next = INDIGENT_CYCLE[current] ?? 'gray'
+    db.clients.update(clientId, { indigent_status: next })
+    addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, indigent_status: next })
+  }
+  return (
+    <button
+      onClick={handleClick}
+      onPointerDown={e => e.stopPropagation()}
+      onPointerUp={e => e.stopPropagation()}
+      style={{
+        width: 24, height: 24, borderRadius: '50%', padding: 0, border: 'none',
+        backgroundColor: INDIGENT_COLOR[current] ?? INDIGENT_COLOR.gray,
+        cursor: 'pointer', flexShrink: 0,
+      }}
+    />
+  )
+}
+
 // ─── Tap-safe click helper ───────────────────────────────────────────────────
 // Fires `handler` on tap but not on drag (> 5px) or touch long-press (>= 300ms).
 // Long-press suppression lets the browser show native text selection on mobile.
@@ -538,21 +565,21 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
         <div className={styles.incidentHeaderLeft}>
           {editing ? (
             <div className={styles.incidentEditInputs} onBlur={onEditContainerBlur} onClick={e => e.stopPropagation()}>
-              <input
-                type="date"
-                className={`${styles.incidentNameInput} ${styles.incidentDateInput}`}
-                value={editDate}
-                autoFocus
-                onChange={e => setEditDate(e.target.value)}
-                onKeyDown={onKeyDown}
-              />
               <textarea
                 className={styles.incidentNameInput}
                 value={editDesc}
                 placeholder="Description"
                 rows={3}
+                autoFocus
                 style={{ resize: 'none' }}
                 onChange={e => setEditDesc(e.target.value)}
+                onKeyDown={onKeyDown}
+              />
+              <input
+                type="date"
+                className={`${styles.incidentNameInput} ${styles.incidentDateInput}`}
+                value={editDate}
+                onChange={e => setEditDate(e.target.value)}
                 onKeyDown={onKeyDown}
               />
             </div>
@@ -1410,7 +1437,10 @@ export default function ClientFile() {
         </header>
         <div className={styles.nameRow}>
           <div className={styles.nameRowLeft}>
-            <h1 className={styles.name}>{nameDisplay}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h1 className={styles.name}>{nameDisplay}</h1>
+              <IndigentCircle clientId={id} status={client.indigent_status} />
+            </div>
             <div className={styles.bondLine}>
               {[`Total Bond: $${totalBond.toLocaleString()}`, client.da_name && `ADA: ${client.da_name}`].filter(Boolean).map((seg, i) => (
                 <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>

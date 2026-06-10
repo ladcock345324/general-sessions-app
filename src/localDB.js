@@ -4,6 +4,10 @@ const db = new Dexie('GeneralSessionsDB')
 
 db.version(1).stores({
   clients:             'id, last_name, relieved_as_counsel',
+})
+
+db.version(2).stores({
+  clients:             'id, last_name, relieved_as_counsel, indigent_status',
   incidents:           'id, client_id',
   cases:               'id, incident_id, case_number',
   next_events:         'id, client_id',

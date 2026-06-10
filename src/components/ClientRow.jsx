@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom'
+import db from '../localDB'
+import { addToSyncQueue } from '../syncManager'
 import styles from './ClientRow.module.css'
 
 // Returns pointer event props that fire `handler` on tap but not on:
@@ -20,6 +22,31 @@ function tapHandlers(handler) {
       handler()
     },
   }
+}
+
+const INDIGENT_CYCLE = { gray: 'red', red: 'green', green: 'gray' }
+const INDIGENT_COLOR = { gray: '#6b7a99', red: '#b85555', green: '#3d9e6a' }
+
+function IndigentCircle({ clientId, status }) {
+  const current = status ?? 'gray'
+  function handleClick(e) {
+    e.stopPropagation()
+    const next = INDIGENT_CYCLE[current] ?? 'gray'
+    db.clients.update(clientId, { indigent_status: next })
+    addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, indigent_status: next })
+  }
+  return (
+    <button
+      onClick={handleClick}
+      onPointerDown={e => e.stopPropagation()}
+      onPointerUp={e => e.stopPropagation()}
+      style={{
+        width: 24, height: 24, borderRadius: '50%', padding: 0, border: 'none',
+        backgroundColor: INDIGENT_COLOR[current] ?? INDIGENT_COLOR.gray,
+        cursor: 'pointer', flexShrink: 0,
+      }}
+    />
+  )
 }
 
 function CustodyBadge({ status, muted }) {
@@ -44,7 +71,7 @@ function RelivedBadge({ closed }) {
 
 export default function ClientRow({ client, relieved = false, onClick }) {
   const navigate = useNavigate()
-  const { lastName, firstName, gender, age, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers } = client
+  const { id, lastName, firstName, gender, age, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers, indigentStatus } = client
 
   const nameOca = oca ? `${lastName}, ${firstName} (${gender}, ${age}) #${oca}` : `${lastName}, ${firstName} (${gender}, ${age})`
 
@@ -65,7 +92,10 @@ export default function ClientRow({ client, relieved = false, onClick }) {
   return (
     <div className={`${styles.row} ${relieved ? styles.dimmed : ''}`} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
       <div className={styles.info}>
-        <span className={styles.name}>{nameOca}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className={styles.name}>{nameOca}</span>
+          <IndigentCircle clientId={id} status={indigentStatus} />
+        </div>
         {nextSegments
           ? (
             <span className={styles.next}>
