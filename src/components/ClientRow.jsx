@@ -36,16 +36,21 @@ function IndigentCircle({ clientId, status }) {
     addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, indigent_status: next })
   }
   return (
-    <button
+    <div
       onClick={handleClick}
       onPointerDown={e => e.stopPropagation()}
       onPointerUp={e => e.stopPropagation()}
       style={{
-        width: 24, height: 24, borderRadius: '50%', padding: 0, border: 'none',
-        backgroundColor: INDIGENT_COLOR[current] ?? INDIGENT_COLOR.gray,
-        cursor: 'pointer', flexShrink: 0,
+        width: 28, height: 28, display: 'inline-flex', alignItems: 'center',
+        justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
       }}
-    />
+    >
+      <div style={{
+        width: 18, height: 18, borderRadius: '50%',
+        backgroundColor: INDIGENT_COLOR[current] ?? INDIGENT_COLOR.gray,
+        pointerEvents: 'none',
+      }} />
+    </div>
   )
 }
 

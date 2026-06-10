@@ -23,16 +23,21 @@ function IndigentCircle({ clientId, status }) {
     addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, indigent_status: next })
   }
   return (
-    <button
+    <div
       onClick={handleClick}
       onPointerDown={e => e.stopPropagation()}
       onPointerUp={e => e.stopPropagation()}
       style={{
-        width: 24, height: 24, borderRadius: '50%', padding: 0, border: 'none',
-        backgroundColor: INDIGENT_COLOR[current] ?? INDIGENT_COLOR.gray,
-        cursor: 'pointer', flexShrink: 0,
+        width: 28, height: 28, display: 'inline-flex', alignItems: 'center',
+        justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
       }}
-    />
+    >
+      <div style={{
+        width: 18, height: 18, borderRadius: '50%',
+        backgroundColor: INDIGENT_COLOR[current] ?? INDIGENT_COLOR.gray,
+        pointerEvents: 'none',
+      }} />
+    </div>
   )
 }
 
@@ -1419,9 +1424,7 @@ export default function ClientFile() {
     )
   }
 
-  const nameDisplay = client.oca
-    ? `${client.last_name}, ${client.first_name} (${client.gender}, ${client.age}) #${client.oca}`
-    : `${client.last_name}, ${client.first_name} (${client.gender}, ${client.age})`
+  const nameCore = `${client.last_name}, ${client.first_name} (${client.gender}, ${client.age})`
 
   const totalBond = incidents.flatMap(inc => inc.cases ?? []).reduce((sum, c) => sum + (Number(c.bond_amount) || 0), 0)
   const sortedIncidents = [...incidents].sort((a, b) => new Date(b.incident_date) - new Date(a.incident_date))
@@ -1437,10 +1440,13 @@ export default function ClientFile() {
         </header>
         <div className={styles.nameRow}>
           <div className={styles.nameRowLeft}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h1 className={styles.name}>{nameDisplay}</h1>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 8 }}>
+              <h1 className={styles.name}>{nameCore}</h1>
               <IndigentCircle clientId={id} status={client.indigent_status} />
             </div>
+            {client.oca && (
+              <div style={{ color: '#9faab8', fontSize: '0.85em', marginTop: 2 }}>#{client.oca}</div>
+            )}
             <div className={styles.bondLine}>
               {[`Total Bond: $${totalBond.toLocaleString()}`, client.da_name && `ADA: ${client.da_name}`].filter(Boolean).map((seg, i) => (
                 <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
