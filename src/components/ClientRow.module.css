@@ -207,6 +207,19 @@
     position: static;
     transform: none;
     flex-shrink: 0;
+    align-self: center;
+  }
+
+  .badge {
+    font-size: 8.4px;
+    padding: 0.7px 7px;
+    border-radius: 14px;
+  }
+
+  .closedBadge {
+    font-size: 6.3px;
+    padding: 0.7px 4.9px;
+    border-radius: 14px;
   }
 }
 
