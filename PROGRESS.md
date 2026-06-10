@@ -152,6 +152,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 - Dropped `criminal_history` text column from `clients` (legacy, unused)
 - Deleted `src/data/clients.js`, `src/data/cases.js`, `src/data/index.js` (static files, never used in UI)
 - Removed unused `EditIncidentForm` component from `ClientFile.jsx` (inline editing replaced it)
+- **Bug fix:** `useClientFile.js` nested `cases` select still included `da_name` after the column was dropped — Supabase errored silently, `incidentData` resolved to `null`, and all incidents disappeared from the Client File view. Fixed by removing `da_name` from the select.
 
 ### Deployment
 - **Production URL:** `https://general-sessions-app.vercel.app` — auto-deploys on every push to `main`
@@ -352,10 +353,17 @@ src/
 
 ## Coming Next
 
-### Offline Layer — Phase 2
-- Migrate all reads in `useClients` and `useClientFile` to read from local Dexie DB first (offline-first)
-- Migrate all writes (insert/update/delete) to write locally and enqueue in `sync_queue` before pushing to Supabase
-- Clean text viewer UI for reading extracted PDF text offline (warrant, criminal history, courtroom docs)
+### Offline Layer — Phase 2a: offline-first reads
+- Migrate reads in `useClients.js` and `useClientFile.js` to serve from Dexie instead of live Supabase queries
+- App loads instantly from local IndexedDB; Supabase remains the source of truth via background sync
+
+### Offline Layer — Phase 2b: offline-first writes
+- Migrate all INSERT/UPDATE/DELETE operations across the entire app to write to Dexie first and enqueue in `sync_queue`
+- `processSyncQueue` (already implemented) flushes to Supabase when online
+
+### Clean text viewer UI
+- In-app panel to read extracted PDF text (`warrant_text`, `criminal_history_text`, `extracted_text`) without opening the PDF
+- Styled for mobile readability; available offline since text is stored locally in Dexie after sync
 
 ### Features
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)
