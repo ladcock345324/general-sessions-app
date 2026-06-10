@@ -577,10 +577,10 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
 
       {open && (
         <div className={styles.incidentBody}>
-          {(incident.cases ?? []).length === 0 && !showAddCase && (
+          {(initialIncident.cases ?? []).length === 0 && !showAddCase && (
             <div className={styles.noCasesMsg}>No cases yet</div>
           )}
-          {[...(incident.cases ?? [])].sort((a, b) => a.case_number.localeCompare(b.case_number)).map(c => (
+          {[...(initialIncident.cases ?? [])].sort((a, b) => a.case_number.localeCompare(b.case_number)).map(c => (
             <div key={c.id} className={styles.caseRow} {...tapHandlers(() => onCaseTap(c.case_number))} style={{ cursor: 'pointer', userSelect: 'text' }}>
               <div className={styles.caseInfo}>
                 <span className={styles.caseNumber}>{c.case_number}</span>
