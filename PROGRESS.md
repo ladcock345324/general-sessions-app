@@ -370,7 +370,5 @@ src/
 ### Known Issues / Things to Revisit
 - Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
 - No pagination — all clients/cases load at once; fine for current scale
-- Diagnostic `console.warn`/`console.log` statements from PDF text extraction (`extractPdfText.js` and all three upload handlers) are still present — should be removed in a future cleanup pass once extraction is confirmed stable
-- All PDFs uploaded before today's session have `null` text columns (`warrant_text`, `criminal_history_text`, `extracted_text`) — must be re-uploaded once to populate extracted text
 - Incident inline edit calendar overlaps description field on mobile (pre-existing layout issue)
 - Sync status indicator not showing on iPhone PWA (cosmetic — indicator renders but may be hidden behind safe area or PWA chrome)
