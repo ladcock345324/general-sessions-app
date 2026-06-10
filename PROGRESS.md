@@ -138,6 +138,13 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Clean text viewer UI (2026-06-10)
+- **`src/components/TextViewerDrawer.jsx`** / **`TextViewerDrawer.module.css`** — slide-up drawer panel (`position: fixed`, 85% screen height, `0.28s cubic-bezier` transition); drag handle, header strip with label + close button, scrollable body; semi-transparent dark overlay closes on tap
+- **`CaseView.jsx`** — "View Text" button appears below "View Warrant" when `warrant_text` is non-null; reads `warrant_text` from Dexie via `useLiveQuery` (fully offline); opens drawer labeled "Warrant Text"
+- **`ClientFile.jsx` — Criminal History section** — "View Text" button appears below "View Criminal History" when `criminal_history_text` is non-null; reads live from Dexie via `useLiveQuery`; opens drawer labeled "Criminal History Text"
+- **`ClientFile.jsx` — Courtroom Documents section** — each tile shows a "View Text" button below the document name when `extracted_text` is non-null; stopPropagation prevents tile tap-to-open; opens drawer labeled with document name
+- Text typography: system-ui 13px, line-height 1.7, color `#d0d8e4`, `pre-wrap` + `break-word`; empty state shows italic muted message
+
 ### Offline Layer — Phase 2b: offline-first writes (2026-06-10)
 - All INSERT/UPDATE/DELETE operations across the app now write to Dexie first, then enqueue via `addToSyncQueue` for background Supabase sync
 - **`src/pages/NewClient.jsx`**: client INSERT → Dexie put + queue; `crypto.randomUUID()` generates id client-side; Supabase import removed
@@ -374,10 +381,6 @@ src/
 ---
 
 ## Coming Next
-
-### Clean text viewer UI
-- In-app panel to read extracted PDF text (`warrant_text`, `criminal_history_text`, `extracted_text`) without opening the PDF
-- Styled for mobile readability; available offline since text is stored locally in Dexie after sync
 
 ### Features
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)

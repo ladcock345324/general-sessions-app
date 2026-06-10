@@ -6,6 +6,7 @@ import { extractPdfText } from '../extractPdfText'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import styles from './CaseView.module.css'
+import TextViewerDrawer from '../components/TextViewerDrawer'
 
 function formatBond(amount) {
   if (amount == null) return null
@@ -98,12 +99,19 @@ export default function CaseView() {
   useEffect(() => {
     if (liveCaseNotes !== undefined) setNotes(liveCaseNotes)
   }, [liveCaseNotes])
+
+  const liveWarrantText = useLiveQuery(
+    () => db.cases.where('case_number').equals(caseNumber).first().then(c => c?.warrant_text ?? null),
+    [caseNumber]
+  )
+
   const [error, setError] = useState(null)
   const [editing, setEditing] = useState(false)
   const [notesSaving, setNotesSaving] = useState(false)
   const [notesSaved, setNotesSaved] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showWarrantText, setShowWarrantText] = useState(false)
 
   async function handleDeleteCase() {
     setDeleting(true)
@@ -278,6 +286,14 @@ export default function CaseView() {
                 View Warrant
               </button>
             )}
+            {liveWarrantText && (
+              <button
+                className={`${styles.warrantBtn} ${styles.viewTextBtn}`}
+                onClick={() => setShowWarrantText(true)}
+              >
+                View Text
+              </button>
+            )}
             <label
               className={`${styles.warrantBtn} ${styles.uploadBtn} ${uploading ? styles.uploadBtnDisabled : ''} ${warrantDragOver ? styles.uploadBtnDragOver : ''}`}
               onDragOver={handleWarrantDragOver}
@@ -355,6 +371,13 @@ export default function CaseView() {
           )}
         </div>
       )}
+
+      <TextViewerDrawer
+        isOpen={showWarrantText}
+        onClose={() => setShowWarrantText(false)}
+        label="Warrant Text"
+        text={liveWarrantText ?? null}
+      />
     </div>
   )
 }

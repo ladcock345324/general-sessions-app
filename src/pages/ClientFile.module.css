@@ -970,6 +970,34 @@
   background: #243f6a;
 }
 
+.cdocViewTextBtn {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: 1px solid rgba(74, 127, 168, 0.5);
+  color: #4a7fa8;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+
+.cdocViewTextBtn:active {
+  background: rgba(74, 127, 168, 0.15);
+}
+
+.viewTextBtn {
+  background: rgba(74, 127, 168, 0.10);
+  border-color: #4a7fa8;
+  color: #4a7fa8;
+}
+
+.viewTextBtn:active {
+  background: rgba(74, 127, 168, 0.20);
+}
+
 .cdocControls {
   display: flex;
   align-items: center;

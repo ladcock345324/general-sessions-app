@@ -7,6 +7,7 @@ import { extractPdfText } from '../extractPdfText'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import styles from './ClientFile.module.css'
+import TextViewerDrawer from '../components/TextViewerDrawer'
 
 // ─── Tap-safe click helper ───────────────────────────────────────────────────
 // Fires `handler` on tap but not on drag (> 5px) or touch long-press (>= 300ms).
@@ -962,6 +963,10 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [historyDragOver, setHistoryDragOver] = useState(false)
+  const [showCriminalHistoryText, setShowCriminalHistoryText] = useState(false)
+
+  const liveClientRecord = useLiveQuery(() => db.clients.get(clientId), [clientId])
+  const criminalHistoryText = liveClientRecord?.criminal_history_text ?? null
 
   async function uploadHistoryFile(file) {
     setUploading(true)
@@ -1031,49 +1036,67 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
   }
 
   return (
-    <div className={styles.section}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
-        <span className={styles.sectionTitle}>Criminal History</span>
-      </div>
-      {showDeleteConfirm ? (
-        <div className={styles.hoursConfirmRow}>
-          <span className={styles.hoursConfirmText}>Delete criminal history?</span>
-          <div className={styles.hoursConfirmActions}>
-            <button className={styles.hoursConfirmYes} onClick={handleDelete} disabled={deleting}>{deleting ? '…' : 'Yes, delete'}</button>
-            <button className={styles.hoursConfirmCancel} onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>Cancel</button>
+    <>
+      <div className={styles.section}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
+          <span className={styles.sectionTitle}>Criminal History</span>
+        </div>
+        {showDeleteConfirm ? (
+          <div className={styles.hoursConfirmRow}>
+            <span className={styles.hoursConfirmText}>Delete criminal history?</span>
+            <div className={styles.hoursConfirmActions}>
+              <button className={styles.hoursConfirmYes} onClick={handleDelete} disabled={deleting}>{deleting ? '…' : 'Yes, delete'}</button>
+              <button className={styles.hoursConfirmCancel} onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>Cancel</button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className={styles.historyButtons}>
-          {url ? (
-            <>
-              <button className={styles.historyViewBtn} onClick={handleView}>
-                View Criminal History
-              </button>
-              <button className={styles.hoursDeleteBtn} onClick={() => setShowDeleteConfirm(true)}>×</button>
-            </>
-          ) : (
-            <label
-              className={`${styles.historyUploadBtn} ${uploading ? styles.historyUploadDisabled : ''} ${historyDragOver ? styles.historyUploadBtnDragOver : ''}`}
-              onDragOver={handleHistoryDragOver}
-              onDragEnter={handleHistoryDragEnter}
-              onDragLeave={handleHistoryDragLeave}
-              onDrop={handleHistoryDrop}
-            >
-              {uploading ? 'Uploading…' : 'Upload Criminal History'}
-              <input
-                type="file"
-                accept="application/pdf"
-                className={styles.fileInputHidden}
-                disabled={uploading}
-                onChange={handleUpload}
-              />
-            </label>
-          )}
-          {uploadError && <div className={styles.formError}>{uploadError}</div>}
-        </div>
-      )}
-    </div>
+        ) : (
+          <div className={styles.historyButtons}>
+            {url ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <button className={styles.historyViewBtn} onClick={handleView}>
+                    View Criminal History
+                  </button>
+                  {criminalHistoryText && (
+                    <button
+                      className={`${styles.historyViewBtn} ${styles.viewTextBtn}`}
+                      onClick={() => setShowCriminalHistoryText(true)}
+                    >
+                      View Text
+                    </button>
+                  )}
+                </div>
+                <button className={styles.hoursDeleteBtn} onClick={() => setShowDeleteConfirm(true)}>×</button>
+              </>
+            ) : (
+              <label
+                className={`${styles.historyUploadBtn} ${uploading ? styles.historyUploadDisabled : ''} ${historyDragOver ? styles.historyUploadBtnDragOver : ''}`}
+                onDragOver={handleHistoryDragOver}
+                onDragEnter={handleHistoryDragEnter}
+                onDragLeave={handleHistoryDragLeave}
+                onDrop={handleHistoryDrop}
+              >
+                {uploading ? 'Uploading…' : 'Upload Criminal History'}
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className={styles.fileInputHidden}
+                  disabled={uploading}
+                  onChange={handleUpload}
+                />
+              </label>
+            )}
+            {uploadError && <div className={styles.formError}>{uploadError}</div>}
+          </div>
+        )}
+      </div>
+      <TextViewerDrawer
+        isOpen={showCriminalHistoryText}
+        onClose={() => setShowCriminalHistoryText(false)}
+        label="Criminal History Text"
+        text={criminalHistoryText}
+      />
+    </>
   )
 }
 
@@ -1094,6 +1117,7 @@ function CourtroomDocsSection({ clientId }) {
   const [renameValue, setRenameValue] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [viewTextDoc, setViewTextDoc] = useState(null)
 
   async function handleSave() {
     if (!formName.trim()) { setFormError('Document name is required.'); return }
@@ -1163,6 +1187,7 @@ function CourtroomDocsSection({ clientId }) {
   const atMax = docs.length >= 5
 
   return (
+    <>
     <div style={{ marginTop: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
         <span className={styles.sectionTitle}>Courtroom Documents</span>
@@ -1209,6 +1234,14 @@ function CourtroomDocsSection({ clientId }) {
             <button className={styles.cdocTile} onClick={() => handleView(doc)}>
               {doc.name}
             </button>
+            {doc.extracted_text && (
+              <button
+                className={styles.cdocViewTextBtn}
+                onClick={e => { e.stopPropagation(); setViewTextDoc(doc) }}
+              >
+                View Text
+              </button>
+            )}
 
             {/* Rename */}
             {renamingId === doc.id ? (
@@ -1247,6 +1280,13 @@ function CourtroomDocsSection({ clientId }) {
         )}
       </div>
     </div>
+    <TextViewerDrawer
+      isOpen={!!viewTextDoc}
+      onClose={() => setViewTextDoc(null)}
+      label={viewTextDoc?.name ?? ''}
+      text={viewTextDoc?.extracted_text ?? null}
+    />
+    </>
   )
 }
 
