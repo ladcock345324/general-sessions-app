@@ -122,8 +122,8 @@ export default function ClientRow({ client, relieved = false, onClick }) {
               const pd = e => { e.stopPropagation(); start.x = e.clientX; start.y = e.clientY }
               const pu = e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number}`) }
               return (
-                <div key={c.id} className={styles.caseTableRow} onPointerDown={pd} onPointerUp={pu}>
-                  <span className={styles.caseNum}>{c.case_number}</span>
+                <div key={c.id} className={styles.caseTableRow}>
+                  <span className={styles.caseNum} style={{ padding: '3px 0' }} onPointerDown={pd} onPointerUp={pu}>{c.case_number}</span>
                   <span className={styles.caseCharge}>| {charge}</span>
                 </div>
               )
