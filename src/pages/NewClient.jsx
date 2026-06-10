@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../supabaseClient'
+import db from '../localDB'
+import { addToSyncQueue } from '../syncManager'
 import styles from './NewClient.module.css'
 
 const EMPTY = {
@@ -32,7 +33,9 @@ export default function NewClient() {
     setSaving(true)
     setError(null)
 
-    const { error: insertError } = await supabase.from('clients').insert({
+    const id = crypto.randomUUID()
+    const record = {
+      id,
       last_name: form.last_name.trim(),
       first_name: form.first_name.trim(),
       gender: form.gender,
@@ -42,15 +45,10 @@ export default function NewClient() {
       da_name: form.da_name.trim() || null,
       relieved_as_counsel: false,
       relieved_closed: false,
-      criminal_history: null,
-    })
-
-    if (insertError) {
-      setError(insertError.message)
-      setSaving(false)
-      return
     }
 
+    await db.clients.put(record)
+    await addToSyncQueue('clients', 'INSERT', id, record)
     navigate('/')
   }
 

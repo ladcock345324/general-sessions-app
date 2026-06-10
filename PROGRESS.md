@@ -138,6 +138,28 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Offline Layer — Phase 2b: offline-first writes (2026-06-10)
+- All INSERT/UPDATE/DELETE operations across the app now write to Dexie first, then enqueue via `addToSyncQueue` for background Supabase sync
+- **`src/pages/NewClient.jsx`**: client INSERT → Dexie put + queue; `crypto.randomUUID()` generates id client-side; Supabase import removed
+- **`src/pages/EditClient.jsx`**: client UPDATE → Dexie update + queue; initial load still reads from Supabase (CaseView pattern)
+- **`src/pages/ClientFile.jsx`**: all write paths migrated:
+  - Incidents: add (INSERT), inline edit (UPDATE), delete cascade (DELETE cases → DELETE incident)
+  - Cases: add under incident (INSERT)
+  - Next event: save (INSERT or UPDATE), clear (DELETE)
+  - Personal notes: save add/edit (INSERT/UPDATE), delete (DELETE)
+  - Hours: add (INSERT), edit (UPDATE), delete (DELETE); local `hours` state removed — component reads prop from `useClientFile` useLiveQuery directly
+  - Criminal history: Storage upload stays direct; `criminal_history_url` update → Dexie + queue; extracted text → Supabase (direct) + Dexie (rule 7)
+  - Courtroom documents: Storage upload stays direct; doc record INSERT → Dexie + queue; rename (UPDATE), delete (DELETE) → Dexie + queue; `useEffect fetchDocs` replaced by `useLiveQuery` for reactive doc list; extracted text → Supabase + Dexie (rule 7)
+  - Relieve/Close/Reopen/Delete client → all client UPDATEs and cascading DELETEs through Dexie + queue
+- **`src/pages/CaseView.jsx`**: case UPDATE (notes, edit form), DELETE (with incident orphan cleanup), warrant URL update → Dexie + queue; extracted text → Supabase + Dexie (rule 7); `handleSaved` re-fetch reads from Dexie (merges into existing state to preserve nested client name)
+- `processSyncQueue` (already implemented) uses `supabase.upsert` for INSERT/UPDATE and `delete` for DELETE — no syncManager changes needed
+- All `refetch()` calls retained as harmless no-ops; useLiveQuery in `useClientFile` provides automatic reactivity for Dexie-sourced writes
+
+### Offline Layer — Phase 2a: offline-first reads (2026-06-10)
+- `dexie-react-hooks` installed; `useClients` and `useClientFile` rewritten to use `useLiveQuery`
+- App loads instantly from IndexedDB; UI auto-updates whenever `fullSync` refreshes local data
+- Return shapes identical — no UI component changes needed
+
 ### Offline Layer — Phase 1 (2026-06-10)
 - **Dexie.js** installed; `src/localDB.js` defines IndexedDB schema mirroring all 7 Supabase data tables plus a `sync_queue` table (auto-increment PK, fields: table_name, operation, record_id, payload, status, created_at, retry_count)
 - **`src/syncManager.js`** exports: `fullSync` (parallel-fetches all tables → bulk-puts to Dexie, stamps `lastSyncedAt` in localStorage), `processSyncQueue` (processes pending queue entries oldest-first, upsert/delete via Supabase, retries up to 3×, marks failed after), `addToSyncQueue` (enqueues a local write), `startBackgroundSync` (30s interval + window `online` event → returns cleanup fn)
@@ -352,14 +374,6 @@ src/
 ---
 
 ## Coming Next
-
-### Offline Layer — Phase 2a: offline-first reads
-- Migrate reads in `useClients.js` and `useClientFile.js` to serve from Dexie instead of live Supabase queries
-- App loads instantly from local IndexedDB; Supabase remains the source of truth via background sync
-
-### Offline Layer — Phase 2b: offline-first writes
-- Migrate all INSERT/UPDATE/DELETE operations across the entire app to write to Dexie first and enqueue in `sync_queue`
-- `processSyncQueue` (already implemented) flushes to Supabase when online
 
 ### Clean text viewer UI
 - In-app panel to read extracted PDF text (`warrant_text`, `criminal_history_text`, `extracted_text`) without opening the PDF

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { extractPdfText } from '../extractPdfText'
+import db from '../localDB'
+import { addToSyncQueue } from '../syncManager'
 import styles from './CaseView.module.css'
 
 function formatBond(amount) {
@@ -31,17 +33,14 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
     setSaving(true)
     setError(null)
 
-    const { error: e } = await supabase
-      .from('cases')
-      .update({
-        case_number:   form.case_number.trim(),
-        charge:        form.charge.trim(),
-        charge_abbrev: form.charge_abbrev.trim() || null,
-        bond_amount:   form.bond_amount ? Number(form.bond_amount) : null,
-      })
-      .eq('id', caseData.id)
-
-    if (e) { setError(e.message); setSaving(false); return }
+    const changes = {
+      case_number:   form.case_number.trim(),
+      charge:        form.charge.trim(),
+      charge_abbrev: form.charge_abbrev.trim() || null,
+      bond_amount:   form.bond_amount ? Number(form.bond_amount) : null,
+    }
+    await db.cases.update(caseData.id, changes)
+    await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, ...changes })
     onSaved(form.case_number.trim())
   }
 
@@ -101,18 +100,16 @@ export default function CaseView() {
     setDeleting(true)
     const incidentId = caseData.incident_id
 
-    // Get the client_id from the incident before deleting
-    const { data: incident } = await supabase
-      .from('incidents').select('client_id').eq('id', incidentId).maybeSingle()
+    const incident = await db.incidents.get(incidentId)
     const clientId = incident?.client_id
 
-    await supabase.from('cases').delete().eq('id', caseData.id)
+    await db.cases.delete(caseData.id)
+    await addToSyncQueue('cases', 'DELETE', caseData.id, { id: caseData.id })
 
-    // If this was the only case under the incident, delete the incident too
-    const { data: remaining } = await supabase
-      .from('cases').select('id').eq('incident_id', incidentId)
-    if (!remaining?.length) {
-      await supabase.from('incidents').delete().eq('id', incidentId)
+    const remaining = await db.cases.where('incident_id').equals(incidentId).count()
+    if (!remaining) {
+      await db.incidents.delete(incidentId)
+      await addToSyncQueue('incidents', 'DELETE', incidentId, { id: incidentId })
     }
 
     navigate(clientId ? `/client/${clientId}` : '/')
@@ -130,13 +127,10 @@ export default function CaseView() {
       .upload(path, file, { contentType: 'application/pdf', upsert: true })
     if (uploadErr) { setUploadError(uploadErr.message); setUploading(false); return }
     const { data: urlData } = supabase.storage.from('warrants').getPublicUrl(path)
-    const { error: updateErr } = await supabase
-      .from('cases')
-      .update({ warrant_url: urlData.publicUrl })
-      .eq('id', caseData.id)
-    if (updateErr) { setUploadError(updateErr.message); setUploading(false); return }
+    await db.cases.update(caseData.id, { warrant_url: urlData.publicUrl })
+    await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, warrant_url: urlData.publicUrl })
     setCaseData(prev => ({ ...prev, warrant_url: urlData.publicUrl }))
-    // Text extraction — separate PATCH after extraction completes.
+    // Text extraction — rule 7: keep direct Supabase write + update Dexie.
     // .then() must be async so the await actually executes the Supabase query
     // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
     extractPdfText(file).then(async text => {
@@ -146,7 +140,10 @@ export default function CaseView() {
         .update({ warrant_text: text ?? null })
         .eq('id', caseData.id)
       if (textErr) console.error('[warrant_text] PATCH failed:', textErr.message)
-      else console.log('[warrant_text] PATCH succeeded')
+      else {
+        console.log('[warrant_text] PATCH succeeded')
+        await db.cases.update(caseData.id, { warrant_text: text ?? null })
+      }
     }).catch(err => console.error('[warrant_text] extraction error:', err))
     setUploading(false)
   }
@@ -215,14 +212,12 @@ export default function CaseView() {
   const warrantStatus = caseData.warrant_url ? 'Warrant on File' : 'No Warrant'
 
   function handleSaved(newCaseNumber) {
-    // If the case number changed, navigate to the new URL; otherwise re-fetch in place
     setEditing(false)
     if (newCaseNumber !== caseNumber) {
       navigate(`/case/${newCaseNumber}`, { replace: true })
     } else {
-      // Re-fetch updated data
-      supabase.from('cases').select('*').eq('case_number', newCaseNumber).maybeSingle()
-        .then(({ data }) => { if (data) { setCaseData(data) } })
+      db.cases.where('case_number').equals(newCaseNumber).first()
+        .then(dexieData => { if (dexieData) setCaseData(prev => ({ ...prev, ...dexieData })) })
     }
   }
 
@@ -309,7 +304,8 @@ export default function CaseView() {
                 disabled={notesSaving}
                 onClick={async () => {
                   setNotesSaving(true)
-                  await supabase.from('cases').update({ notes }).eq('id', caseData.id)
+                  await db.cases.update(caseData.id, { notes })
+                  await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, notes })
                   setNotesSaving(false)
                   setNotesSaved(true)
                 }}

@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { useClientFile } from '../hooks/useClientFile'
 import { extractPdfText } from '../extractPdfText'
+import db from '../localDB'
+import { addToSyncQueue } from '../syncManager'
 import styles from './ClientFile.module.css'
 
 // ─── Tap-safe click helper ───────────────────────────────────────────────────
@@ -218,8 +221,12 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
   async function clear() {
     setSaving(true)
     setError(null)
-    const { error: e } = await supabase.from('next_events').delete().eq('client_id', clientId)
-    if (e) { setError(e.message); setSaving(false); return }
+    if (existing?.id) {
+      await db.next_events.delete(existing.id)
+      await addToSyncQueue('next_events', 'DELETE', existing.id, { id: existing.id })
+    } else {
+      await db.next_events.where('client_id').equals(clientId).delete()
+    }
     onCleared()
   }
 
@@ -235,16 +242,13 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
     const payload = { ...rest, judge: form.judge === 'Other' ? judgeOther.trim() : form.judge }
 
     if (existing) {
-      const { error: e } = await supabase
-        .from('next_events')
-        .update(payload)
-        .eq('client_id', clientId)
-      if (e) { setError(e.message); setSaving(false); return }
+      await db.next_events.update(existing.id, payload)
+      await addToSyncQueue('next_events', 'UPDATE', existing.id, { id: existing.id, client_id: clientId, ...payload })
     } else {
-      const { error: e } = await supabase
-        .from('next_events')
-        .insert({ client_id: clientId, ...payload })
-      if (e) { setError(e.message); setSaving(false); return }
+      const newId = crypto.randomUUID()
+      const record = { id: newId, client_id: clientId, ...payload }
+      await db.next_events.put(record)
+      await addToSyncQueue('next_events', 'INSERT', newId, record)
     }
     onSaved()
   }
@@ -345,12 +349,15 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
     }
     setSaving(true)
     setError(null)
-    const { error: e } = await supabase.from('incidents').insert({
+    const newId = crypto.randomUUID()
+    const record = {
+      id: newId,
       client_id: clientId,
       incident_description: form.incident_description.trim(),
       incident_date: form.incident_date.trim(),
-    })
-    if (e) { setError(e.message); setSaving(false); return }
+    }
+    await db.incidents.put(record)
+    await addToSyncQueue('incidents', 'INSERT', newId, record)
     onSaved()
   }
 
@@ -396,13 +403,16 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
     }
     setSaving(true)
     setError(null)
-    const { error: ce } = await supabase.from('cases').insert({
+    const newId = crypto.randomUUID()
+    const record = {
+      id: newId,
       incident_id: incidentId,
       case_number: form.case_number.trim(),
       charge: form.charge.trim(),
       bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
-    })
-    if (ce) { setError(ce.message); setSaving(false); return }
+    }
+    await db.cases.put(record)
+    await addToSyncQueue('cases', 'INSERT', newId, record)
     onSaved()
   }
 
@@ -464,11 +474,10 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
       committingRef.current = false
       return
     }
-    const { error } = await supabase
-      .from('incidents')
-      .update({ incident_description: newDesc || null, incident_date: newDate })
-      .eq('id', incident.id)
-    if (!error) setIncident(prev => ({ ...prev, incident_description: newDesc || null, incident_date: newDate }))
+    const changes = { incident_description: newDesc || null, incident_date: newDate }
+    await db.incidents.update(incident.id, changes)
+    await addToSyncQueue('incidents', 'UPDATE', incident.id, { id: incident.id, ...changes })
+    setIncident(prev => ({ ...prev, incident_description: newDesc || null, incident_date: newDate }))
     setEditing(false)
     committingRef.current = false
   }
@@ -490,8 +499,13 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
 
   async function handleDelete() {
     setDeleting(true)
-    await supabase.from('cases').delete().eq('incident_id', incident.id)
-    await supabase.from('incidents').delete().eq('id', incident.id)
+    const cases = await db.cases.where('incident_id').equals(incident.id).toArray()
+    for (const c of cases) {
+      await addToSyncQueue('cases', 'DELETE', c.id, { id: c.id })
+    }
+    await db.cases.where('incident_id').equals(incident.id).delete()
+    await db.incidents.delete(incident.id)
+    await addToSyncQueue('incidents', 'DELETE', incident.id, { id: incident.id })
     setDeleting(false)
     onDeleted(incident.id)
   }
@@ -633,20 +647,18 @@ function PersonalNotesSection({ clientId, initialNote }) {
     if (!text) return
     setSaving(true)
     if (mode === 'add') {
-      const { data, error } = await supabase
-        .from('personal_notes')
-        .insert({ client_id: clientId, note: text })
-        .select()
-        .single()
-      if (!error) { setNote(data); setOpen(true) }
+      const newId = crypto.randomUUID()
+      const record = { id: newId, client_id: clientId, note: text, updated_at: new Date().toISOString() }
+      await db.personal_notes.put(record)
+      await addToSyncQueue('personal_notes', 'INSERT', newId, record)
+      setNote(record)
+      setOpen(true)
     } else {
-      const { data, error } = await supabase
-        .from('personal_notes')
-        .update({ note: text, updated_at: new Date().toISOString() })
-        .eq('id', note.id)
-        .select()
-        .single()
-      if (!error) setNote(data)
+      const updated_at = new Date().toISOString()
+      const changes = { note: text, updated_at }
+      await db.personal_notes.update(note.id, changes)
+      await addToSyncQueue('personal_notes', 'UPDATE', note.id, { id: note.id, client_id: clientId, note: text, updated_at })
+      setNote(prev => ({ ...prev, note: text, updated_at }))
     }
     setSaving(false)
     setMode('idle')
@@ -658,7 +670,8 @@ function PersonalNotesSection({ clientId, initialNote }) {
 
   async function confirmDelete() {
     setSaving(true)
-    await supabase.from('personal_notes').delete().eq('id', note.id)
+    await db.personal_notes.delete(note.id)
+    await addToSyncQueue('personal_notes', 'DELETE', note.id, { id: note.id })
     setNote(null)
     setOpen(false)
     setMode('idle')
@@ -754,13 +767,16 @@ function AddHoursForm({ clientId, onSaved, onCancel }) {
     }
     setSaving(true)
     setError(null)
-    const { error: e } = await supabase.from('hours').insert({
+    const newId = crypto.randomUUID()
+    const record = {
+      id: newId,
       client_id: clientId,
       entry_date: form.entry_date.trim(),
       hours: Number(form.hours),
       description: form.description.trim(),
-    })
-    if (e) { setError(e.message); setSaving(false); return }
+    }
+    await db.hours.put(record)
+    await addToSyncQueue('hours', 'INSERT', newId, record)
     onSaved()
   }
 
@@ -809,12 +825,13 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
     }
     setSaving(true)
     setError(null)
-    const { error: e } = await supabase.from('hours').update({
+    const changes = {
       entry_date: form.entry_date.trim(),
       hours: Number(form.hours),
       description: form.description.trim(),
-    }).eq('id', entry.id)
-    if (e) { setError(e.message); setSaving(false); return }
+    }
+    await db.hours.update(entry.id, changes)
+    await addToSyncQueue('hours', 'UPDATE', entry.id, { id: entry.id, ...changes })
     onSaved()
   }
 
@@ -845,38 +862,24 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
   )
 }
 
-function HoursSection({ clientId, hours: initialHours }) {
-  const [hours, setHours] = useState(
-    [...(initialHours ?? [])].sort((a, b) => new Date(b.entry_date) - new Date(a.entry_date))
-  )
+function HoursSection({ clientId, hours }) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
 
-  const total = hours.reduce((sum, e) => sum + Number(e.hours), 0)
+  const total = (hours ?? []).reduce((sum, e) => sum + Number(e.hours), 0)
 
-  async function refreshHours() {
-    const { data } = await supabase
-      .from('hours')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('entry_date', { ascending: false })
-    if (data) setHours(data)
-  }
-
-  async function handleSaved() {
-    await refreshHours()
+  function handleSaved() {
     setShowForm(false)
   }
 
-  async function handleEditSaved() {
-    await refreshHours()
+  function handleEditSaved() {
     setEditingId(null)
   }
 
-  async function confirmDelete(entry, i) {
-    if (entry.id) await supabase.from('hours').delete().eq('id', entry.id)
-    setHours(prev => prev.filter((_, idx) => idx !== i))
+  async function confirmDelete(entry) {
+    await db.hours.delete(entry.id)
+    await addToSyncQueue('hours', 'DELETE', entry.id, { id: entry.id })
     setConfirmingId(null)
   }
 
@@ -897,8 +900,8 @@ function HoursSection({ clientId, hours: initialHours }) {
         <div className={styles.hoursHead}>
           <span>Date</span><span>Hours</span><span>Description</span>
         </div>
-        {hours.length === 0 && <div className={styles.hoursEmpty}>No entries yet</div>}
-        {hours.map((entry, i) => {
+        {(hours ?? []).length === 0 && <div className={styles.hoursEmpty}>No entries yet</div>}
+        {(hours ?? []).map((entry, i) => {
           if (editingId === entry.id) {
             return (
               <div key={entry.id ?? i}>
@@ -915,7 +918,7 @@ function HoursSection({ clientId, hours: initialHours }) {
               <div key={entry.id ?? i} className={styles.hoursConfirmRow}>
                 <span className={styles.hoursConfirmText}>Delete this entry?</span>
                 <div className={styles.hoursConfirmActions}>
-                  <button className={styles.hoursConfirmYes} onClick={() => confirmDelete(entry, i)}>Yes, delete</button>
+                  <button className={styles.hoursConfirmYes} onClick={() => confirmDelete(entry)}>Yes, delete</button>
                   <button className={styles.hoursConfirmCancel} onClick={() => setConfirmingId(null)}>Cancel</button>
                 </div>
               </div>
@@ -938,7 +941,7 @@ function HoursSection({ clientId, hours: initialHours }) {
             </div>
           )
         })}
-        {hours.length > 0 && (
+        {(hours ?? []).length > 0 && (
           <div className={styles.hoursTotal}>
             <span>Total</span>
             <span className={styles.hoursValue}>{total % 1 === 0 ? total : total.toFixed(1)}</span>
@@ -969,11 +972,8 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
       .upload(path, file, { contentType: 'application/pdf', upsert: true })
     if (uploadErr) { setUploadError(uploadErr.message); setUploading(false); return }
     const { data: urlData } = await supabase.storage.from('warrants').getPublicUrl(path)
-    const { error: updateErr } = await supabase
-      .from('clients')
-      .update({ criminal_history_url: urlData.publicUrl })
-      .eq('id', clientId)
-    if (updateErr) { setUploadError(updateErr.message); setUploading(false); return }
+    await db.clients.update(clientId, { criminal_history_url: urlData.publicUrl })
+    await addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, criminal_history_url: urlData.publicUrl })
     setUrl(urlData.publicUrl)
     // Text extraction — .then() must be async so the await executes the query
     // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
@@ -984,7 +984,10 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
         .update({ criminal_history_text: text ?? null })
         .eq('id', clientId)
       if (textErr) console.error('[criminal_history_text] PATCH failed:', textErr.message)
-      else console.log('[criminal_history_text] PATCH succeeded')
+      else {
+        console.log('[criminal_history_text] PATCH succeeded')
+        await db.clients.update(clientId, { criminal_history_text: text ?? null })
+      }
     }).catch(err => console.error('[criminal_history_text] extraction error:', err))
     setUploading(false)
   }
@@ -1019,7 +1022,8 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
     setDeleting(true)
     const path = `criminal-history/${clientId}.pdf`
     await supabase.storage.from('warrants').remove([path])
-    await supabase.from('clients').update({ criminal_history_url: null }).eq('id', clientId)
+    await db.clients.update(clientId, { criminal_history_url: null })
+    await addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, criminal_history_url: null })
     setUrl(null)
     setShowDeleteConfirm(false)
     setDeleting(false)
@@ -1076,7 +1080,11 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
 // ─── Courtroom Documents section ─────────────────────────────────────────────
 
 function CourtroomDocsSection({ clientId }) {
-  const [docs, setDocs] = useState([])
+  const docs = useLiveQuery(
+    () => db.courtroom_documents.where('client_id').equals(clientId).sortBy('id'),
+    [clientId]
+  ) ?? []
+
   const [showForm, setShowForm] = useState(false)
   const [formName, setFormName] = useState('')
   const [formFile, setFormFile] = useState(null)
@@ -1086,19 +1094,6 @@ function CourtroomDocsSection({ clientId }) {
   const [renameValue, setRenameValue] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [deleting, setDeleting] = useState(false)
-
-  useEffect(() => {
-    fetchDocs()
-  }, [clientId])
-
-  async function fetchDocs() {
-    const { data } = await supabase
-      .from('courtroom_documents')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('id', { ascending: true })
-    if (data) setDocs(data)
-  }
 
   async function handleSave() {
     if (!formName.trim()) { setFormError('Document name is required.'); return }
@@ -1115,34 +1110,32 @@ function CourtroomDocsSection({ clientId }) {
 
     if (uploadErr) { setFormError(uploadErr.message); setSaving(false); return }
 
-    const { data: insertData, error: insertErr } = await supabase
-      .from('courtroom_documents')
-      .insert({ client_id: clientId, name: formName.trim(), file_url: path })
-      .select('id')
-      .single()
+    const newId = crypto.randomUUID()
+    const record = { id: newId, client_id: clientId, name: formName.trim(), file_url: path }
+    await db.courtroom_documents.put(record)
+    await addToSyncQueue('courtroom_documents', 'INSERT', newId, record)
 
-    if (insertErr) { setFormError(insertErr.message); setSaving(false); return }
-
+    const fileRef = formFile
     setFormName('')
     setFormFile(null)
     setShowForm(false)
     setSaving(false)
-    fetchDocs()
 
-    // Text extraction — .then() must be async so the await executes the query
+    // Text extraction — rule 7: keep direct Supabase write + update Dexie
+    // .then() must be async so the await executes the query
     // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
-    if (insertData?.id) {
-      const fileRef = formFile
-      extractPdfText(fileRef).then(async text => {
-        console.log('[extracted_text] extracted length:', text?.length ?? 0)
-        const { error: textErr } = await supabase
-          .from('courtroom_documents')
-          .update({ extracted_text: text ?? null })
-          .eq('id', insertData.id)
-        if (textErr) console.error('[extracted_text] PATCH failed:', textErr.message)
-        else console.log('[extracted_text] PATCH succeeded')
-      }).catch(err => console.error('[extracted_text] extraction error:', err))
-    }
+    extractPdfText(fileRef).then(async text => {
+      console.log('[extracted_text] extracted length:', text?.length ?? 0)
+      const { error: textErr } = await supabase
+        .from('courtroom_documents')
+        .update({ extracted_text: text ?? null })
+        .eq('id', newId)
+      if (textErr) console.error('[extracted_text] PATCH failed:', textErr.message)
+      else {
+        console.log('[extracted_text] PATCH succeeded')
+        await db.courtroom_documents.update(newId, { extracted_text: text ?? null })
+      }
+    }).catch(err => console.error('[extracted_text] extraction error:', err))
   }
 
   async function handleView(doc) {
@@ -1153,18 +1146,18 @@ function CourtroomDocsSection({ clientId }) {
 
   async function handleRename(doc) {
     if (!renameValue.trim()) return
-    await supabase.from('courtroom_documents').update({ name: renameValue.trim() }).eq('id', doc.id)
+    await db.courtroom_documents.update(doc.id, { name: renameValue.trim() })
+    await addToSyncQueue('courtroom_documents', 'UPDATE', doc.id, { id: doc.id, name: renameValue.trim() })
     setRenamingId(null)
-    fetchDocs()
   }
 
   async function handleDelete(doc) {
     setDeleting(true)
     await supabase.storage.from('warrants').remove([doc.file_url])
-    await supabase.from('courtroom_documents').delete().eq('id', doc.id)
+    await db.courtroom_documents.delete(doc.id)
+    await addToSyncQueue('courtroom_documents', 'DELETE', doc.id, { id: doc.id })
     setConfirmDeleteId(null)
     setDeleting(false)
-    fetchDocs()
   }
 
   const atMax = docs.length >= 5
@@ -1274,17 +1267,39 @@ export default function ClientFile() {
 
   async function handleDeleteClient() {
     setDeleting(true)
-    // Delete in dependency order
-    await supabase.from('hours').delete().eq('client_id', id)
-    await supabase.from('next_events').delete().eq('client_id', id)
-    const { data: incidentRows } = await supabase
-      .from('incidents').select('id').eq('client_id', id)
-    if (incidentRows?.length) {
-      const incidentIds = incidentRows.map(r => r.id)
-      await supabase.from('cases').delete().in('incident_id', incidentIds)
-      await supabase.from('incidents').delete().eq('client_id', id)
-    }
-    await supabase.from('clients').delete().eq('id', id)
+
+    // Gather all related records before deleting
+    const [hourRows, nextEventRows, personalNoteRows, incidentRows] = await Promise.all([
+      db.hours.where('client_id').equals(id).toArray(),
+      db.next_events.where('client_id').equals(id).toArray(),
+      db.personal_notes.where('client_id').equals(id).toArray(),
+      db.incidents.where('client_id').equals(id).toArray(),
+    ])
+    const incidentIds = incidentRows.map(r => r.id)
+    const caseRows = (await Promise.all(
+      incidentIds.map(iid => db.cases.where('incident_id').equals(iid).toArray())
+    )).flat()
+
+    // Delete from Dexie
+    await Promise.all([
+      db.hours.where('client_id').equals(id).delete(),
+      db.next_events.where('client_id').equals(id).delete(),
+      db.personal_notes.where('client_id').equals(id).delete(),
+    ])
+    await Promise.all(incidentIds.map(iid => db.cases.where('incident_id').equals(iid).delete()))
+    await db.incidents.where('client_id').equals(id).delete()
+    await db.clients.delete(id)
+
+    // Queue DELETEs for Supabase sync
+    await Promise.all([
+      ...hourRows.map(r => addToSyncQueue('hours', 'DELETE', r.id, { id: r.id })),
+      ...nextEventRows.map(r => addToSyncQueue('next_events', 'DELETE', r.id, { id: r.id })),
+      ...personalNoteRows.map(r => addToSyncQueue('personal_notes', 'DELETE', r.id, { id: r.id })),
+      ...caseRows.map(r => addToSyncQueue('cases', 'DELETE', r.id, { id: r.id })),
+      ...incidentRows.map(r => addToSyncQueue('incidents', 'DELETE', r.id, { id: r.id })),
+      addToSyncQueue('clients', 'DELETE', id, { id }),
+    ])
+
     navigate('/')
   }
 
@@ -1293,7 +1308,17 @@ export default function ClientFile() {
 
   async function handleClose() {
     setClosing(true)
-    await supabase.from('clients').update({ relieved_closed: true }).eq('id', id)
+    await db.clients.update(id, { relieved_closed: true })
+    await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_closed: true })
+    setClosing(false)
+    setShowCloseConfirm(false)
+    refetch()
+  }
+
+  async function handleReopenCase() {
+    setClosing(true)
+    await db.clients.update(id, { relieved_closed: false })
+    await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_closed: false })
     setClosing(false)
     setShowCloseConfirm(false)
     refetch()
@@ -1301,13 +1326,15 @@ export default function ClientFile() {
 
   async function handleRelieve() {
     setClosing(true)
-    await supabase.from('clients').update({ relieved_as_counsel: true }).eq('id', id)
+    await db.clients.update(id, { relieved_as_counsel: true })
+    await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_as_counsel: true })
     navigate('/')
   }
 
   async function handleReopen() {
     setClosing(true)
-    await supabase.from('clients').update({ relieved_as_counsel: false, relieved_closed: false }).eq('id', id)
+    await db.clients.update(id, { relieved_as_counsel: false, relieved_closed: false })
+    await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_as_counsel: false, relieved_closed: false })
     navigate('/')
   }
 
@@ -1455,7 +1482,7 @@ export default function ClientFile() {
               <div className={styles.confirmBox}>
                 <p className={styles.confirmText}>{isClosed ? 'Reopen this case?' : 'Mark this case as closed?'}</p>
                 <div className={styles.confirmActions}>
-                  <button className={styles.confirmYes} onClick={isClosed ? () => { setClosing(true); supabase.from('clients').update({ relieved_closed: false }).eq('id', id).then(() => { setClosing(false); setShowCloseConfirm(false); refetch() }) } : handleClose} disabled={closing}>
+                  <button className={styles.confirmYes} onClick={isClosed ? handleReopenCase : handleClose} disabled={closing}>
                     {closing ? '…' : isClosed ? 'Yes, Reopen' : 'Yes, Close'}
                   </button>
                   <button className={styles.confirmNo} onClick={() => setShowCloseConfirm(false)} disabled={closing}>No</button>

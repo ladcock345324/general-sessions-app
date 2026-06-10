@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
+import db from '../localDB'
+import { addToSyncQueue } from '../syncManager'
 import styles from './NewClient.module.css'
 
 export default function EditClient() {
@@ -50,25 +52,18 @@ export default function EditClient() {
     setSaving(true)
     setError(null)
 
-    const { error: updateError } = await supabase
-      .from('clients')
-      .update({
-        last_name: form.last_name.trim(),
-        first_name: form.first_name.trim(),
-        gender: form.gender,
-        age: form.age ? Number(form.age) : null,
-        oca: form.oca.trim() || null,
-        custody_status: form.custody_status,
-        da_name: form.da_name.trim() || null,
-      })
-      .eq('id', id)
-
-    if (updateError) {
-      setError(updateError.message)
-      setSaving(false)
-      return
+    const changes = {
+      last_name: form.last_name.trim(),
+      first_name: form.first_name.trim(),
+      gender: form.gender,
+      age: form.age ? Number(form.age) : null,
+      oca: form.oca.trim() || null,
+      custody_status: form.custody_status,
+      da_name: form.da_name.trim() || null,
     }
 
+    await db.clients.update(id, changes)
+    await addToSyncQueue('clients', 'UPDATE', id, { id, ...changes })
     navigate(`/client/${id}`, { replace: true })
   }
 
