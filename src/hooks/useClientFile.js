@@ -52,7 +52,6 @@ export function useClientFile(clientId) {
             charge,
             warrant_url,
             bond_amount,
-            da_name,
             disposition,
             notes,
             status
