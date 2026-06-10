@@ -27,6 +27,16 @@ export async function fullSync(supabase) {
     })
   )
 
+  // Re-apply any pending local writes so they survive the clear+bulkPut
+  const pending = await db.sync_queue.where('status').equals('pending').toArray()
+  for (const entry of pending) {
+    if (entry.operation === 'INSERT' || entry.operation === 'UPDATE') {
+      await db[entry.table_name].put(entry.payload)
+    } else if (entry.operation === 'DELETE') {
+      await db[entry.table_name].delete(entry.record_id)
+    }
+  }
+
   localStorage.setItem('lastSyncedAt', new Date().toISOString())
 }
 
@@ -37,15 +47,19 @@ export async function processSyncQueue(supabase) {
 
   for (const entry of entries) {
     try {
-      if (entry.operation === 'INSERT' || entry.operation === 'UPDATE') {
+      if (entry.operation === 'INSERT') {
         const { error } = await supabase.from(entry.table_name).upsert(entry.payload)
+        if (error) throw error
+      } else if (entry.operation === 'UPDATE') {
+        const { error } = await supabase.from(entry.table_name).update(entry.payload).eq('id', entry.record_id)
         if (error) throw error
       } else if (entry.operation === 'DELETE') {
         const { error } = await supabase.from(entry.table_name).delete().eq('id', entry.record_id)
         if (error) throw error
       }
       await db.sync_queue.delete(entry.id)
-    } catch {
+    } catch (error) {
+      console.error('[syncQueue] failed:', entry.table_name, entry.operation, error)
       const newCount = (entry.retry_count ?? 0) + 1
       await db.sync_queue.update(entry.id, {
         retry_count: newCount,
