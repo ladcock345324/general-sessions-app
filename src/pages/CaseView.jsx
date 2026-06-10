@@ -150,16 +150,12 @@ export default function CaseView() {
     // .then() must be async so the await actually executes the Supabase query
     // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
     extractPdfText(file).then(async text => {
-      console.log('[warrant_text] extracted length:', text?.length ?? 0)
       const { error: textErr } = await supabase
         .from('cases')
         .update({ warrant_text: text ?? null })
         .eq('id', caseData.id)
       if (textErr) console.error('[warrant_text] PATCH failed:', textErr.message)
-      else {
-        console.log('[warrant_text] PATCH succeeded')
-        await db.cases.update(caseData.id, { warrant_text: text ?? null })
-      }
+      else await db.cases.update(caseData.id, { warrant_text: text ?? null })
     }).catch(err => console.error('[warrant_text] extraction error:', err))
     setUploading(false)
   }

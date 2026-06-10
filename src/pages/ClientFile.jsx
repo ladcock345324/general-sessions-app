@@ -983,16 +983,12 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
     // Text extraction — .then() must be async so the await executes the query
     // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
     extractPdfText(file).then(async text => {
-      console.log('[criminal_history_text] extracted length:', text?.length ?? 0)
       const { error: textErr } = await supabase
         .from('clients')
         .update({ criminal_history_text: text ?? null })
         .eq('id', clientId)
       if (textErr) console.error('[criminal_history_text] PATCH failed:', textErr.message)
-      else {
-        console.log('[criminal_history_text] PATCH succeeded')
-        await db.clients.update(clientId, { criminal_history_text: text ?? null })
-      }
+      else await db.clients.update(clientId, { criminal_history_text: text ?? null })
     }).catch(err => console.error('[criminal_history_text] extraction error:', err))
     setUploading(false)
   }
@@ -1149,16 +1145,12 @@ function CourtroomDocsSection({ clientId }) {
     // .then() must be async so the await executes the query
     // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
     extractPdfText(fileRef).then(async text => {
-      console.log('[extracted_text] extracted length:', text?.length ?? 0)
       const { error: textErr } = await supabase
         .from('courtroom_documents')
         .update({ extracted_text: text ?? null })
         .eq('id', newId)
       if (textErr) console.error('[extracted_text] PATCH failed:', textErr.message)
-      else {
-        console.log('[extracted_text] PATCH succeeded')
-        await db.courtroom_documents.update(newId, { extracted_text: text ?? null })
-      }
+      else await db.courtroom_documents.update(newId, { extracted_text: text ?? null })
     }).catch(err => console.error('[extracted_text] extraction error:', err))
   }
 
