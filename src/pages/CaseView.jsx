@@ -88,24 +88,25 @@ export default function CaseView() {
   const { caseNumber } = useParams()
   const navigate = useNavigate()
 
-  const [caseData, setCaseData] = useState(null)
   const [notes, setNotes] = useState('')
-  const [loading, setLoading] = useState(true)
 
-  const liveCaseNotes = useLiveQuery(
-    () => db.cases.where('case_number').equals(caseNumber).first().then(c => c?.notes ?? ''),
-    [caseNumber]
-  )
+  const liveData = useLiveQuery(async () => {
+    const caseRecord = await db.cases.where('case_number').equals(caseNumber).first()
+    if (!caseRecord) return null
+    const incident = await db.incidents.get(caseRecord.incident_id)
+    const client = incident ? await db.clients.get(incident.client_id) : null
+    return { caseRecord, client }
+  }, [caseNumber])
+
+  const caseData = liveData?.caseRecord ?? null
+  const clientName = liveData?.client ?? null
+  const loading = liveData === undefined
+  const liveWarrantText = caseData?.warrant_text ?? null
+
   useEffect(() => {
-    if (liveCaseNotes !== undefined) setNotes(liveCaseNotes)
-  }, [liveCaseNotes])
+    if (liveData !== undefined) setNotes(liveData?.caseRecord?.notes ?? '')
+  }, [liveData])
 
-  const liveWarrantText = useLiveQuery(
-    () => db.cases.where('case_number').equals(caseNumber).first().then(c => c?.warrant_text ?? null),
-    [caseNumber]
-  )
-
-  const [error, setError] = useState(null)
   const [editing, setEditing] = useState(false)
   const [notesSaving, setNotesSaving] = useState(false)
   const [notesSaved, setNotesSaved] = useState(false)
@@ -145,7 +146,6 @@ export default function CaseView() {
     if (uploadErr) { setUploadError(uploadErr.message); setUploading(false); return }
     await db.cases.update(caseData.id, { warrant_url: path })
     await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, warrant_url: path })
-    setCaseData(prev => ({ ...prev, warrant_url: path }))
     // Text extraction — rule 7: keep direct Supabase write + update Dexie.
     // .then() must be async so the await actually executes the Supabase query
     // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
@@ -190,25 +190,6 @@ export default function CaseView() {
     await uploadWarrantFile(file)
   }
 
-  useEffect(() => {
-    async function fetchCase() {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('cases')
-        .select('*, incidents(client_id, clients(first_name, last_name))')
-        .eq('case_number', caseNumber)
-        .maybeSingle()
-
-      if (error) {
-        setError(error.message)
-      } else {
-        setCaseData(data)
-      }
-      setLoading(false)
-    }
-    fetchCase()
-  }, [caseNumber])
-
   if (loading) {
     return (
       <div className={styles.screen}>
@@ -220,13 +201,13 @@ export default function CaseView() {
     )
   }
 
-  if (error || !caseData) {
+  if (!caseData) {
     return (
       <div className={styles.screen}>
         <header className={styles.header}>
           <button className={styles.back} onClick={() => navigate(-1)}>‹ Back</button>
         </header>
-        <div className={styles.placeholder}>{error ?? `Case ${caseNumber} not found.`}</div>
+        <div className={styles.placeholder}>{`Case ${caseNumber} not found.`}</div>
       </div>
     )
   }
@@ -237,10 +218,8 @@ export default function CaseView() {
     setEditing(false)
     if (newCaseNumber !== caseNumber) {
       navigate(`/case/${newCaseNumber}`, { replace: true })
-    } else {
-      db.cases.where('case_number').equals(newCaseNumber).first()
-        .then(dexieData => { if (dexieData) setCaseData(prev => ({ ...prev, ...dexieData })) })
     }
+    // same case_number: useLiveQuery re-renders automatically after db.cases.update
   }
 
   return (
@@ -248,15 +227,11 @@ export default function CaseView() {
       <div className={styles.caseHeader}>
         <header className={styles.header}>
           <button className={styles.back} onClick={() => navigate(-1)}>‹ Back</button>
-          {(() => {
-            const client = caseData.incidents?.clients
-            if (!client) return null
-            return (
-              <div className={styles.clientName}>
-                {client.last_name}, {client.first_name}
-              </div>
-            )
-          })()}
+          {clientName && (
+            <div className={styles.clientName}>
+              {clientName.last_name}, {clientName.first_name}
+            </div>
+          )}
           {!editing && (
             <button className={styles.editBtn} onClick={() => setEditing(true)}>Edit</button>
           )}
