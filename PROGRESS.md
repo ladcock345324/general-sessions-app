@@ -138,6 +138,13 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### UI Polish (2026-06-10)
+- **Indigent status circle** — 14px colored dot inside a 28px transparent hit area (`inline-flex`, centered); cycles gray → red → green → gray on tap; writes offline-first to Dexie then enqueues `addToSyncQueue`; rendered in `ClientRow` (to the right of the name/OCA) and in `ClientFile` header (to the right of the name on line 1); both views stay in sync via `useLiveQuery`; `indigent_status text DEFAULT 'gray'` column added to `clients` table; Dexie schema bumped to v2
+- **ClientFile header layout** — line 1: name + gender/age + indigent circle in a `flex-wrap: nowrap` row; line 2: OCA number in muted `#9faab8` text below (previously OCA was concatenated into the name string)
+- **Mobile custody badge** — font-size, padding, and border-radius reduced 30% on mobile only (`@media max-width: 768px`); badge container uses `position: absolute; right: 14px; top: 50%; transform: translateY(-50%)` on the row so it centers against the full row height rather than just the case-list sub-row; row gets `position: relative` and `padding-right: 76px` to keep content clear
+- **Calendar overlap fix** — in the incident inline edit form, the date `<input>` now renders below the description `<textarea>` instead of above; `autoFocus` moved to the textarea; prevents the native mobile date picker from covering the description field while editing
+- **Case number tap target** — pointer handlers moved from the full `caseTableRow` div onto just the `caseNum` span; only the blue case number text triggers case navigation; charge abbreviation and surrounding whitespace are no longer tappable; `padding: 3px 0` on the span preserves a usable vertical touch target
+
 ### Offline Layer — Phase 2 + Text Viewer (2026-06-10)
 - **Reads migrated to Dexie** — `useClients` and `useClientFile` rewritten to use `useLiveQuery` from `dexie-react-hooks`; app loads instantly from IndexedDB; UI auto-updates on any Dexie write; return shapes identical so no UI component changes were needed
 - **All writes offline-first** — every INSERT/UPDATE/DELETE across `NewClient`, `EditClient`, `ClientFile`, and `CaseView` writes to Dexie first then enqueues via `addToSyncQueue`; Supabase sync happens in the background; Storage uploads (warrants, criminal history, courtroom docs) remain direct
