@@ -170,6 +170,8 @@
     align-items: stretch;
     gap: 3px;
     padding: 10px 14px;
+    padding-right: 76px;
+    position: relative;
   }
 
   .info {
@@ -204,10 +206,10 @@
   }
 
   .right {
-    position: static;
-    transform: none;
-    flex-shrink: 0;
-    align-self: center;
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
   }
 
   .badge {
