@@ -138,34 +138,15 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
-### Clean text viewer UI (2026-06-10)
-- **`src/components/TextViewerDrawer.jsx`** / **`TextViewerDrawer.module.css`** — slide-up drawer panel (`position: fixed`, 85% screen height, `0.28s cubic-bezier` transition); drag handle, header strip with label + close button, scrollable body; semi-transparent dark overlay closes on tap
-- **`CaseView.jsx`** — "View Text" button appears below "View Warrant" when `warrant_text` is non-null; reads `warrant_text` from Dexie via `useLiveQuery` (fully offline); opens drawer labeled "Warrant Text"
-- **`ClientFile.jsx` — Criminal History section** — "View Text" button appears below "View Criminal History" when `criminal_history_text` is non-null; reads live from Dexie via `useLiveQuery`; opens drawer labeled "Criminal History Text"
-- **`ClientFile.jsx` — Courtroom Documents section** — each tile shows a "View Text" button below the document name when `extracted_text` is non-null; stopPropagation prevents tile tap-to-open; opens drawer labeled with document name
-- Text typography: system-ui 13px, line-height 1.7, color `#d0d8e4`, `pre-wrap` + `break-word`; empty state shows italic muted message
-
-### Offline Layer — Phase 2b: offline-first writes (2026-06-10)
-- All INSERT/UPDATE/DELETE operations across the app now write to Dexie first, then enqueue via `addToSyncQueue` for background Supabase sync
-- **`src/pages/NewClient.jsx`**: client INSERT → Dexie put + queue; `crypto.randomUUID()` generates id client-side; Supabase import removed
-- **`src/pages/EditClient.jsx`**: client UPDATE → Dexie update + queue; initial load still reads from Supabase (CaseView pattern)
-- **`src/pages/ClientFile.jsx`**: all write paths migrated:
-  - Incidents: add (INSERT), inline edit (UPDATE), delete cascade (DELETE cases → DELETE incident)
-  - Cases: add under incident (INSERT)
-  - Next event: save (INSERT or UPDATE), clear (DELETE)
-  - Personal notes: save add/edit (INSERT/UPDATE), delete (DELETE)
-  - Hours: add (INSERT), edit (UPDATE), delete (DELETE); local `hours` state removed — component reads prop from `useClientFile` useLiveQuery directly
-  - Criminal history: Storage upload stays direct; `criminal_history_url` update → Dexie + queue; extracted text → Supabase (direct) + Dexie (rule 7)
-  - Courtroom documents: Storage upload stays direct; doc record INSERT → Dexie + queue; rename (UPDATE), delete (DELETE) → Dexie + queue; `useEffect fetchDocs` replaced by `useLiveQuery` for reactive doc list; extracted text → Supabase + Dexie (rule 7)
-  - Relieve/Close/Reopen/Delete client → all client UPDATEs and cascading DELETEs through Dexie + queue
-- **`src/pages/CaseView.jsx`**: case UPDATE (notes, edit form), DELETE (with incident orphan cleanup), warrant URL update → Dexie + queue; extracted text → Supabase + Dexie (rule 7); `handleSaved` re-fetch reads from Dexie (merges into existing state to preserve nested client name)
-- `processSyncQueue` (already implemented) uses `supabase.upsert` for INSERT/UPDATE and `delete` for DELETE — no syncManager changes needed
-- All `refetch()` calls retained as harmless no-ops; useLiveQuery in `useClientFile` provides automatic reactivity for Dexie-sourced writes
-
-### Offline Layer — Phase 2a: offline-first reads (2026-06-10)
-- `dexie-react-hooks` installed; `useClients` and `useClientFile` rewritten to use `useLiveQuery`
-- App loads instantly from IndexedDB; UI auto-updates whenever `fullSync` refreshes local data
-- Return shapes identical — no UI component changes needed
+### Offline Layer — Phase 2 + Text Viewer (2026-06-10)
+- **Reads migrated to Dexie** — `useClients` and `useClientFile` rewritten to use `useLiveQuery` from `dexie-react-hooks`; app loads instantly from IndexedDB; UI auto-updates on any Dexie write; return shapes identical so no UI component changes were needed
+- **All writes offline-first** — every INSERT/UPDATE/DELETE across `NewClient`, `EditClient`, `ClientFile`, and `CaseView` writes to Dexie first then enqueues via `addToSyncQueue`; Supabase sync happens in the background; Storage uploads (warrants, criminal history, courtroom docs) remain direct
+- **`CaseView` initial load from Dexie** — replaced Supabase `useEffect` fetch with a single `useLiveQuery` that reads the case record, walks `incident → client` for the header name, and covers all case fields including `notes` and `warrant_text`
+- **`warrant_url` stores storage path** — warrant uploads now store `warrants/[case_number].pdf` in Dexie and Supabase instead of an expiring signed URL; "View Warrant" generates a fresh signed URL on demand via `createSignedUrl`, matching how courtroom documents work
+- **fullSync correctness** — `fullSync` calls `processSyncQueue` first so pending writes reach Supabase before the clear+bulkPut; after repopulating all 7 tables, re-applies any remaining pending queue entries to Dexie so local writes that haven't synced yet are never wiped from the UI; each table's clear+bulkPut is wrapped in a Dexie transaction
+- **Deletions propagate across devices** — `fullSync` uses `clear()` + `bulkPut()` instead of `bulkPut` only, so records deleted on one device are removed from Dexie on all other devices at next sync
+- **`processSyncQueue` hardened** — INSERT uses `upsert`, UPDATE uses `.update(payload).eq('id')` (avoids partial-payload upsert ambiguity); failures log `console.error('[syncQueue] failed:', table, operation, error)` for visibility during testing
+- **TextViewerDrawer** — slide-up drawer component (`position: fixed`, 85% height, `0.28s cubic-bezier` transition, semi-transparent overlay) wired into: CaseView (`warrant_text`), ClientFile criminal history (`criminal_history_text`), ClientFile courtroom document tiles (`extracted_text`); typography: system-ui 13px, line-height 1.7, `#d0d8e4`, `pre-wrap`; fully offline since text is cached in Dexie
 
 ### Offline Layer — Phase 1 (2026-06-10)
 - **Dexie.js** installed; `src/localDB.js` defines IndexedDB schema mirroring all 7 Supabase data tables plus a `sync_queue` table (auto-increment PK, fields: table_name, operation, record_id, payload, status, created_at, retry_count)
@@ -391,3 +372,5 @@ src/
 - No pagination — all clients/cases load at once; fine for current scale
 - Diagnostic `console.warn`/`console.log` statements from PDF text extraction (`extractPdfText.js` and all three upload handlers) are still present — should be removed in a future cleanup pass once extraction is confirmed stable
 - All PDFs uploaded before today's session have `null` text columns (`warrant_text`, `criminal_history_text`, `extracted_text`) — must be re-uploaded once to populate extracted text
+- Incident inline edit calendar overlaps description field on mobile (pre-existing layout issue)
+- Sync status indicator not showing on iPhone PWA (cosmetic — indicator renders but may be hidden behind safe area or PWA chrome)
