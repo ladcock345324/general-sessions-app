@@ -1,85 +1,45 @@
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../supabaseClient'
+import { useCallback } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
+import db from '../localDB'
 
 export function useClientFile(clientId) {
-  const [client, setClient] = useState(null)
-  const [incidents, setIncidents] = useState([])
-  const [nextEvent, setNextEvent] = useState(null)
-  const [hours, setHours] = useState([])
-  const [personalNote, setPersonalNote] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [tick, setTick] = useState(0)
+  const data = useLiveQuery(async () => {
+    if (!clientId) return null
 
-  const refetch = useCallback(() => setTick(t => t + 1), [])
+    const [client, nextEvent, allIncidents, allHours, personalNote] = await Promise.all([
+      db.clients.get(clientId),
+      db.next_events.where('client_id').equals(clientId).first(),
+      db.incidents.where('client_id').equals(clientId).toArray(),
+      db.hours.where('client_id').equals(clientId).toArray(),
+      db.personal_notes.where('client_id').equals(clientId).first(),
+    ])
 
-  useEffect(() => {
-    if (!clientId) return
+    if (!client) return null
 
-    async function fetchAll() {
-      setLoading(true)
-      setError(null)
+    allIncidents.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
-      const { data: clientData, error: clientError } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', clientId)
-        .single()
+    const incidents = await Promise.all(
+      allIncidents.map(async incident => {
+        const cases = await db.cases.where('incident_id').equals(incident.id).toArray()
+        return { ...incident, cases }
+      })
+    )
 
-      if (clientError) {
-        setError(clientError.message)
-        setLoading(false)
-        return
-      }
-      setClient(clientData)
+    allHours.sort((a, b) => (a.entry_date < b.entry_date ? 1 : a.entry_date > b.entry_date ? -1 : 0))
 
-      const { data: eventData } = await supabase
-        .from('next_events')
-        .select('*')
-        .eq('client_id', clientId)
-        .maybeSingle()
-      setNextEvent(eventData ?? null)
+    return { client, incidents, nextEvent: nextEvent ?? null, hours: allHours, personalNote: personalNote ?? null }
+  }, [clientId])
 
-      const { data: incidentData } = await supabase
-        .from('incidents')
-        .select(`
-          id,
-          incident_date,
-          incident_description,
-          cases (
-            id,
-            case_number,
-            charge,
-            warrant_url,
-            bond_amount,
-            disposition,
-            notes,
-            status
-          )
-        `)
-        .eq('client_id', clientId)
-        .order('id', { ascending: true })
-      setIncidents(incidentData ?? [])
+  const refetch = useCallback(() => {}, [])
 
-      const { data: hoursData } = await supabase
-        .from('hours')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('entry_date', { ascending: false })
-      setHours(hoursData ?? [])
-
-      const { data: noteData } = await supabase
-        .from('personal_notes')
-        .select('*')
-        .eq('client_id', clientId)
-        .maybeSingle()
-      setPersonalNote(noteData ?? null)
-
-      setLoading(false)
-    }
-
-    fetchAll()
-  }, [clientId, tick])
-
-  return { client, incidents, nextEvent, hours, personalNote, loading, error, refetch }
+  return {
+    client: data?.client ?? null,
+    incidents: data?.incidents ?? [],
+    nextEvent: data?.nextEvent ?? null,
+    hours: data?.hours ?? [],
+    personalNote: data?.personalNote ?? null,
+    loading: data === undefined,
+    error: null,
+    refetch,
+  }
 }
