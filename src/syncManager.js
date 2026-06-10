@@ -11,6 +11,8 @@ const DATA_TABLES = [
 ]
 
 export async function fullSync(supabase) {
+  await processSyncQueue(supabase)
+
   const results = await Promise.all(
     DATA_TABLES.map(table => supabase.from(table).select('*'))
   )

@@ -143,10 +143,9 @@ export default function CaseView() {
       .from('warrants')
       .upload(path, file, { contentType: 'application/pdf', upsert: true })
     if (uploadErr) { setUploadError(uploadErr.message); setUploading(false); return }
-    const { data: urlData } = supabase.storage.from('warrants').getPublicUrl(path)
-    await db.cases.update(caseData.id, { warrant_url: urlData.publicUrl })
-    await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, warrant_url: urlData.publicUrl })
-    setCaseData(prev => ({ ...prev, warrant_url: urlData.publicUrl }))
+    await db.cases.update(caseData.id, { warrant_url: path })
+    await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, warrant_url: path })
+    setCaseData(prev => ({ ...prev, warrant_url: path }))
     // Text extraction — rule 7: keep direct Supabase write + update Dexie.
     // .then() must be async so the await actually executes the Supabase query
     // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
@@ -170,6 +169,13 @@ export default function CaseView() {
     if (!file) return
     await uploadWarrantFile(file)
     e.target.value = ''
+  }
+
+  async function handleViewWarrant() {
+    const path = caseData.warrant_url
+    const { data, error } = await supabase.storage.from('warrants').createSignedUrl(path, 3600)
+    if (error) { alert('Could not open warrant: ' + error.message); return }
+    window.open(data.signedUrl, '_blank')
   }
 
   function handleWarrantDragOver(e) { e.preventDefault(); setWarrantDragOver(true) }
@@ -272,17 +278,7 @@ export default function CaseView() {
         <>
           <div className={styles.warrantRow}>
             {caseData.warrant_url && (
-              <button
-                className={styles.warrantBtn}
-                onClick={async () => {
-                  const path = `warrants/${caseData.case_number}.pdf`
-                  const { data, error } = await supabase.storage
-                    .from('warrants')
-                    .createSignedUrl(path, 3600)
-                  if (error) { alert('Could not open warrant: ' + error.message); return }
-                  window.open(data.signedUrl, '_blank')
-                }}
-              >
+              <button className={styles.warrantBtn} onClick={handleViewWarrant}>
                 View Warrant
               </button>
             )}
