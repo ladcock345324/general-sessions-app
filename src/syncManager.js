@@ -17,7 +17,11 @@ export async function fullSync(supabase) {
 
   await Promise.all(
     results.map(({ data }, i) => {
-      if (data && data.length > 0) return db[DATA_TABLES[i]].bulkPut(data)
+      const table = DATA_TABLES[i]
+      return db.transaction('rw', db[table], async () => {
+        await db[table].clear()
+        await db[table].bulkPut(data ?? [])
+      })
     })
   )
 
