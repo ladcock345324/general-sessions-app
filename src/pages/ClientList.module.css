@@ -63,6 +63,42 @@
   padding-bottom: 2px;
 }
 
+/* ── Sync status bar ── */
+.syncBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 16px;
+  font-size: 11px;
+  color: #6b7a99;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.syncDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.syncDotGreen {
+  background: #3d9e6a;
+}
+
+.syncDotYellow {
+  background: #c8a84b;
+}
+
+@keyframes syncPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.syncDotPulse {
+  background: #6b9fd4;
+  animation: syncPulse 1.2s ease-in-out infinite;
+}
+
 .section {
   margin-top: 16px;
 }

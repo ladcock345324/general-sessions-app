@@ -138,6 +138,14 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Offline Layer — Phase 1 (2026-06-10)
+- **Dexie.js** installed; `src/localDB.js` defines IndexedDB schema mirroring all 7 Supabase data tables plus a `sync_queue` table (auto-increment PK, fields: table_name, operation, record_id, payload, status, created_at, retry_count)
+- **`src/syncManager.js`** exports: `fullSync` (parallel-fetches all tables → bulk-puts to Dexie, stamps `lastSyncedAt` in localStorage), `processSyncQueue` (processes pending queue entries oldest-first, upsert/delete via Supabase, retries up to 3×, marks failed after), `addToSyncQueue` (enqueues a local write), `startBackgroundSync` (30s interval + window `online` event → returns cleanup fn)
+- **`src/SyncContext.jsx`** provides `isOnline`, `isSyncing`, `lastSyncedAt`, `triggerSync` via React context; initial `fullSync` fires on mount only after confirmed auth session; background sync starts after initial sync and is cleaned up on unmount
+- **`App.jsx`** wraps router in `<SyncProvider>` inside `<AuthProvider>`
+- **Sync status indicator** added to `ClientList.jsx` below the top bar: green dot + "Synced [time]" (online+synced), yellow dot + "Offline — changes will sync when reconnected" (offline), pulsing blue dot + "Syncing…" (in progress)
+- All existing Supabase reads/writes untouched — Phase 1 is infrastructure only
+
 ### DB Cleanup (2026-06-09)
 - Dropped `warrant_status` column from `cases` (was ignored by UI)
 - Dropped `da_name` column from `cases` (legacy, no longer shown)
@@ -343,6 +351,11 @@ src/
 ---
 
 ## Coming Next
+
+### Offline Layer — Phase 2
+- Migrate all reads in `useClients` and `useClientFile` to read from local Dexie DB first (offline-first)
+- Migrate all writes (insert/update/delete) to write locally and enqueue in `sync_queue` before pushing to Supabase
+- Clean text viewer UI for reading extracted PDF text offline (warrant, criminal history, courtroom docs)
 
 ### Features
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)

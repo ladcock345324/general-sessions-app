@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 import { AuthProvider } from './AuthContext'
+import { SyncProvider } from './SyncContext'
 import RequireAuth from './RequireAuth'
 import Login from './pages/Login'
 import ClientList from './pages/ClientList'
@@ -12,6 +13,7 @@ import CaseView from './pages/CaseView'
 function App() {
   return (
     <AuthProvider>
+      <SyncProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<RequireAuth><ClientList /></RequireAuth>} />
@@ -21,6 +23,7 @@ function App() {
         <Route path="/case/:caseNumber" element={<RequireAuth><CaseView /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </SyncProvider>
     </AuthProvider>
   )
 }

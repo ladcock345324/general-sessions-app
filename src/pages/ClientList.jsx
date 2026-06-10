@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useClients } from '../hooks/useClients'
+import { useSyncStatus } from '../SyncContext'
 import ClientRow from '../components/ClientRow'
 import styles from './ClientList.module.css'
 
@@ -38,6 +39,32 @@ function toRowProps(client) {
   }
 }
 
+function SyncStatusBar() {
+  const { isOnline, isSyncing, lastSyncedAt } = useSyncStatus()
+
+  let dot, text
+  if (isSyncing) {
+    dot  = styles.syncDotPulse
+    text = 'Syncing…'
+  } else if (!isOnline) {
+    dot  = styles.syncDotYellow
+    text = 'Offline — changes will sync when reconnected'
+  } else {
+    dot  = styles.syncDotGreen
+    const time = lastSyncedAt
+      ? new Date(lastSyncedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      : null
+    text = time ? `Synced ${time}` : 'Synced'
+  }
+
+  return (
+    <div className={styles.syncBar}>
+      <span className={`${styles.syncDot} ${dot}`} />
+      <span>{text}</span>
+    </div>
+  )
+}
+
 export default function ClientList() {
   const navigate = useNavigate()
   const { clients, loading, error } = useClients()
@@ -50,6 +77,7 @@ export default function ClientList() {
       <div className={styles.topBar}>
         <button className={styles.signOutBtn} onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
+      <SyncStatusBar />
       <header className={styles.header}>
         <h1 className={styles.title}>Clients</h1>
         <button className={styles.addClientBtn} onClick={() => navigate('/client/new')}>+</button>

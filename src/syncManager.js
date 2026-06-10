@@ -1,0 +1,80 @@
+import db from './localDB'
+
+const DATA_TABLES = [
+  'clients',
+  'incidents',
+  'cases',
+  'next_events',
+  'hours',
+  'personal_notes',
+  'courtroom_documents',
+]
+
+export async function fullSync(supabase) {
+  const results = await Promise.all(
+    DATA_TABLES.map(table => supabase.from(table).select('*'))
+  )
+
+  await Promise.all(
+    results.map(({ data }, i) => {
+      if (data && data.length > 0) return db[DATA_TABLES[i]].bulkPut(data)
+    })
+  )
+
+  localStorage.setItem('lastSyncedAt', new Date().toISOString())
+}
+
+export async function processSyncQueue(supabase) {
+  const entries = await db.sync_queue
+    .where('status').equals('pending')
+    .sortBy('created_at')
+
+  for (const entry of entries) {
+    try {
+      if (entry.operation === 'INSERT' || entry.operation === 'UPDATE') {
+        const { error } = await supabase.from(entry.table_name).upsert(entry.payload)
+        if (error) throw error
+      } else if (entry.operation === 'DELETE') {
+        const { error } = await supabase.from(entry.table_name).delete().eq('id', entry.record_id)
+        if (error) throw error
+      }
+      await db.sync_queue.delete(entry.id)
+    } catch {
+      const newCount = (entry.retry_count ?? 0) + 1
+      await db.sync_queue.update(entry.id, {
+        retry_count: newCount,
+        status: newCount >= 3 ? 'failed' : 'pending',
+      })
+    }
+  }
+}
+
+export async function addToSyncQueue(table_name, operation, record_id, payload) {
+  await db.sync_queue.add({
+    table_name,
+    operation,
+    record_id,
+    payload,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    retry_count: 0,
+  })
+}
+
+export function startBackgroundSync(supabase) {
+  const interval = setInterval(() => {
+    if (navigator.onLine) processSyncQueue(supabase)
+  }, 30_000)
+
+  async function handleOnline() {
+    await processSyncQueue(supabase)
+    await fullSync(supabase)
+  }
+
+  window.addEventListener('online', handleOnline)
+
+  return () => {
+    clearInterval(interval)
+    window.removeEventListener('online', handleOnline)
+  }
+}
