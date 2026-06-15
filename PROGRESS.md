@@ -88,7 +88,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `status` | text | default "open" |
 | `warrant_text` | text | extracted text from warrant PDF — populated on upload |
 
-> Warrant status is derived purely from `warrant_url`: "Warrant on File" if set, "No Warrant" if null.
+> Affidavit status is derived purely from `warrant_url`: "Affidavit on File" if set, "No Affidavit" if null.
 
 ### `courtroom_documents`
 | Column | Type | Notes |
@@ -149,7 +149,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 - **Reads migrated to Dexie** — `useClients` and `useClientFile` rewritten to use `useLiveQuery` from `dexie-react-hooks`; app loads instantly from IndexedDB; UI auto-updates on any Dexie write; return shapes identical so no UI component changes were needed
 - **All writes offline-first** — every INSERT/UPDATE/DELETE across `NewClient`, `EditClient`, `ClientFile`, and `CaseView` writes to Dexie first then enqueues via `addToSyncQueue`; Supabase sync happens in the background; Storage uploads (warrants, criminal history, courtroom docs) remain direct
 - **`CaseView` initial load from Dexie** — replaced Supabase `useEffect` fetch with a single `useLiveQuery` that reads the case record, walks `incident → client` for the header name, and covers all case fields including `notes` and `warrant_text`
-- **`warrant_url` stores storage path** — warrant uploads now store `warrants/[case_number].pdf` in Dexie and Supabase instead of an expiring signed URL; "View Warrant" generates a fresh signed URL on demand via `createSignedUrl`, matching how courtroom documents work
+- **`warrant_url` stores storage path** — warrant uploads now store `warrants/[case_number].pdf` in Dexie and Supabase instead of an expiring signed URL; "View Affidavit" generates a fresh signed URL on demand via `createSignedUrl`, matching how courtroom documents work
 - **fullSync correctness** — `fullSync` calls `processSyncQueue` first so pending writes reach Supabase before the clear+bulkPut; after repopulating all 7 tables, re-applies any remaining pending queue entries to Dexie so local writes that haven't synced yet are never wiped from the UI; each table's clear+bulkPut is wrapped in a Dexie transaction
 - **Deletions propagate across devices** — `fullSync` uses `clear()` + `bulkPut()` instead of `bulkPut` only, so records deleted on one device are removed from Dexie on all other devices at next sync
 - **`processSyncQueue` hardened** — INSERT uses `upsert`, UPDATE uses `.update(payload).eq('id')` (avoids partial-payload upsert ambiguity); failures log `console.error('[syncQueue] failed:', table, operation, error)` for visibility during testing
@@ -239,8 +239,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ### Case View (`/case/:caseNumber`)
 - Header shows client name (`LASTNAME, FIRSTNAME`) centered between Back and Edit buttons
-- **Upload Warrant** / **Replace Warrant** — drag-and-drop or tap; uploads PDF to Supabase Storage
-- **View Warrant** button when warrant is on file
+- **Upload Affidavit** / **Replace Affidavit** — drag-and-drop or tap; uploads PDF to Supabase Storage; "Replace Affidavit" button resized to match "View Affidavit" and "View Text" buttons
+- **View Affidavit** button when affidavit is on file
 - **Notes** textarea with Save/Saved confirmation
 - **Disposition**, **Edit** (inline form includes `charge_abbrev` field), **Delete Case**
 
