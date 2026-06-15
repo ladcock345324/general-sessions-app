@@ -170,7 +170,7 @@ export default function CaseView() {
   async function handleViewWarrant() {
     const path = caseData.warrant_url
     const { data, error } = await supabase.storage.from('warrants').createSignedUrl(path, 3600)
-    if (error) { alert('Could not open warrant: ' + error.message); return }
+    if (error) { alert('Could not open affidavit: ' + error.message); return }
     window.open(data.signedUrl, '_blank')
   }
 
@@ -208,7 +208,7 @@ export default function CaseView() {
     )
   }
 
-  const warrantStatus = caseData.warrant_url ? 'Warrant on File' : 'No Warrant'
+  const warrantStatus = caseData.warrant_url ? 'Affidavit on File' : 'No Affidavit'
 
   function handleSaved(newCaseNumber) {
     setEditing(false)
@@ -250,7 +250,7 @@ export default function CaseView() {
           <div className={styles.warrantRow}>
             {caseData.warrant_url && (
               <button className={styles.warrantBtn} onClick={handleViewWarrant}>
-                View Warrant
+                View Affidavit
               </button>
             )}
             {liveWarrantText && (
@@ -268,7 +268,7 @@ export default function CaseView() {
               onDragLeave={handleWarrantDragLeave}
               onDrop={handleWarrantDrop}
             >
-              {uploading ? 'Uploading…' : caseData.warrant_url ? 'Replace Warrant' : 'Upload Warrant'}
+              {uploading ? 'Uploading…' : caseData.warrant_url ? 'Replace Affidavit' : 'Upload Affidavit'}
               <input
                 type="file"
                 accept="application/pdf"
@@ -342,7 +342,7 @@ export default function CaseView() {
       <TextViewerDrawer
         isOpen={showWarrantText}
         onClose={() => setShowWarrantText(false)}
-        label="Warrant Text"
+        label="Affidavit Text"
         text={liveWarrantText ?? null}
       />
     </div>

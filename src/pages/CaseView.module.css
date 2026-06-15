@@ -124,6 +124,10 @@
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: #9faab8;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: normal;
+  box-sizing: border-box;
 }
 
 .uploadBtn:active {

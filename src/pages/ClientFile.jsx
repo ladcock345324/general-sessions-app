@@ -619,7 +619,7 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
                 <span className={styles.caseNumber}>{c.case_number}</span>
                 <span className={styles.caseCharge}>{c.charge}</span>
                 <span className={styles.caseMeta}>
-                  {c.warrant_url ? 'Warrant on File' : 'No Warrant'}<span className={styles.pipe}>|</span>{formatBond(c.bond_amount)} bond
+                  {c.warrant_url ? 'Affidavit on File' : 'No Affidavit'}<span className={styles.pipe}>|</span>{formatBond(c.bond_amount)} bond
                 </span>
               </div>
               <span className={styles.caseChevron}>›</span>
