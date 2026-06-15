@@ -52,8 +52,8 @@
 }
 
 .caseTable {
-  display: grid;
-  grid-template-columns: 56px auto;
+  display: flex;
+  flex-direction: column;
   width: 280px;
   position: absolute;
   right: 78px;
@@ -62,7 +62,9 @@
 }
 
 .caseTableRow {
-  display: contents;
+  display: flex;
+  align-items: baseline;
+  padding: 2px 0;
 }
 
 .caseNum {
@@ -74,6 +76,10 @@
   line-height: 1.5;
   cursor: pointer;
   user-select: text;
+  width: 56px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .caseCharge {
@@ -190,7 +196,15 @@
     width: auto;
     flex: 1;
     min-width: 0;
-    grid-template-columns: max-content auto;
+  }
+
+  .caseTableRow {
+    align-items: baseline;
+  }
+
+  .caseNum {
+    width: max-content;
+    flex-shrink: 0;
   }
 
   .caseNum {
