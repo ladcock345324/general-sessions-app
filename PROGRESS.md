@@ -81,7 +81,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `case_number` | text | e.g. "GS1041482" |
 | `charge` | text | required |
 | `charge_abbrev` | text | optional short label shown in client list and case rows |
-| `warrant_url` | text | Supabase Storage signed URL for warrant PDF |
+| `warrant_url` | text | Supabase Storage path for affidavit PDF (e.g. `warrants/GS1041482.pdf`) — signed URL generated on demand |
 | `bond_amount` | numeric | 0 displays as "$0 bond" |
 | `notes` | text | free-text, editable on case view with Save button |
 | `disposition` | text | null = open; shown when set |
@@ -143,7 +143,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 - **ClientFile header layout** — `nameCore` (`LASTNAME, FIRSTNAME (gender, age)`) and indigent circle on line 1 as `flex-wrap: nowrap`; OCA number on its own line 2 in muted text (`#9faab8`, `0.85em`) — previously OCA was concatenated into the name string
 - **Mobile custody badge** — font-size, padding, and border-radius all reduced 30% on mobile only (inside `@media (max-width: 768px)`); vertically centered against full row height via `position: absolute` on `.right` with `top: 50%; transform: translateY(-50%)`; `.row` gets `position: relative` and `padding-right: 76px` to keep content clear — desktop layout unchanged
 - **Incident edit calendar overlap fix** — date `<input>` moved below description `<textarea>` in the incident inline edit form so the native mobile date picker no longer covers the description field; `autoFocus` moved to the textarea
-- **Case number tap target tightened** — navigation handler moved from the full `caseTableRow` div onto the `caseNum` span only; charge/abbreviation text and surrounding whitespace no longer trigger case navigation; `padding: 3px 0` retained on the span for touch usability
+- **Case number tap target tightened** — navigation handler moved from the full `caseTableRow` div onto the `caseNum` span only; charge/abbreviation text and surrounding whitespace no longer trigger case navigation; case table layout switched from CSS grid (`display: contents` rows) to flexbox column so row containers can carry `padding: 1px 0` — both columns share equal vertical breathing room and sit on the same baseline per row; `caseNum` span has `width: 56px; flex-shrink: 0` to preserve column alignment
 
 ### Offline Layer — Phase 2 + Text Viewer (2026-06-10)
 - **Reads migrated to Dexie** — `useClients` and `useClientFile` rewritten to use `useLiveQuery` from `dexie-react-hooks`; app loads instantly from IndexedDB; UI auto-updates on any Dexie write; return shapes identical so no UI component changes were needed
@@ -192,7 +192,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 - Both sorted alphabetically by last name
 - Each section header shows a count badge (e.g. "Active 12")
 - Each row shows: name, next hearing (blue), case numbers + charge abbrevs, custody badge
-- **Case table** in each row: two-column grid (`56px auto`), `position: absolute` right-anchored so all case number left edges are flush; charge_abbrev shown if set, falls back to charge
+- **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), `position: absolute` right-anchored so all case number left edges are flush; charge_abbrev shown if set, falls back to charge
 - Badge colors: **In Custody** → muted crimson (`#b85555`); **Bonded Out** / **Out** → muted green (`#3d9e6a`); **CLOSED** / relieved clients → gray
 - Active clients with `relieved_closed = true` show all custody badges in gray (same as CLOSED badge)
 - `+` button top-right → Add Client form
