@@ -90,24 +90,28 @@ export default function ClientRow({ client, relieved = false, onClick }) {
       `${weekday}${nextHearing.date}`,
       ...(validTime ? [t] : []),
       ...(nextHearing.docket_type ? [nextHearing.docket_type] : []),
-      ...(nextHearing.courtroom ? [nextHearing.courtroom] : []),
+      ...(nextHearing.courtroom ? [`Courtroom ${nextHearing.courtroom}`] : []),
     ]
   }
 
   return (
     <div className={`${styles.row} ${relieved ? styles.dimmed : ''}`} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
       <div className={styles.info}>
-        <div className={styles.nameLine}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className={styles.name}>{nameOca}</span>
           <IndigentCircle clientId={id} status={indigentStatus} />
         </div>
-        {nextSegments && (
-          <span className={styles.next}>
-            {nextSegments.map((seg, i) => (
-              <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
-            ))}
-          </span>
-        )}
+        {nextSegments
+          ? (
+            <span className={styles.next}>
+              <span style={{ textDecoration: 'underline' }}>Next:</span>{' '}
+              {nextSegments.map((seg, i) => (
+                <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
+              ))}
+            </span>
+          )
+          : <span className={styles.nextEmpty}>&nbsp;</span>
+        }
       </div>
       <div className={styles.caseLine}>
         {caseNumbers && caseNumbers.length > 0 && (
