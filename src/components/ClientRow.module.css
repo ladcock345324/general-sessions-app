@@ -46,6 +46,9 @@
   color: #6b9fd4;
   margin: 0;
   padding: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  display: block;
 }
 
 .pipe {
@@ -209,6 +212,10 @@
     white-space: nowrap;
     overflow: hidden;
     font-size: 12px;
+  }
+
+  .next {
+    font-size: 11px;
   }
 
   .caseLine {

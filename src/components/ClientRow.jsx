@@ -90,7 +90,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
       `${weekday}${nextHearing.date}`,
       ...(validTime ? [t] : []),
       ...(nextHearing.docket_type ? [nextHearing.docket_type] : []),
-      ...(nextHearing.courtroom ? [`Courtroom ${nextHearing.courtroom}`] : []),
+      ...(nextHearing.courtroom ? [nextHearing.courtroom] : []),
     ]
   }
 
@@ -104,7 +104,6 @@ export default function ClientRow({ client, relieved = false, onClick }) {
         {nextSegments
           ? (
             <span className={styles.next}>
-              <span style={{ textDecoration: 'underline' }}>Next:</span>{' '}
               {nextSegments.map((seg, i) => (
                 <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
               ))}
