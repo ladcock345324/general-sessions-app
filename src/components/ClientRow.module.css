@@ -25,6 +25,13 @@
   padding-right: 400px;
 }
 
+.nameLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .name {
   font-size: 15px;
   font-weight: 600;
@@ -39,16 +46,15 @@
   color: #6b9fd4;
   margin: 0;
   padding: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  display: block;
 }
 
 .pipe {
   font-size: 1.08em;
   margin: 0 0.35em;
   line-height: 1;
-}
-
-.nextEmpty {
-  font-size: 13px;
 }
 
 .caseTable {
@@ -182,6 +188,22 @@
 
   .info {
     padding-right: 0;
+  }
+
+  .nameLine {
+    gap: 5px;
+  }
+
+  .name {
+    min-width: 0;
+    flex: 1 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 12.5px;
+  }
+
+  .next {
+    font-size: 11px;
   }
 
   .caseLine {

@@ -1285,12 +1285,3 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-
-@media (max-width: 768px) {
-  .name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
