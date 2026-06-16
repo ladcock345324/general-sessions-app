@@ -1287,10 +1287,14 @@
 }
 
 @media (max-width: 768px) {
-  .name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  /* Fix D: stack name and badges vertically so the full name + circle fits on
+     one line without truncation. nameRowLeft stretches to the full row width
+     (~358px), enough for "Woods-James, Kimberly (F, 56)" at 17px + 28px circle.
+     badgeStack also stretches full-width so its internal flex-end aligns badges
+     to the right edge. */
+  .nameRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 }

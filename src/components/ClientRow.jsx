@@ -97,7 +97,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
   return (
     <div className={`${styles.row} ${relieved ? styles.dimmed : ''}`} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
       <div className={styles.info}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className={styles.nameLine}>
           <span className={styles.name}>{nameOca}</span>
           <IndigentCircle clientId={id} status={indigentStatus} />
         </div>

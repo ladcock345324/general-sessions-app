@@ -25,6 +25,13 @@
   padding-right: 400px;
 }
 
+.nameLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .name {
   font-size: 15px;
   font-weight: 600;
@@ -182,6 +189,26 @@
 
   .info {
     padding-right: 0;
+    gap: 1px;
+  }
+
+  /* Fix A: hide the &nbsp; spacer on mobile so no blank gap appears for clients
+     with no next event. The spacer stays in the DOM to preserve desktop row height. */
+  .nextEmpty {
+    display: none;
+  }
+
+  .nameLine {
+    gap: 5px;
+  }
+
+  /* Fix B: allow name to shrink so the circle stays inline rather than overflowing */
+  .name {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 12px;
   }
 
   .caseLine {
