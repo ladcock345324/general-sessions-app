@@ -420,7 +420,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
 
 // ─── Add Case form (under a specific incident) ────────────────────────────────
 
-const EMPTY_CASE = { case_number: '', charge: '', bond_amount: '' }
+const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', bond_amount: '' }
 
 function AddCaseForm({ incidentId, onSaved, onCancel }) {
   const [form, setForm] = useState(EMPTY_CASE)
@@ -442,6 +442,7 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
       incident_id: incidentId,
       case_number: form.case_number.trim(),
       charge: form.charge.trim(),
+      charge_abbrev: form.charge_abbrev.trim() || null,
       bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
     }
     await db.cases.put(record)
@@ -458,6 +459,10 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Charge *</label>
         <input className={styles.formInput} value={form.charge} onChange={e => set('charge', e.target.value)} placeholder="e.g. Vandalism" />
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Abbrev. (for client list)</label>
+        <input className={styles.formInput} value={form.charge_abbrev} onChange={e => set('charge_abbrev', e.target.value)} placeholder="Optional" />
       </div>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Bond Amount</label>
@@ -1432,6 +1437,9 @@ export default function ClientFile() {
   return (
     <div className={styles.screen}>
 
+      {/* ── Sticky name bar ── */}
+      <div className={styles.stickyNameBar}>{nameCore}</div>
+
       {/* ── Client header ── */}
       <div className={styles.clientHeader}>
         <header className={styles.header}>
@@ -1453,9 +1461,12 @@ export default function ClientFile() {
               ))}
             </div>
           </div>
-          {client.custody_status === 'in_custody' && <span className={`${styles.badge} ${styles.badgeRed}`}>In Custody</span>}
-          {client.custody_status === 'bonded_out' && <span className={`${styles.badge} ${styles.badgeGreen}`}>Bonded Out</span>}
-          {client.custody_status === 'out' && <span className={`${styles.badge} ${styles.badgeGreen}`}>Out</span>}
+          <div className={styles.badgeStack}>
+            {client.custody_status === 'in_custody' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeRed}`}>In Custody</span>}
+            {client.custody_status === 'bonded_out' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>Bonded Out</span>}
+            {client.custody_status === 'out' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>Out</span>}
+            {isClosed && <span className={styles.closedBadge}>CLOSED</span>}
+          </div>
         </div>
       </div>
 

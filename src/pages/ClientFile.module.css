@@ -16,6 +16,21 @@
   background: #16212F;
 }
 
+.stickyNameBar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #1E2A3A;
+  color: #f0f2f5;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Header / back */
 .header {
   display: flex;
@@ -105,6 +120,31 @@
   background-color: rgba(50, 140, 90, 0.2);
   color: #3d9e6a;
   border: 1px solid rgba(50, 140, 90, 0.4);
+}
+
+.badgeGray {
+  background-color: rgba(74, 74, 74, 0.5);
+  color: #c0c0c0;
+  border: 1px solid rgba(160, 160, 160, 0.25);
+}
+
+.badgeStack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.closedBadge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 1px 7px;
+  border-radius: 20px;
+  background-color: rgba(74, 74, 74, 0.5);
+  color: #c0c0c0;
+  border: 1px solid rgba(160, 160, 160, 0.25);
+  white-space: nowrap;
 }
 
 /* Next event — teal-dark block */
@@ -1244,4 +1284,13 @@
 .confirmNo:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
