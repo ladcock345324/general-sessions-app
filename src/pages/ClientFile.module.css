@@ -1287,17 +1287,22 @@
 }
 
 @media (max-width: 768px) {
-  /* Switch nameRow from flex-row to block so children stack by document order
-     with no flex alignment magic. This sidesteps the entire flex-column
-     justify-content / flex-grow inheritance problem. nameRowLeft (block) takes
-     full width at its natural content height; badgeStack (block) follows
-     immediately below. badgeStack stays a flex container internally so its own
-     align-items:flex-end still right-aligns the badge spans. */
-  .nameRow {
-    display: block;
+  /* Flex row restored (base styles already set it). nameRowLeft has flex:1 +
+     min-width:0 from base — that's correct. badgeStack gets flex-shrink:0 so
+     the badge column doesn't compress. .name gets font-size:13px so the
+     longest name ("Woods-James, Kimberly (F, 56)" = 29 chars × ~6.59px avg
+     at 13px bold = 191px) fits within the ~211px available after the badge
+     column and circle are subtracted from iPhone SE's 343px inner width,
+     leaving a ~20px safety margin. At 14px the margin shrinks to ~5px — risky
+     given estimation error, so 13px was chosen. white-space:nowrap prevents
+     mid-parenthetical wrapping; overflow:hidden is a safety net. */
+  .badgeStack {
+    flex-shrink: 0;
   }
 
-  .badgeStack {
-    margin-top: 8px;
+  .name {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
   }
 }
