@@ -140,31 +140,35 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ### Collapse "Relieved as Counsel" into "Closed" Model (2026-06-16)
 
-Branch `rename-relieved-to-closed`. Unified the two-status model (Active / Relieved as Counsel) into a single Active / Closed model.
+Unified the two-status model (Active / Relieved as Counsel) into a single Active / Closed model. The `relieved_as_counsel` column is kept in the database for reversibility but is no longer used by the app.
 
 - **Section placement** — `ClientList.jsx` now filters Active vs. Closed entirely on `relieved_closed` (`false` → Active, `true` → Closed). `relieved_as_counsel` is no longer read anywhere in app logic.
+
 - **Section header** — "RELIEVED AS COUNSEL" renamed to "CLOSED" in `ClientList.jsx`.
+
 - **"Relieve as Counsel" button removed** — `ClientFile.jsx` no longer has the "Relieved as Counsel" action button, its confirmation dialog, `handleRelieve()`, `handleReopen()` (the dual-flag reset path), `isRelieved` flag, or `showRelieveConfirm` state. Only "Close Case" / "Reopen Case" (toggling `relieved_closed`) and "Delete Client" remain as actions.
+
 - **"Relieved as Counsel" text removed app-wide** — purged from `ClientRow.jsx` (unstyled badge text in closed rows), `ClientList.jsx` (section header), and all `ClientFile.jsx` button/dialog copy.
+
 - **Closed-section row brightness** — removed `opacity: 0.5` (`.dimmed` class) from Closed-section rows. Name, OCA, case numbers, and charge text now render at full brightness matching the Active section.
+
 - **Closed-section custody badge** — Closed rows now show a gray/muted `CustodyBadge` (In Custody / Bonded Out / Out) stacked above the CLOSED pill, matching how closed clients appeared when they were still in the Active section.
-- **`relieved_as_counsel` DB column** — left in place, untouched, for reversibility. The app simply no longer reads or writes it (except `NewClient.jsx` which still initializes it to `false` on create).
-- **Data migration** — checked for clients with `relieved_as_counsel = true` and `relieved_closed` not true; zero rows found. The one client with `relieved_as_counsel = true` (Test) already had `relieved_closed = true`.
-- **Section moves** — Pitts, Terron and Woods-James, Kimberly (both had `relieved_closed = true, relieved_as_counsel = false`, so appeared in Active with a gray CLOSED badge) moved to the Closed section as intended.
 
-### Client List + ClientFile Mobile/Desktop Layout Fixes — Round 2 (2026-06-16)
+- **Data migration** — queried for clients with `relieved_as_counsel = true` and `relieved_closed` not true; zero rows found. The one existing client with `relieved_as_counsel = true` (Test) already had `relieved_closed = true`, so no backfill was needed.
 
-Branch `fix/client-list-mobile-v2`. These fixes followed a critical production regression (commit 42dc61b, reverted same day) that caused desktop rows to collapse and badges to bleed into adjacent rows.
+- **Section moves** — Pitts, Terron and Woods-James, Kimberly (both had `relieved_closed = true, relieved_as_counsel = false`, so previously appeared in Active with a gray CLOSED badge) moved to the Closed section as intended.
+
+### Client List + ClientFile Mobile/Desktop Layout Fixes (2026-06-16)
+
+Followed a critical production regression (commit 42dc61b, reverted same day) that caused desktop client-list rows to collapse and badges to bleed into adjacent rows.
 
 - **Desktop row height (no-next-event clients)** — rows with no upcoming hearing collapsed to near-zero height because the `&nbsp;` spacer (`.nextEmpty`) that provided a height floor had been removed in the reverted commit. Fix: keep the `&nbsp;` in the DOM, but hide it on mobile only via `display: none` inside `@media (max-width: 768px)`. Desktop keeps its height; mobile avoids the blank gap.
 
-- **Mobile indigent circle position** — on mobile, all indigent circles were aligning in a vertical column at the far right of the name row regardless of name length. Root cause: the name `<span>` had `flex: 1 1 auto` (flex-grow: 1), which caused it to expand to fill the full `.nameLine` container and push the circle to the right edge. Fix: `flex: 0 1 auto` on the name span — name takes only its content width, circle sits immediately after the text. Also tightened the name/next-event vertical gap: reduced `.info` gap from 4px to 1px and `.indigentCircle` height from 28px to 22px on mobile.
+- **Mobile indigent circle position** — on mobile, all indigent circles were aligning in a vertical column at the far right of the name row regardless of name length. Root cause: the name `<span>` had `flex: 1 1 auto` (flex-grow: 1), causing it to expand to fill the full `.nameLine` container and push the circle to the right edge. Fix: `flex: 0 1 auto` — name takes only its content width, circle sits immediately after the text. Also tightened the name/next-event vertical gap: reduced `.info` gap from 4px to 1px and `.indigentCircle` height from 28px to 22px on mobile.
 
 - **Mobile next-event line reformatting** — removed the leading underlined "Next:" label from the JSX; removed the "Courtroom " prefix (courtroom value like "4B" renders directly); set `white-space: nowrap; overflow: hidden; display: block` on `.next` so the line truncates on narrow screens rather than wrapping; reduced mobile `.next` font-size from 13px to 11px for single-line fit.
 
-- **ClientFile mobile header — badges beside name block** — on mobile, the name/OCA/bond text block and the custody badge now sit in a flex row (`align-items: center; justify-content: space-between`) so the badge is vertically centered beside the text, not stacked below it or anchored with dead space. `badgeStack` gets `flex-shrink: 0` to prevent it from collapsing; `nameRowLeft` gets `flex-shrink: 1; min-width: 0` to let it compress. Badge font-size reduced to 9px with 2px/6px padding (roughly half the desktop size) to free horizontal width; name font-size set to 15px. At 15px, the worst-case name "Woods-James, Kimberly (F, 56)" (≈14.56em) fits in the available width with ~17px margin.
-
-  > **Note on failed attempts:** Two earlier approaches to the ClientFile badge dead-space fix silently failed. A `flex-direction: column` override on `.nameRow` and a `display: block` override were each verified as present in the compiled bundle with correct class names and cascade order, but neither produced the expected visual result on device. The working fix uses the base `flex-row` layout (no override needed) and relies solely on `flex-shrink` and font-size tuning to achieve the correct layout.
+- **ClientFile mobile header — badges beside name block** — on mobile, the name/OCA/bond text block and the custody badge now sit in a flex row (`align-items: center; justify-content: space-between`) so the badge is vertically centered beside the text, not stacked below it or anchored with dead space. `badgeStack` gets `flex-shrink: 0`; `nameRowLeft` gets `flex-shrink: 1; min-width: 0`. Badge font-size reduced to 9px / 2px 6px padding (roughly half desktop size) to free width; name font-size set to 15px. At 15px, the worst-case name "Woods-James, Kimberly (F, 56)" (≈14.56em) fits with ~17px margin. Note: two earlier approaches (flex-column override, then display:block override) were each verified present in the compiled bundle with correct cascade order but neither fixed the layout on device — the working fix required no media-query override at all, only flex-shrink tuning.
 
 ### Minor Fixes Batch (2026-06-16)
 - **ClientFile closed-client badges** — `ClientFile.jsx` header now mirrors `ClientRow`'s "gray everything when relieved_closed" logic: custody badge (`In Custody`/`Bonded Out`/`Out`) renders with `badgeGray` instead of red/green when `relieved_closed = true`, and a `CLOSED` badge now appears next to it. Added `.badgeGray`, `.badgeStack`, `.closedBadge` classes to `ClientFile.module.css` (copied from `ClientRow.module.css`) — previously these existed only in `ClientRow`, so the single client view never reflected closed status.
