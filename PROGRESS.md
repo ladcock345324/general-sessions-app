@@ -42,7 +42,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `oca` | text | optional OCA # |
 | `custody_status` | text | `"in_custody"`, `"bonded_out"`, or `"out"` |
 | `da_name` | text | DA assigned to this client — shown on client file header |
-| `relieved_as_counsel` | boolean | `true` = relieved section; `false` = active |
+| `relieved_as_counsel` | boolean | legacy column — kept for reversibility; not read by app logic; section placement driven by `relieved_closed` |
 | `relieved_closed` | boolean | shows CLOSED badge when true |
 | `criminal_history_url` | text | Supabase Storage public URL for criminal history PDF |
 | `criminal_history_text` | text | extracted text from criminal history PDF — populated on upload |
@@ -226,13 +226,13 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 
 ### Client List (`/`)
 - Fetches all clients from Supabase via `useClients` hook
-- Two sections: **Active** (`relieved_as_counsel = false`) and **Relieved as Counsel** (`true`)
+- Two sections: **Active** (`relieved_closed = false`) and **Closed** (`relieved_closed = true`) — header text rendered as "CLOSED" via CSS `text-transform: uppercase`
 - Both sorted alphabetically by last name
 - Each section header shows a count badge (e.g. "Active 12")
 - Each row shows: name, next hearing (blue), case numbers + charge abbrevs, custody badge
 - **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), `position: absolute` right-anchored so all case number left edges are flush; charge_abbrev shown if set, falls back to charge
 - Badge colors: **In Custody** → muted crimson (`#b85555`); **Bonded Out** / **Out** → muted green (`#3d9e6a`); **CLOSED** / relieved clients → gray
-- Active clients with `relieved_closed = true` show all custody badges in gray (same as CLOSED badge)
+- Clients in the Closed section (`relieved_closed = true`) show all custody badges in gray
 - `+` button top-right → Add Client form
 - **Mobile layout** (`max-width: 768px`): 3-line stacked layout — name, next event, case table + badge on same line. Desktop layout unchanged.
 
@@ -263,7 +263,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Criminal History** section: Upload/Replace/View Criminal History PDF; drag-and-drop supported
 - **Courtroom Documents** section: up to 5 documents; rename/delete per document; tappable tiles open via signed URL
 - **Edit Client** button → Edit Client form
-- **Close Case / Relieve as Counsel / Reopen Case / Delete Client** action buttons
+- **Close Case / Reopen Case / Delete Client** action buttons
 
 ### Edit Client (`/client/:id/edit`)
 - Pre-populated with live Supabase data
@@ -346,7 +346,6 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 | Section headers (client list) | background `#0f1820`, text `#c8d0db` |
 | Delete buttons | muted red `#7a3a30` border / `#c97060` text |
 | Close/Reopen Case button | yellow `#c8a84b` |
-| Relieved as Counsel button | orange `#c87060` |
 
 ---
 
@@ -354,18 +353,23 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 
 ```
 src/
-  App.jsx                  # Routes + AuthProvider
+  App.jsx                  # Routes + AuthProvider + SyncProvider
   main.jsx                 # BrowserRouter wrapper
   App.css                  # Global reset + body bg
+  index.css                # Vite entry-point stylesheet (minimal resets)
   AuthContext.jsx          # Supabase auth session context
   RequireAuth.jsx          # Route guard — redirects to /login if no session
   supabaseClient.js        # Supabase client singleton
+  SyncContext.jsx          # Provides isOnline, isSyncing, lastSyncedAt, triggerSync via React context
+  localDB.js               # Dexie IndexedDB schema — mirrors 7 Supabase tables + sync_queue
+  syncManager.js           # fullSync, processSyncQueue, addToSyncQueue, startBackgroundSync
   extractPdfText.js        # PDF text extraction utility — pdfjs-dist v6 + CDN worker
   seed.js                  # One-time seed script (node src/seed.js)
+  Home.jsx                 # (unused legacy placeholder — not imported anywhere)
 
   hooks/
-    useClients.js          # Fetches all clients + next_events + cases (with charge_abbrev)
-    useClientFile.js       # Fetches client + incidents + cases + hours + nextEvent + personalNote; exposes refetch()
+    useClients.js          # Reads all clients + next_events + cases from Dexie via useLiveQuery
+    useClientFile.js       # Reads client + incidents + cases + hours + nextEvent + personalNote from Dexie; exposes refetch()
 
   pages/
     Login.jsx / .module.css
@@ -376,7 +380,8 @@ src/
     CaseView.jsx / .module.css
 
   components/
-    ClientRow.jsx / .module.css   # Single row in client list; mobile-responsive
+    ClientRow.jsx / .module.css         # Single row in client list; mobile-responsive
+    TextViewerDrawer.jsx / .module.css  # Slide-up drawer for viewing extracted PDF text; used in CaseView and ClientFile
 
   data/                    # (deleted — static sample files removed 2026-06-09)
 ```
@@ -415,5 +420,47 @@ src/
 ### Known Issues / Things to Revisit
 - Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
 - No pagination — all clients/cases load at once; fine for current scale
-- All PDFs uploaded before the offline layer session have `null` text columns (`warrant_text`, `criminal_history_text`, `extracted_text`) — being resolved manually by re-uploading each PDF; not a code issue
-- Sync status indicator not showing on iPhone PWA (cosmetic — indicator renders but may be hidden behind safe area or PWA chrome)
+- **NULL text columns (as of 2026-06-17):** `cases`: 2 warrant PDFs on file with NULL `warrant_text` (need re-upload); `clients`: 1 client with NULL `criminal_history_text` but no PDF uploaded (nothing to re-upload); `courtroom_documents`: 0 documents uploaded (no action needed)
+- **Sync status indicator hidden on iPhone PWA** — root cause: `.screen` and `.topBar` have no `env(safe-area-inset-top)` padding. On iPhone X+ in standalone PWA mode the status bar/notch covers ~47px from the top of the viewport. The sign-out button (in `.topBar`, padding-top: 10px) and sync bar (below it, starting at ~36–46px) both fall within this covered zone and render behind the status bar. The "Clients" header starts at ~55px and is visible. Fix: apply `padding-top: env(safe-area-inset-top, 0px)` to `.screen` in `ClientList.module.css`.
+- `.relievedBadge` and `.relievedLabel` CSS classes in `ClientRow.module.css` are dead (not referenced in `ClientRow.jsx` — leftover from pre-Closed-model era)
+
+---
+
+## Maintenance Session (2026-06-17)
+
+Documentation-only pass + dead code removal. No app behavior changed.
+
+### Doc Fixes Applied
+
+1. **`clients.relieved_as_counsel` schema description** — updated from "true = relieved section; false = active" to reflect that the column is now a legacy/reversibility column not read by any app logic; section placement driven by `relieved_closed`.
+
+2. **Client List section description** — rewrote "Two sections: Active (`relieved_as_counsel = false`) and Relieved as Counsel (`true`)" to reflect the current Active/Closed model driven by `relieved_closed`.
+
+3. **Client List badge note** — reworded "Active clients with `relieved_closed = true`…" (contradictory phrasing) to "Clients in the Closed section (`relieved_closed = true`)…".
+
+4. **Client File action buttons** — removed "Relieve as Counsel" from the listed action buttons; current set is Close Case / Reopen Case / Delete Client.
+
+5. **Color Palette table** — removed "Relieved as Counsel button — orange #c87060" row (button removed in the 2026-06-16 Collapse session).
+
+6. **File Structure** — added previously missing files: `SyncContext.jsx`, `localDB.js`, `syncManager.js`, `index.css`, and `components/TextViewerDrawer.jsx / .module.css`. Updated hook descriptions to reflect Dexie reads. Added note that `Home.jsx` is an unused legacy placeholder (exists in repo, not imported anywhere).
+
+### Dead Code Removed
+
+- **`ClientFile.module.css` — `.relieveCaseBtn` / `.relieveCaseBtn:active`** (13 lines): CSS for the removed "Relieve as Counsel" button, never referenced in any JSX. Removed.
+- **Flex-column / display:block media-query overrides**: per PROGRESS.md history, two earlier approaches to the ClientFile mobile header fix were superseded. Verified these overrides are not present in the current `ClientFile.module.css` — already clean.
+
+### Known-Issues Findings (no changes made)
+
+**NULL text columns (Supabase query 2026-06-17):**
+- `cases` (11 total): 3 rows have NULL `warrant_text`; 2 of those have a `warrant_url` (i.e., 2 warrant PDFs on file need re-upload to extract text; 1 NULL row has no PDF and requires no action)
+- `clients` (5 total): 1 row has NULL `criminal_history_text` but also has no `criminal_history_url` — no PDF on file, nothing to re-upload
+- `courtroom_documents` (0 total): no documents uploaded yet; no action needed
+
+**Sync status indicator hidden on iPhone PWA:**
+- Root cause identified: no `env(safe-area-inset-top)` applied on `.screen` or `.topBar`. On iPhone X+ in standalone PWA mode, the device status bar/notch covers the top ~47px of the viewport. The sign-out button and sync bar both render at approximately y=10–55px from the page top, putting the sync bar entirely behind the covered zone. The "Clients" header starts at ~55px and clears the notch — which is why everything else appears correct. The sync bar is rendered and present in the DOM; it is simply visually obscured by iOS chrome. Suggested fix (not applied): add `padding-top: env(safe-area-inset-top, 0px)` to `.screen` in `ClientList.module.css`.
+
+### RLS / Credentials Assessment (no changes made)
+
+**RLS disabled:** All tables have Row Level Security off. For a single-user local app behind Supabase Auth this is low-risk in practice — the only way to query data is through the Supabase client, which requires the anon key, and in this app there's one authenticated user. The real risk is: (a) if the anon key is ever shared or exposed, anyone can read/write all case data with no row-level check; (b) if Supabase ever adds a multi-user requirement, RLS policies would need to be designed from scratch rather than incrementally. Risk level: **acceptable for current single-user use, but worth enabling before any expansion or external sharing of the URL.**
+
+**Hardcoded credentials in `src/supabaseClient.js`:** The Supabase URL and anon key are committed to the repo. The anon key is designed to be public (it is the client-facing key, not the service-role key). Supabase's security model assumes the anon key is visible to users — it is not a secret. The real guard is RLS. Since RLS is off, anyone with the anon key has full read/write access to all tables. Since this is a private GitHub repo with a single developer and the production URL requires a login, the practical exposure is low. Risk level: **low for current usage, but should be revisited together with RLS enablement if the repo ever becomes public or the app is shared with others.**
