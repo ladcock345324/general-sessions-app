@@ -1287,22 +1287,17 @@
 }
 
 @media (max-width: 768px) {
-  /* Stack name section and badges vertically so the full name + circle fits on
-     one line. Three desktop values must be overridden to prevent dead space:
-     1. justify-content: space-between → flex-start (was pinning badgeStack to bottom)
-     2. nameRowLeft flex: 1 → flex: none (flex-basis:0 + flex-grow in a column
-        container caused nameRowLeft to expand and push badges to the far bottom)
-     3. nameRowLeft justify-content: center → flex-start (was centering content
-        inside the over-tall nameRowLeft box, creating visible empty space) */
+  /* Switch nameRow from flex-row to block so children stack by document order
+     with no flex alignment magic. This sidesteps the entire flex-column
+     justify-content / flex-grow inheritance problem. nameRowLeft (block) takes
+     full width at its natural content height; badgeStack (block) follows
+     immediately below. badgeStack stays a flex container internally so its own
+     align-items:flex-end still right-aligns the badge spans. */
   .nameRow {
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 8px;
+    display: block;
   }
 
-  .nameRowLeft {
-    flex: none;
-    justify-content: flex-start;
+  .badgeStack {
+    margin-top: 8px;
   }
 }
