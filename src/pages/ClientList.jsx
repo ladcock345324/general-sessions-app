@@ -24,7 +24,7 @@ function toRowProps(client) {
     gender: client.gender,
     age: client.age,
     oca: client.oca,
-    status: client.relieved_as_counsel ? 'relieved' : 'active',
+    status: client.relieved_closed ? 'closed' : 'active',
     custodyStatus: client.custody_status,
     nextHearing: (client.next_events && client.next_events.length > 0)
       ? {
@@ -70,8 +70,8 @@ export default function ClientList() {
   const navigate = useNavigate()
   const { clients, loading, error } = useClients()
 
-  const active = clients.filter(c => !c.relieved_as_counsel).sort(byLastName).map(toRowProps)
-  const relieved = clients.filter(c => c.relieved_as_counsel).sort(byLastName).map(toRowProps)
+  const active = clients.filter(c => !c.relieved_closed).sort(byLastName).map(toRowProps)
+  const relieved = clients.filter(c => c.relieved_closed).sort(byLastName).map(toRowProps)
 
   return (
     <div className={styles.screen}>
@@ -116,7 +116,7 @@ export default function ClientList() {
           {relieved.length > 0 && (
             <section className={styles.section}>
               <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>Relieved as Counsel</span>
+                <span className={styles.sectionTitle}>Closed</span>
                 <span className={styles.sectionCount}>{relieved.length}</span>
               </div>
               <div className={styles.list}>

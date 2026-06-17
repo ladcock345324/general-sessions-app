@@ -1329,7 +1329,6 @@ export default function ClientFile() {
   const [showEventForm, setShowEventForm] = useState(false)
   const [showIncidentForm, setShowIncidentForm] = useState(false)
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
-  const [showRelieveConfirm, setShowRelieveConfirm] = useState(false)
   const [closing, setClosing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -1372,8 +1371,7 @@ export default function ClientFile() {
     navigate('/')
   }
 
-  const isRelieved = client?.relieved_as_counsel === true
-  const isClosed   = client?.relieved_closed === true
+  const isClosed = client?.relieved_closed === true
 
   async function handleClose() {
     setClosing(true)
@@ -1391,20 +1389,6 @@ export default function ClientFile() {
     setClosing(false)
     setShowCloseConfirm(false)
     refetch()
-  }
-
-  async function handleRelieve() {
-    setClosing(true)
-    await db.clients.update(id, { relieved_as_counsel: true })
-    await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_as_counsel: true })
-    navigate('/')
-  }
-
-  async function handleReopen() {
-    setClosing(true)
-    await db.clients.update(id, { relieved_as_counsel: false, relieved_closed: false })
-    await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_as_counsel: false, relieved_closed: false })
-    navigate('/')
   }
 
   if (loading) {
@@ -1531,54 +1515,26 @@ export default function ClientFile() {
       {/* ── Courtroom Documents ── */}
       <CourtroomDocsSection clientId={id} />
 
-      {/* ── Close / Relieve / Reopen ── */}
+      {/* ── Close / Reopen ── */}
       <div className={styles.closeCaseSection}>
-        {isRelieved ? (
-          /* ── Reopen ── */
-          !showCloseConfirm ? (
-            <button className={styles.reopenCaseBtn} onClick={() => setShowCloseConfirm(true)}>Reopen Case</button>
-          ) : (
+        <div className={styles.closeCaseBtnRow}>
+          {!showCloseConfirm && (
+            <button className={styles.closeCaseBtn} onClick={() => setShowCloseConfirm(true)}>
+              {isClosed ? 'Reopen Case' : 'Close Case'}
+            </button>
+          )}
+          {showCloseConfirm && (
             <div className={styles.confirmBox}>
-              <p className={styles.confirmText}>Reopen this case?</p>
+              <p className={styles.confirmText}>{isClosed ? 'Reopen this case?' : 'Mark this case as closed?'}</p>
               <div className={styles.confirmActions}>
-                <button className={styles.confirmYes} onClick={handleReopen} disabled={closing}>{closing ? '…' : 'Yes, Reopen'}</button>
+                <button className={styles.confirmYes} onClick={isClosed ? handleReopenCase : handleClose} disabled={closing}>
+                  {closing ? '…' : isClosed ? 'Yes, Reopen' : 'Yes, Close'}
+                </button>
                 <button className={styles.confirmNo} onClick={() => setShowCloseConfirm(false)} disabled={closing}>No</button>
               </div>
             </div>
-          )
-        ) : (
-          /* ── Close Case + Relieved as Counsel ── */
-          <div className={styles.closeCaseBtnRow}>
-            {!showCloseConfirm && !showRelieveConfirm && (
-              <>
-                <button className={styles.closeCaseBtn} onClick={() => setShowCloseConfirm(true)}>
-                  {isClosed ? 'Reopen Case' : 'Close Case'}
-                </button>
-                <button className={styles.relieveCaseBtn} onClick={() => setShowRelieveConfirm(true)}>Relieved as Counsel</button>
-              </>
-            )}
-            {showCloseConfirm && (
-              <div className={styles.confirmBox}>
-                <p className={styles.confirmText}>{isClosed ? 'Reopen this case?' : 'Mark this case as closed?'}</p>
-                <div className={styles.confirmActions}>
-                  <button className={styles.confirmYes} onClick={isClosed ? handleReopenCase : handleClose} disabled={closing}>
-                    {closing ? '…' : isClosed ? 'Yes, Reopen' : 'Yes, Close'}
-                  </button>
-                  <button className={styles.confirmNo} onClick={() => setShowCloseConfirm(false)} disabled={closing}>No</button>
-                </div>
-              </div>
-            )}
-            {showRelieveConfirm && (
-              <div className={styles.confirmBox} style={{ borderColor: 'rgba(200, 80, 60, 0.35)' }}>
-                <p className={styles.confirmText}>Mark as relieved as counsel and move to the Relieved section?</p>
-                <div className={styles.confirmActions}>
-                  <button className={styles.confirmYes} onClick={handleRelieve} disabled={closing}>{closing ? '…' : 'Yes, Relieve'}</button>
-                  <button className={styles.confirmNo} onClick={() => setShowRelieveConfirm(false)} disabled={closing}>No</button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* ── Delete Client ── */}
