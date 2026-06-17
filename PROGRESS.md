@@ -420,9 +420,9 @@ src/
 ### Known Issues / Things to Revisit
 - Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
 - No pagination — all clients/cases load at once; fine for current scale
-- **NULL text columns (as of 2026-06-17):** `cases`: 2 warrant PDFs on file with NULL `warrant_text` (need re-upload); `clients`: 1 client with NULL `criminal_history_text` but no PDF uploaded (nothing to re-upload); `courtroom_documents`: 0 documents uploaded (no action needed)
-- **Sync status indicator hidden on iPhone PWA** — root cause: `.screen` and `.topBar` have no `env(safe-area-inset-top)` padding. On iPhone X+ in standalone PWA mode the status bar/notch covers ~47px from the top of the viewport. The sign-out button (in `.topBar`, padding-top: 10px) and sync bar (below it, starting at ~36–46px) both fall within this covered zone and render behind the status bar. The "Clients" header starts at ~55px and is visible. Fix: apply `padding-top: env(safe-area-inset-top, 0px)` to `.screen` in `ClientList.module.css`.
-- `.relievedBadge` and `.relievedLabel` CSS classes in `ClientRow.module.css` are dead (not referenced in `ClientRow.jsx` — leftover from pre-Closed-model era)
+- **NULL text columns (as of 2026-06-17):** `cases`: 2 warrant PDFs on file have NULL `warrant_text` — confirmed scanned/non-OCR'd PDFs with no embedded text layer; `pdfjs-dist` cannot extract text from these regardless of re-upload. NULL is the permanent expected state for these two cases. `clients`: 1 client with NULL `criminal_history_text` but no PDF uploaded (no action needed); `courtroom_documents`: 0 documents uploaded (no action needed)
+- ~~Sync status indicator hidden on iPhone PWA~~ — fixed 2026-06-17: `padding-top: env(safe-area-inset-top, 0px)` added to `.screen` in `ClientList.module.css`; falls back to `0px` on desktop/non-notch devices.
+- ~~`.relievedBadge` and `.relievedLabel` CSS classes in `ClientRow.module.css` are dead~~ — removed 2026-06-17
 
 ---
 
@@ -452,7 +452,7 @@ Documentation-only pass + dead code removal. No app behavior changed.
 ### Known-Issues Findings (no changes made)
 
 **NULL text columns (Supabase query 2026-06-17):**
-- `cases` (11 total): 3 rows have NULL `warrant_text`; 2 of those have a `warrant_url` (i.e., 2 warrant PDFs on file need re-upload to extract text; 1 NULL row has no PDF and requires no action)
+- `cases` (11 total): 3 rows have NULL `warrant_text`; 2 of those have a `warrant_url` — subsequently confirmed (2026-06-17 follow-up) to be scanned/non-OCR'd PDFs with no embedded text layer; `pdfjs-dist` cannot extract text from these; NULL is permanent expected state. 1 NULL row has no PDF and requires no action.
 - `clients` (5 total): 1 row has NULL `criminal_history_text` but also has no `criminal_history_url` — no PDF on file, nothing to re-upload
 - `courtroom_documents` (0 total): no documents uploaded yet; no action needed
 
@@ -464,3 +464,18 @@ Documentation-only pass + dead code removal. No app behavior changed.
 **RLS disabled:** All tables have Row Level Security off. For a single-user local app behind Supabase Auth this is low-risk in practice — the only way to query data is through the Supabase client, which requires the anon key, and in this app there's one authenticated user. The real risk is: (a) if the anon key is ever shared or exposed, anyone can read/write all case data with no row-level check; (b) if Supabase ever adds a multi-user requirement, RLS policies would need to be designed from scratch rather than incrementally. Risk level: **acceptable for current single-user use, but worth enabling before any expansion or external sharing of the URL.**
 
 **Hardcoded credentials in `src/supabaseClient.js`:** The Supabase URL and anon key are committed to the repo. The anon key is designed to be public (it is the client-facing key, not the service-role key). Supabase's security model assumes the anon key is visible to users — it is not a secret. The real guard is RLS. Since RLS is off, anyone with the anon key has full read/write access to all tables. Since this is a private GitHub repo with a single developer and the production URL requires a login, the practical exposure is low. Risk level: **low for current usage, but should be revisited together with RLS enablement if the repo ever becomes public or the app is shared with others.**
+
+---
+
+## Cleanup Pass (2026-06-17)
+
+### Safe-Area Fix
+- **`ClientList.module.css` — `.screen`**: added `padding-top: env(safe-area-inset-top, 0px)`. On iPhone X+ in standalone PWA mode this pushes the sign-out button and sync bar below the notch/status bar (~47px). Falls back to `0px` on desktop and non-notch devices — no visual change outside of PWA on notched iPhones.
+
+### Dead Code Removed
+- **`ClientRow.module.css` — `.relievedBadge` / `.relievedLabel`**: 13 lines removed. Confirmed zero references in `ClientRow.jsx` via search. Leftover from pre-Closed-model era.
+
+### PROGRESS.md Updates
+- NULL `warrant_text` note: updated to reflect that the 2 cases (warrants on file, NULL text) are confirmed scanned/non-OCR'd PDFs — `pdfjs-dist` has no text to extract regardless of re-upload. NULL is the permanent expected state; removed "needs re-upload" framing.
+- Marked sync-bar iPhone PWA issue as resolved.
+- Marked `.relievedBadge` / `.relievedLabel` dead-CSS note as resolved.

@@ -171,20 +171,6 @@
   display: contents;
 }
 
-/* Relieved badge */
-.relievedBadge {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.relievedLabel {
-  font-size: 12px;
-  font-weight: 600;
-  color: #9faab8;
-  white-space: nowrap;
-}
 
 @media (max-width: 768px) {
   .row {
