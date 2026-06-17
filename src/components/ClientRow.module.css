@@ -25,6 +25,19 @@
   padding-right: 400px;
 }
 
+.nameLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.indigentCircle {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
 .name {
   font-size: 15px;
   font-weight: 600;
@@ -39,6 +52,9 @@
   color: #6b9fd4;
   margin: 0;
   padding: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  display: block;
 }
 
 .pipe {
@@ -182,6 +198,36 @@
 
   .info {
     padding-right: 0;
+    gap: 1px;
+  }
+
+  /* Fix A: hide the &nbsp; spacer on mobile so no blank gap appears for clients
+     with no next event. The spacer stays in the DOM to preserve desktop row height. */
+  .nextEmpty {
+    display: none;
+  }
+
+  .nameLine {
+    gap: 5px;
+  }
+
+  .indigentCircle {
+    height: 22px;
+  }
+
+  /* flex-grow:0 so name only takes its content width — circle sits immediately
+     after the text. flex-shrink:1 + min-width:0 still let it compress for long
+     names so the line doesn't overflow. */
+  .name {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 12px;
+  }
+
+  .next {
+    font-size: 11px;
   }
 
   .caseLine {

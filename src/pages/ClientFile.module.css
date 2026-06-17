@@ -1287,10 +1287,29 @@
 }
 
 @media (max-width: 768px) {
+  /* Badge shrunk to free width for a larger name font-size.
+     Badge math (iPhone SE, 375px inner=343px):
+       "Bonded Out" at 9px: 5.32em×9=47.9px + 12px padding = ~60px
+       (was 84px at 12px+20px padding — frees 24px)
+       nameRowLeft: 343 - 60 - 12gap = 271px (was 247px)
+       Name space: 271 - 36 (circle+gap) = 235px
+     Name math ("Woods-James, Kimberly (F, 56)" = 14.56em total):
+       At 15px: 14.56×15 = 218px → 17px margin ✓
+       At 15.5px: 225.7px → 9.3px — within estimation error range
+       At 16px: 233px → 2px — too risky
+       → chose 15px (17px margin, same comfort level as previous round) */
+  .badgeStack {
+    flex-shrink: 0;
+  }
+
+  .badge {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+
   .name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 15px;
     white-space: nowrap;
+    overflow: hidden;
   }
 }

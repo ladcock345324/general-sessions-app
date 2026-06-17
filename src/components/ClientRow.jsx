@@ -37,13 +37,11 @@ function IndigentCircle({ clientId, status }) {
   }
   return (
     <div
+      className={styles.indigentCircle}
       onClick={handleClick}
       onPointerDown={e => e.stopPropagation()}
       onPointerUp={e => e.stopPropagation()}
-      style={{
-        width: 28, height: 28, display: 'inline-flex', alignItems: 'center',
-        justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
-      }}
+      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
     >
       <div style={{
         width: 14, height: 14, borderRadius: '50%',
@@ -90,21 +88,20 @@ export default function ClientRow({ client, relieved = false, onClick }) {
       `${weekday}${nextHearing.date}`,
       ...(validTime ? [t] : []),
       ...(nextHearing.docket_type ? [nextHearing.docket_type] : []),
-      ...(nextHearing.courtroom ? [`Courtroom ${nextHearing.courtroom}`] : []),
+      ...(nextHearing.courtroom ? [nextHearing.courtroom] : []),
     ]
   }
 
   return (
     <div className={`${styles.row} ${relieved ? styles.dimmed : ''}`} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
       <div className={styles.info}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className={styles.nameLine}>
           <span className={styles.name}>{nameOca}</span>
           <IndigentCircle clientId={id} status={indigentStatus} />
         </div>
         {nextSegments
           ? (
             <span className={styles.next}>
-              <span style={{ textDecoration: 'underline' }}>Next:</span>{' '}
               {nextSegments.map((seg, i) => (
                 <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
               ))}
