@@ -426,6 +426,24 @@ src/
 ## Coming Next
 
 ### Features
+
+#### Automated Backups — database + Storage files (not yet started)
+
+Fully designed and deliberately deferred. Pick up here next session.
+
+**Why:** Supabase's built-in backup products (Daily Backups and the paid PITR add-on) only cover the Postgres database — they explicitly exclude files stored via the Storage API. No Supabase plan, paid or free, protects the PDFs in the `warrants` bucket (warrant affidavits, criminal history, courtroom documents) on its own.
+
+**Plan:** a free, self-built nightly backup:
+- A Node script (`scripts/backup.js`) using the Supabase service role key dumps all 7 tables to JSON and downloads every file across all three `warrants` bucket prefixes (`warrants/`, `criminal-history/`, `courtroom-docs/`).
+- Output is pushed as a rolling snapshot (overwritten each run, not version history) to a dedicated `backups` branch via a nightly GitHub Actions workflow (`.github/workflows/backup.yml`), triggered on a cron schedule plus manual `workflow_dispatch` for on-demand testing.
+- **Cost: $0/month** — explicitly chosen over Supabase Pro ($25/mo, database-only, doesn't cover Storage) and the PITR add-on (~$100+/mo, overkill for current data volume and risk).
+
+**Setup requires two manual steps only Lucas can do** (never into chat or any file):
+1. Copy the Supabase service role key from Project Settings → API Keys.
+2. Paste it as a new GitHub Actions repo secret named `SUPABASE_SERVICE_ROLE_KEY` — directly between those two dashboards.
+
+**Follow-up once running:** test an actual restore using Supabase's branching feature to confirm the backup is real and complete, rather than just trusting the script ran.
+
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)
 
 ### Known Issues / Things to Revisit
