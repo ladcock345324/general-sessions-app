@@ -63,13 +63,8 @@ function CustodyBadge({ status, muted }) {
   return <span className={`${styles.badge} ${colorClass}`}>{label}</span>
 }
 
-function RelivedBadge({ closed }) {
-  return (
-    <div className={styles.relievedBadge}>
-      <span className={styles.relievedLabel}>Relieved as Counsel</span>
-      {closed && <span className={styles.closedBadge}>CLOSED</span>}
-    </div>
-  )
+function RelivedBadge() {
+  return <span className={styles.closedBadge}>CLOSED</span>
 }
 
 export default function ClientRow({ client, relieved = false, onClick }) {
@@ -93,7 +88,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
   }
 
   return (
-    <div className={`${styles.row} ${relieved ? styles.dimmed : ''}`} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
+    <div className={styles.row} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
       <div className={styles.info}>
         <div className={styles.nameLine}>
           <span className={styles.name}>{nameOca}</span>
@@ -129,7 +124,10 @@ export default function ClientRow({ client, relieved = false, onClick }) {
         )}
         <div className={styles.right}>
           {relieved ? (
-            <RelivedBadge closed={relievedClosed} />
+            <div className={styles.badgeStack}>
+              <CustodyBadge status={custodyStatus} muted />
+              <RelivedBadge />
+            </div>
           ) : (
             <div className={styles.badgeStack}>
               <CustodyBadge status={custodyStatus} muted={!!relievedClosed} />
