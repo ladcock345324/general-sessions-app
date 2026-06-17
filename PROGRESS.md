@@ -24,8 +24,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 - **URL:** `https://afhzkqjrciyoeizrpaxt.supabase.co`
 - **Client file:** `src/supabaseClient.js`
-- **RLS:** Disabled on all tables (development mode)
-- **Auth:** Email/password. One user account. RLS not yet enforced.
+- **RLS:** Enabled on all 7 tables. Each table has an "authenticated users only" policy (`USING (auth.role() = 'authenticated')`, applies to all commands). Applied to `clients`, `incidents`, `cases`, `hours`, `next_events` at some prior point; applied to `courtroom_documents` and `personal_notes` on 2026-06-17 via Supabase migration (see `supabase_migration_enable_rls_courtroom_personal_notes.sql`).
+- **Auth:** Email/password. One user account.
 
 ---
 
@@ -137,6 +137,18 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### RLS Enabled on All Tables (2026-06-17)
+
+Supabase's security advisor flagged `courtroom_documents` and `personal_notes` as **CRITICAL** ("RLS Disabled in Public"). These two tables were fully exposed to anyone who had the app's public Supabase anon key — which is visible in the production JS bundle — with no login required, bypassing the app's auth screen entirely. At the time of discovery, `personal_notes` had 3 real rows exposed; `courtroom_documents` had 0 rows.
+
+A check of the other 5 tables confirmed that `clients`, `incidents`, `cases`, `hours`, and `next_events` already had RLS enabled with an identical "authenticated users only" policy (`USING (auth.role() = 'authenticated')`, applies to all commands). This was a partial gap, not a database-wide one. That prior RLS setup had never been reflected in this doc.
+
+**Fix applied:** Enabled RLS and added the matching "authenticated users only" policy to both `courtroom_documents` and `personal_notes`, applied directly as a Supabase migration via the MCP connector (not through the normal app commit flow). Migration SQL is version-controlled in `supabase_migration_enable_rls_courtroom_personal_notes.sql`.
+
+**Verified:** Supabase security advisor cleared both CRITICAL findings after the fix. Remaining advisory items:
+- "Auth RLS Initialization Plan" warnings on the original 5 tables — performance-only suggestion (re-evaluating `auth.role()` per row instead of once via subquery); not a security issue; acceptable to leave as-is.
+- "Leaked Password Protection Disabled" — low-severity Auth setting; not yet addressed (see Known Issues).
 
 ### Collapse "Relieved as Counsel" into "Closed" Model (2026-06-16)
 
@@ -415,7 +427,6 @@ src/
 
 ### Features
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)
-- **RLS policies** — enable Row Level Security on all tables once auth is stable
 
 ### Known Issues / Things to Revisit
 - Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
@@ -423,6 +434,7 @@ src/
 - **NULL text columns (as of 2026-06-17):** `cases`: 2 warrant PDFs on file have NULL `warrant_text` — confirmed scanned/non-OCR'd PDFs with no embedded text layer; `pdfjs-dist` cannot extract text from these regardless of re-upload. NULL is the permanent expected state for these two cases. `clients`: 1 client with NULL `criminal_history_text` but no PDF uploaded (no action needed); `courtroom_documents`: 0 documents uploaded (no action needed)
 - ~~Sync status indicator hidden on iPhone PWA~~ — fixed 2026-06-17: `padding-top: env(safe-area-inset-top, 0px)` added to `.screen` in `ClientList.module.css`; falls back to `0px` on desktop/non-notch devices.
 - ~~`.relievedBadge` and `.relievedLabel` CSS classes in `ClientRow.module.css` are dead~~ — removed 2026-06-17
+- **Leaked Password Protection Disabled** — low-severity advisory in Supabase Auth settings; not yet addressed; can be toggled on in the Supabase dashboard under Auth → Settings whenever ready
 
 ---
 
@@ -479,3 +491,15 @@ Documentation-only pass + dead code removal. No app behavior changed.
 - NULL `warrant_text` note: updated to reflect that the 2 cases (warrants on file, NULL text) are confirmed scanned/non-OCR'd PDFs — `pdfjs-dist` has no text to extract regardless of re-upload. NULL is the permanent expected state; removed "needs re-upload" framing.
 - Marked sync-bar iPhone PWA issue as resolved.
 - Marked `.relievedBadge` / `.relievedLabel` dead-CSS note as resolved.
+
+---
+
+## RLS Security Fix (2026-06-17)
+
+Documentation-only entry — all database changes were applied directly via Supabase MCP connector. No app code changes.
+
+See "RLS Enabled on All Tables" under Completed Features for full details. Summary:
+- `courtroom_documents` and `personal_notes` were exposed (CRITICAL per Supabase security advisor) — fixed by enabling RLS and adding "authenticated users only" policy to both tables.
+- All 7 tables now have RLS enabled. Security advisor CRITICAL findings cleared.
+- Migration SQL recorded in `supabase_migration_enable_rls_courtroom_personal_notes.sql`.
+- "Leaked Password Protection Disabled" advisory remains (low priority, Auth setting).
