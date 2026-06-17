@@ -1287,21 +1287,28 @@
 }
 
 @media (max-width: 768px) {
-  /* Flex row restored (base styles already set it). nameRowLeft has flex:1 +
-     min-width:0 from base — that's correct. badgeStack gets flex-shrink:0 so
-     the badge column doesn't compress. .name gets font-size:13px so the
-     longest name ("Woods-James, Kimberly (F, 56)" = 29 chars × ~6.59px avg
-     at 13px bold = 191px) fits within the ~211px available after the badge
-     column and circle are subtracted from iPhone SE's 343px inner width,
-     leaving a ~20px safety margin. At 14px the margin shrinks to ~5px — risky
-     given estimation error, so 13px was chosen. white-space:nowrap prevents
-     mid-parenthetical wrapping; overflow:hidden is a safety net. */
+  /* Badge shrunk to free width for a larger name font-size.
+     Badge math (iPhone SE, 375px inner=343px):
+       "Bonded Out" at 9px: 5.32em×9=47.9px + 12px padding = ~60px
+       (was 84px at 12px+20px padding — frees 24px)
+       nameRowLeft: 343 - 60 - 12gap = 271px (was 247px)
+       Name space: 271 - 36 (circle+gap) = 235px
+     Name math ("Woods-James, Kimberly (F, 56)" = 14.56em total):
+       At 15px: 14.56×15 = 218px → 17px margin ✓
+       At 15.5px: 225.7px → 9.3px — within estimation error range
+       At 16px: 233px → 2px — too risky
+       → chose 15px (17px margin, same comfort level as previous round) */
   .badgeStack {
     flex-shrink: 0;
   }
 
+  .badge {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+
   .name {
-    font-size: 13px;
+    font-size: 15px;
     white-space: nowrap;
     overflow: hidden;
   }
