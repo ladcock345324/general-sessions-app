@@ -32,6 +32,12 @@
   min-width: 0;
 }
 
+.indigentCircle {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
 .name {
   font-size: 15px;
   font-weight: 600;
@@ -205,9 +211,15 @@
     gap: 5px;
   }
 
-  /* Fix B: allow name to shrink so the circle stays inline rather than overflowing */
+  .indigentCircle {
+    height: 22px;
+  }
+
+  /* flex-grow:0 so name only takes its content width — circle sits immediately
+     after the text. flex-shrink:1 + min-width:0 still let it compress for long
+     names so the line doesn't overflow. */
   .name {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;

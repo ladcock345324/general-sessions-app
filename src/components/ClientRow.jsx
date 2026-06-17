@@ -37,13 +37,11 @@ function IndigentCircle({ clientId, status }) {
   }
   return (
     <div
+      className={styles.indigentCircle}
       onClick={handleClick}
       onPointerDown={e => e.stopPropagation()}
       onPointerUp={e => e.stopPropagation()}
-      style={{
-        width: 28, height: 28, display: 'inline-flex', alignItems: 'center',
-        justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
-      }}
+      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
     >
       <div style={{
         width: 14, height: 14, borderRadius: '50%',
