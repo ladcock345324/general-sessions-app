@@ -88,7 +88,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
   }
 
   return (
-    <div className={`${styles.row} ${relieved ? styles.dimmed : ''}`} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
+    <div className={styles.row} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
       <div className={styles.info}>
         <div className={styles.nameLine}>
           <span className={styles.name}>{nameOca}</span>
@@ -124,7 +124,10 @@ export default function ClientRow({ client, relieved = false, onClick }) {
         )}
         <div className={styles.right}>
           {relieved ? (
-            <RelivedBadge />
+            <div className={styles.badgeStack}>
+              <CustodyBadge status={custodyStatus} muted />
+              <RelivedBadge />
+            </div>
           ) : (
             <div className={styles.badgeStack}>
               <CustodyBadge status={custodyStatus} muted={!!relievedClosed} />
