@@ -1287,14 +1287,22 @@
 }
 
 @media (max-width: 768px) {
-  /* Fix D: stack name and badges vertically so the full name + circle fits on
-     one line without truncation. nameRowLeft stretches to the full row width
-     (~358px), enough for "Woods-James, Kimberly (F, 56)" at 17px + 28px circle.
-     badgeStack also stretches full-width so its internal flex-end aligns badges
-     to the right edge. */
+  /* Stack name section and badges vertically so the full name + circle fits on
+     one line. Three desktop values must be overridden to prevent dead space:
+     1. justify-content: space-between → flex-start (was pinning badgeStack to bottom)
+     2. nameRowLeft flex: 1 → flex: none (flex-basis:0 + flex-grow in a column
+        container caused nameRowLeft to expand and push badges to the far bottom)
+     3. nameRowLeft justify-content: center → flex-start (was centering content
+        inside the over-tall nameRowLeft box, creating visible empty space) */
   .nameRow {
     flex-direction: column;
     align-items: stretch;
+    justify-content: flex-start;
     gap: 8px;
+  }
+
+  .nameRowLeft {
+    flex: none;
+    justify-content: flex-start;
   }
 }
