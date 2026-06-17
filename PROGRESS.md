@@ -138,6 +138,20 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Collapse "Relieved as Counsel" into "Closed" Model (2026-06-16)
+
+Branch `rename-relieved-to-closed`. Unified the two-status model (Active / Relieved as Counsel) into a single Active / Closed model.
+
+- **Section placement** — `ClientList.jsx` now filters Active vs. Closed entirely on `relieved_closed` (`false` → Active, `true` → Closed). `relieved_as_counsel` is no longer read anywhere in app logic.
+- **Section header** — "RELIEVED AS COUNSEL" renamed to "CLOSED" in `ClientList.jsx`.
+- **"Relieve as Counsel" button removed** — `ClientFile.jsx` no longer has the "Relieved as Counsel" action button, its confirmation dialog, `handleRelieve()`, `handleReopen()` (the dual-flag reset path), `isRelieved` flag, or `showRelieveConfirm` state. Only "Close Case" / "Reopen Case" (toggling `relieved_closed`) and "Delete Client" remain as actions.
+- **"Relieved as Counsel" text removed app-wide** — purged from `ClientRow.jsx` (unstyled badge text in closed rows), `ClientList.jsx` (section header), and all `ClientFile.jsx` button/dialog copy.
+- **Closed-section row brightness** — removed `opacity: 0.5` (`.dimmed` class) from Closed-section rows. Name, OCA, case numbers, and charge text now render at full brightness matching the Active section.
+- **Closed-section custody badge** — Closed rows now show a gray/muted `CustodyBadge` (In Custody / Bonded Out / Out) stacked above the CLOSED pill, matching how closed clients appeared when they were still in the Active section.
+- **`relieved_as_counsel` DB column** — left in place, untouched, for reversibility. The app simply no longer reads or writes it (except `NewClient.jsx` which still initializes it to `false` on create).
+- **Data migration** — checked for clients with `relieved_as_counsel = true` and `relieved_closed` not true; zero rows found. The one client with `relieved_as_counsel = true` (Test) already had `relieved_closed = true`.
+- **Section moves** — Pitts, Terron and Woods-James, Kimberly (both had `relieved_closed = true, relieved_as_counsel = false`, so appeared in Active with a gray CLOSED badge) moved to the Closed section as intended.
+
 ### Client List + ClientFile Mobile/Desktop Layout Fixes — Round 2 (2026-06-16)
 
 Branch `fix/client-list-mobile-v2`. These fixes followed a critical production regression (commit 42dc61b, reverted same day) that caused desktop rows to collapse and badges to bleed into adjacent rows.
