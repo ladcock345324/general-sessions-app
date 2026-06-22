@@ -11,6 +11,8 @@ const DATA_TABLES = [
 ]
 
 export async function fullSync(supabase) {
+  if (!navigator.onLine) return
+
   await processSyncQueue(supabase)
 
   const results = await Promise.all(
@@ -18,11 +20,15 @@ export async function fullSync(supabase) {
   )
 
   await Promise.all(
-    results.map(({ data }, i) => {
+    results.map(({ data, error }, i) => {
       const table = DATA_TABLES[i]
+      // Skip this table on a failed/offline fetch — preserve the existing cache.
+      // A successful empty array (data = [], error = null) still clears, which is
+      // how cross-device deletions propagate.
+      if (error || !Array.isArray(data)) return Promise.resolve()
       return db.transaction('rw', db[table], async () => {
         await db[table].clear()
-        await db[table].bulkPut(data ?? [])
+        await db[table].bulkPut(data)
       })
     })
   )
@@ -41,6 +47,8 @@ export async function fullSync(supabase) {
 }
 
 export async function processSyncQueue(supabase) {
+  if (!navigator.onLine) return
+
   const entries = await db.sync_queue
     .where('status').equals('pending')
     .sortBy('created_at')
