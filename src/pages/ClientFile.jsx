@@ -11,14 +11,14 @@ import TextViewerDrawer from '../components/TextViewerDrawer'
 
 // ─── Indigent status circle ──────────────────────────────────────────────────
 
-const INDIGENT_CYCLE = { gray: 'red', red: 'green', green: 'gray' }
-const INDIGENT_COLOR = { gray: '#6b7a99', red: '#b85555', green: '#3d9e6a' }
+const INDIGENT_CYCLE = { red: 'yellow', yellow: 'green', green: 'gold', gold: 'red' }
+const INDIGENT_COLOR = { red: '#b85555', yellow: '#E8913A', green: '#3d9e6a', gold: '#FFD700' }
 
 function IndigentCircle({ clientId, status }) {
-  const current = status ?? 'gray'
+  const current = INDIGENT_COLOR[status] ? status : 'red'
   function handleClick(e) {
     e.stopPropagation()
-    const next = INDIGENT_CYCLE[current] ?? 'gray'
+    const next = INDIGENT_CYCLE[current]
     db.clients.update(clientId, { indigent_status: next })
     addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, indigent_status: next })
   }
@@ -34,7 +34,7 @@ function IndigentCircle({ clientId, status }) {
     >
       <div style={{
         width: 14, height: 14, borderRadius: '50%',
-        backgroundColor: INDIGENT_COLOR[current] ?? INDIGENT_COLOR.gray,
+        backgroundColor: INDIGENT_COLOR[current],
         pointerEvents: 'none',
       }} />
     </div>
