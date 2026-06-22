@@ -1,10 +1,21 @@
 .screen {
+  position: relative;
   min-height: 100vh;
   background: #1E2A3A;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
+}
+
+.statusTop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+  display: flex;
+  justify-content: center;
 }
 
 .card {

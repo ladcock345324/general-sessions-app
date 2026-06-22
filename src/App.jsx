@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 import { AuthProvider } from './AuthContext'
 import { SyncProvider } from './SyncContext'
+import { PWAProvider } from './PWAContext'
 import RequireAuth from './RequireAuth'
 import Login from './pages/Login'
 import ClientList from './pages/ClientList'
@@ -12,6 +13,7 @@ import CaseView from './pages/CaseView'
 
 function App() {
   return (
+    <PWAProvider>
     <AuthProvider>
       <SyncProvider>
       <Routes>
@@ -25,6 +27,7 @@ function App() {
       </Routes>
       </SyncProvider>
     </AuthProvider>
+    </PWAProvider>
   )
 }
 

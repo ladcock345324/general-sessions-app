@@ -139,6 +139,26 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Offline Cold-Launch Fix — SW Update Model "Option 1" + Offline-Readiness Status Line (2026-06-22)
+
+Fixes the **blank-screen-on-offline-cold-launch** bug: launching the app offline from the iOS home-screen icon showed a completely blank screen (no app shell at all). **This is distinct from the 2026-06-21 data-layer cache-wipe fix** — that one showed "No clients yet" with the shell intact (a Dexie data problem); this one was the shell/JS bundle not being served at all (a service-worker lifecycle/timing problem).
+
+**Root cause:** `vite-plugin-pwa` was set to `registerType: 'autoUpdate'` with no explicit workbox block, so the generated `sw.js` had `skipWaiting` + `clientsClaim` both ON. That let a new, **not-yet-fully-precached** service worker seize control of the page mid-update. Combined with `no-store` on `index.html` and hash-named assets that change every deploy, a cold launch could land in a half-cached state where the served `index.html` referenced a JS bundle that wasn't in the cache → blank screen offline. The React render path was already confirmed innocent (getSession reads localStorage; SyncContext renders children regardless), so this was purely a SW timing fix.
+
+**The fix — "Option 1" update model (`vite.config.js`):**
+- `registerType: 'prompt'` (no immediate takeover) and `injectRegister: null` (registration now happens in-app — see below — preventing double registration).
+- Explicit `workbox` block: **`skipWaiting: false`** (the gate — a new SW only reaches "waiting" *after* its install/precache completes, then activates on the next full launch when all instances are closed and reopened, so a partially-cached SW never controls a page), `clientsClaim: true` (first-ever install still protects the current session ASAP; does not reintroduce the race because skipWaiting is false), `cleanupOutdatedCaches: true`, `globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}']`, `navigateFallback: 'index.html'`.
+- **Updates apply only on the next full launch.** We deliberately never call `updateServiceWorker()` and never force a reload. `needRefresh` is used for DISPLAY ONLY.
+
+**In-app registration (`src/PWAContext.jsx`):** `useRegisterSW` from `virtual:pwa-register/react`, called once in `PWAProvider` (mounted as the outermost provider in `App.jsx`). Exposes `offlineReady`, `needRefresh`, and a live **`controlled`** signal (`navigator.serviceWorker.controller !== null`, kept current via a `controllerchange` listener) to the UI via context.
+
+**Offline-readiness status line (`src/components/OfflineStatus.jsx` + `.module.css`):** one shared, low-contrast component rendered on **both** the Login screen (standalone line, top of screen, respects `env(safe-area-inset-top)`, with an Online/Offline segment) and the ClientList shell (next to the existing sync bar, connectivity omitted there to avoid duplicating the sync bar). States:
+- **Offline-ready** (green dot) — `controlled` is true: a SW actively controls the page, so the shell is served from cache and the app will open offline. This is the live truth to check before going underground.
+- **Preparing offline…** (amber dot) — registered/installing but `controlled` still null (first-ever visit before claim).
+- **Update ready — opens on next launch** (muted) — `needRefresh` true; the visible confirmation Option 1 is working. **No reload/refresh button** by design.
+
+**Verified from the generated `dist/sw.js`:** unconditional `self.skipWaiting()` is **gone** (replaced by the prompt-mode `SKIP_WAITING` message listener that only fires if we post to it — which we never do, so the SW waits); `clientsClaim()` present; precache manifest includes `index.html` **and** the main hashed JS/CSS bundles; `NavigationRoute` → `index.html` wired. The auto-injected `registerSW.js` script is no longer in `dist/index.html` (confirming `injectRegister: null`).
+
 ### Critical Offline Cache-Wipe Fix (2026-06-21)
 
 **Important correction to the offline-layer behavior described elsewhere in this doc.** Commit `feffd17`, `src/syncManager.js`.

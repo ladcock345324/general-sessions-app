@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient'
 import { useClients } from '../hooks/useClients'
 import { useSyncStatus } from '../SyncContext'
 import ClientRow from '../components/ClientRow'
+import OfflineStatus from '../components/OfflineStatus'
 import styles from './ClientList.module.css'
 
 const SORT_KEY = 'clientListSortMode'
@@ -147,6 +148,7 @@ export default function ClientList() {
         <button className={styles.signOutBtn} onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
       <SyncStatusBar />
+      <OfflineStatus />
       <header className={styles.header}>
         <h1 className={styles.title}>Clients</h1>
         <button className={styles.addClientBtn} onClick={() => navigate('/client/new')}>+</button>

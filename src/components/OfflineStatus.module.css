@@ -1,0 +1,32 @@
+.bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 16px;
+  font-size: 11px;
+  color: #6b7a99;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotGreen {
+  background: #3d9e6a;
+}
+
+.dotAmber {
+  background: #c8a84b;
+}
+
+.update {
+  color: #9faab8;
+}
+
+.conn {
+  color: #6b7a99;
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
+import OfflineStatus from '../components/OfflineStatus'
 import styles from './Login.module.css'
 
 export default function Login() {
@@ -25,6 +26,9 @@ export default function Login() {
 
   return (
     <div className={styles.screen}>
+      <div className={styles.statusTop}>
+        <OfflineStatus showConnectivity />
+      </div>
       <div className={styles.card}>
         <h1 className={styles.title}>General Sessions</h1>
         <p className={styles.subtitle}>Sign in to continue</p>
