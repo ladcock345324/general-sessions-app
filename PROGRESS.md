@@ -159,6 +159,14 @@ Fixes the **blank-screen-on-offline-cold-launch** bug: launching the app offline
 
 **Verified from the generated `dist/sw.js`:** unconditional `self.skipWaiting()` is **gone** (replaced by the prompt-mode `SKIP_WAITING` message listener that only fires if we post to it — which we never do, so the SW waits); `clientsClaim()` present; precache manifest includes `index.html` **and** the main hashed JS/CSS bundles; `NavigationRoute` → `index.html` wired. The auto-injected `registerSW.js` script is no longer in `dist/index.html` (confirming `injectRegister: null`).
 
+#### How to verify on-device (iPhone)
+
+1. **One-time transition (do this first).** The version currently on the phone still runs under the OLD immediate-takeover SW, so this fix *installs* under the old rules. Open the app **online once**, then **fully close it** — swipe it away in the app switcher (don't just background it). This lets the new safe SW activate. From the *next* launch onward the new model is in effect.
+2. **Reach the green light.** Open the app **online** and confirm the status line reads **"Offline-ready" (green)** on **both** the Login screen **and** the ClientList screen. Do not trust offline use until you've seen green on both.
+3. **The real test.** Turn on **Airplane Mode** *and* confirm **Wi-Fi is off** (no signal at all). Then **fully close** the app and **cold-launch** the home-screen PWA icon (must be a true cold launch, not resuming a backgrounded instance). **Expected:** the shell loads, the client list is visible, **no blank screen**.
+4. **Update-on-next-launch behavior.** After a future deploy, open the app online and expect **"Update ready — opens on next launch"** to appear. The new version intentionally does **not** take over on mere backgrounding — it only activates after a **full close (swipe away) and reopen**. This is the expected, safe behavior, not a bug.
+5. **If it ever blanks again.** First check whether the **status line itself rendered at all**. If even the status line is missing, the failure is **earlier than the service worker** (the shell/JS never executed) rather than a SW caching problem — note this, as it points the diagnosis in a different direction.
+
 ### Critical Offline Cache-Wipe Fix (2026-06-21)
 
 **Important correction to the offline-layer behavior described elsewhere in this doc.** Commit `feffd17`, `src/syncManager.js`.
