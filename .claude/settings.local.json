@@ -30,7 +30,8 @@
       "Bash(git merge rename-relieved-to-closed --no-ff -m ' *)",
       "Bash(grep -v \"^$\")",
       "PowerShell(npm run build)",
-      "mcp__ce5b625c-1365-4a6c-93f0-4f9590518d10__apply_migration"
+      "mcp__ce5b625c-1365-4a6c-93f0-4f9590518d10__apply_migration",
+      "Bash(node --check scripts/backup.js)"
     ]
   }
 }

@@ -1,0 +1,51 @@
+name: Nightly Supabase Backup
+
+# Nightly DB + Storage backup published as a rolling single snapshot to the
+# `backups` branch. Reads the Supabase service role key ONLY from the
+# SUPABASE_SERVICE_ROLE_KEY repo secret. Writes ONLY to `backups` — never main.
+
+on:
+  schedule:
+    # 08:00 UTC nightly ≈ 2:00–3:00am US Central (CDT/CST).
+    - cron: '0 8 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run backup
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/backup.js
+
+      - name: Publish rolling snapshot to backups branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Fresh orphan branch so the snapshot carries no history and old PDF
+          # blobs never accumulate in git (bounds repo size).
+          git checkout --orphan backups-tmp
+          git rm -r --cached -q . || true
+          # backup/ is gitignored on main, so force-add it for this branch only.
+          git add -f backup
+          git commit -m "Backup snapshot $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          # Single force-pushed commit = rolling latest-only snapshot on `backups`.
+          git push -f origin backups-tmp:backups

@@ -139,6 +139,29 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Automated Nightly Backups — DB + Storage (2026-06-22)
+
+Free ($0/month) self-built nightly backup that covers the gap Supabase's own backup products leave: **Supabase Daily Backups and the paid PITR add-on only cover the Postgres database — they explicitly exclude files stored via the Storage API.** No Supabase plan, paid or free, protects the PDFs in the `warrants` bucket (warrant affidavits, criminal history, courtroom documents) on its own. This system backs up both the database and those Storage files. Chosen over Supabase Pro ($25/mo, DB-only) and PITR (~$100+/mo, overkill for current volume).
+
+**The script (`scripts/backup.js`)** — Node, ESM, run by the workflow (not locally):
+- Reads the service role key **only** from `process.env.SUPABASE_SERVICE_ROLE_KEY`; if missing, errors and exits non-zero **without printing the key**. The key is never logged, printed, or written to disk anywhere.
+- Creates a service-role `@supabase/supabase-js` client (bypasses RLS by design, so it can read every row and file).
+- **DB dump:** all 7 tables (`clients`, `incidents`, `cases`, `hours`, `next_events`, `personal_notes`, `courtroom_documents`) → `backup/db/<table>.json`, **paginated via `.range()`** (1000/page) so it never truncates at the supabase-js 1000-row default.
+- **Storage dump:** walks the `warrants` bucket recursively from the root — `.list()` is non-recursive and paginated (100/page), so each level is paginated and subfolders are recursed — covering `warrants/`, `criminal-history/`, and the nested `courtroom-docs/<client_id>/<timestamp>_<filename>`. Every file's bytes are saved under `backup/storage/<same path>` (skips the `.emptyFolderPlaceholder` markers).
+- **`backup/manifest.json`:** UTC ISO timestamp, per-table row counts, total file count, total bytes — a quick integrity summary.
+- **Fails loudly** (non-zero exit) on any select/list/download error, so a broken backup can never report success.
+
+**The workflow (`.github/workflows/backup.yml`):**
+- Triggers: nightly `schedule` cron **`0 8 * * *` (08:00 UTC ≈ 2–3am US Central)** plus `workflow_dispatch` (manual button).
+- `permissions: contents: write`; checkout main → setup Node 20 → `npm ci` → `node scripts/backup.js` with `SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}`.
+- **Publishes a rolling single snapshot to the dedicated `backups` branch**: creates a fresh orphan branch, force-adds `backup/` (which is gitignored on main), commits one snapshot, and **force-pushes one orphan commit** to `backups` each run — so the branch always holds exactly the latest snapshot and old PDF blobs never accumulate in git history (bounds repo size). Uses the built-in `GITHUB_TOKEN`. **Writes only to `backups` — never to main.**
+
+**Housekeeping:** `backup/` added to `.gitignore` on main so the local output dir can never be committed there. The `backups` branch is created by the first workflow run (not pre-created).
+
+**One manual setup step only Lucas can do** (the key must never go into chat or any file): copy the Supabase service role key from Project Settings → API Keys, and paste it as a GitHub Actions repo secret named `SUPABASE_SERVICE_ROLE_KEY`. The workflow won't succeed until that secret exists.
+
+**Follow-up (not yet done):** test an actual **restore** — e.g. via Supabase's branching feature — to confirm the backup is real and complete, rather than just trusting the script ran.
+
 ### Offline Cold-Launch Fix — SW Update Model "Option 1" + Offline-Readiness Status Line (2026-06-22)
 
 Fixes the **blank-screen-on-offline-cold-launch** bug: launching the app offline from the iOS home-screen icon showed a completely blank screen (no app shell at all). **This is distinct from the 2026-06-21 data-layer cache-wipe fix** — that one showed "No clients yet" with the shell intact (a Dexie data problem); this one was the shell/JS bundle not being served at all (a service-worker lifecycle/timing problem).
@@ -483,23 +506,6 @@ src/
 ## Coming Next
 
 ### Features
-
-#### Automated Backups — database + Storage files (not yet started)
-
-Fully designed and deliberately deferred. Pick up here next session.
-
-**Why:** Supabase's built-in backup products (Daily Backups and the paid PITR add-on) only cover the Postgres database — they explicitly exclude files stored via the Storage API. No Supabase plan, paid or free, protects the PDFs in the `warrants` bucket (warrant affidavits, criminal history, courtroom documents) on its own.
-
-**Plan:** a free, self-built nightly backup:
-- A Node script (`scripts/backup.js`) using the Supabase service role key dumps all 7 tables to JSON and downloads every file across all three `warrants` bucket prefixes (`warrants/`, `criminal-history/`, `courtroom-docs/`).
-- Output is pushed as a rolling snapshot (overwritten each run, not version history) to a dedicated `backups` branch via a nightly GitHub Actions workflow (`.github/workflows/backup.yml`), triggered on a cron schedule plus manual `workflow_dispatch` for on-demand testing.
-- **Cost: $0/month** — explicitly chosen over Supabase Pro ($25/mo, database-only, doesn't cover Storage) and the PITR add-on (~$100+/mo, overkill for current data volume and risk).
-
-**Setup requires two manual steps only Lucas can do** (never into chat or any file):
-1. Copy the Supabase service role key from Project Settings → API Keys.
-2. Paste it as a new GitHub Actions repo secret named `SUPABASE_SERVICE_ROLE_KEY` — directly between those two dashboards.
-
-**Follow-up once running:** test an actual restore using Supabase's branching feature to confirm the backup is real and complete, rather than just trusting the script ran.
 
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)
 

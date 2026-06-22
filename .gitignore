@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Local output of scripts/backup.js — must never land on main (the workflow
+# publishes it to the dedicated `backups` branch instead).
+backup/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
