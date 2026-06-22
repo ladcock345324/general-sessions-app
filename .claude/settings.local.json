@@ -6,7 +6,30 @@
       "Bash(npm run *)",
       "Bash(git -C \"C:\\\\Users\\\\lucas\\\\Documents\\\\general-sessions-app\" status)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(git commit *)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(curl -s https://general-sessions-4jtwv04l6-lucas-adcock-s-projects.vercel.app/)",
+      "Bash(git pull *)",
+      "mcp__ce5b625c-1365-4a6c-93f0-4f9590518d10__execute_sql",
+      "Bash(npm install *)",
+      "Bash(npx eslint *)",
+      "mcp__Claude_in_Chrome__navigate",
+      "Bash(git revert *)",
+      "Bash(vercel ls *)",
+      "PowerShell(vercel ls 2>&1)",
+      "Bash(npx vercel *)",
+      "Bash(Select-String \"general-sessions\")",
+      "Bash(Select-Object -First 5)",
+      "Bash(git checkout *)",
+      "Bash(git merge rename-relieved-to-closed --no-ff -m ' *)",
+      "Bash(grep -v \"^$\")",
+      "PowerShell(npm run build)"
     ]
   }
 }

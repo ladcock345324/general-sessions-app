@@ -117,6 +117,7 @@ function NextEventBlock({ event, onEdit }) {
                 ...(event.reason ? [event.reason] : []),
                 ...(event.courtroom ? [`Courtroom ${event.courtroom}`] : []),
                 ...(event.judge ? [event.judge] : []),
+                ...(event.ada_name ? [`ADA: ${event.ada_name}`] : []),
               ]
               return segments.map((s, i) => (
                 <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{s}</span>
@@ -133,7 +134,7 @@ function NextEventBlock({ event, onEdit }) {
 
 // ─── Next Event form ─────────────────────────────────────────────────────────
 
-const EMPTY_EVENT = { docket_type: 'Jail Docket', reason: '', event_date: '', event_time: '9:00 AM', courtroom: '', judge: '', subpoenas: 'w/ subs' }
+const EMPTY_EVENT = { docket_type: 'Jail Docket', reason: '', event_date: '', event_time: '9:00 AM', courtroom: '', judge: '', subpoenas: 'w/ subs', ada_name: '' }
 
 const COURTROOMS = ['', '3A', '3B', '3C', '4B', '4C', '4D', '5C', '5D']
 
@@ -243,6 +244,7 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
           judge:       judgeInList ? existingJudge : 'Other',
           judgeOther:  judgeInList ? '' : existingJudge,
           subpoenas:   existing.subpoenas ?? '',
+          ada_name:    existing.ada_name ?? '',
         }
       : { ...EMPTY_EVENT, judgeOther: '' }
   )
@@ -295,6 +297,7 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
             <option>Jail Docket</option>
             <option>Bond Docket</option>
             <option>Review Docket</option>
+            <option>Settlement Docket</option>
           </select>
         </div>
         <div className={styles.formRow}>
@@ -355,6 +358,15 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
           <option value="w/out subs">w/out subs</option>
           <option value="">—</option>
         </select>
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Assistant DA Name</label>
+        <input
+          className={styles.formInput}
+          value={form.ada_name}
+          onChange={e => set('ada_name', e.target.value)}
+          placeholder="Optional"
+        />
       </div>
       {error && <div className={styles.formError}>{error}</div>}
       <div className={styles.formActions}>
@@ -1375,8 +1387,9 @@ export default function ClientFile() {
 
   async function handleClose() {
     setClosing(true)
-    await db.clients.update(id, { relieved_closed: true })
-    await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_closed: true })
+    const closedAt = new Date().toISOString()
+    await db.clients.update(id, { relieved_closed: true, closed_at: closedAt })
+    await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_closed: true, closed_at: closedAt })
     setClosing(false)
     setShowCloseConfirm(false)
     refetch()
@@ -1384,8 +1397,8 @@ export default function ClientFile() {
 
   async function handleReopenCase() {
     setClosing(true)
-    await db.clients.update(id, { relieved_closed: false })
-    await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_closed: false })
+    await db.clients.update(id, { relieved_closed: false, closed_at: null })
+    await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_closed: false, closed_at: null })
     setClosing(false)
     setShowCloseConfirm(false)
     refetch()
@@ -1413,7 +1426,7 @@ export default function ClientFile() {
     )
   }
 
-  const nameCore = `${client.last_name}, ${client.first_name} (${client.gender}, ${client.age})`
+  const nameCore = `${client.last_name}, ${client.first_name} (${client.gender})`
 
   const totalBond = incidents.flatMap(inc => inc.cases ?? []).reduce((sum, c) => sum + (Number(c.bond_amount) || 0), 0)
   const sortedIncidents = [...incidents].sort((a, b) => new Date(b.incident_date) - new Date(a.incident_date))
@@ -1440,7 +1453,7 @@ export default function ClientFile() {
               <div style={{ color: '#9faab8', fontSize: '0.85em', marginTop: 2 }}>#{client.oca}</div>
             )}
             <div className={styles.bondLine}>
-              {[`Total Bond: $${totalBond.toLocaleString()}`, client.da_name && `ADA: ${client.da_name}`].filter(Boolean).map((seg, i) => (
+              {[`Total Bond: $${totalBond.toLocaleString()}`].filter(Boolean).map((seg, i) => (
                 <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
               ))}
             </div>

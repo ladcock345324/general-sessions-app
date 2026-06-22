@@ -69,9 +69,9 @@ function RelivedBadge() {
 
 export default function ClientRow({ client, relieved = false, onClick }) {
   const navigate = useNavigate()
-  const { id, lastName, firstName, gender, age, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers, indigentStatus } = client
+  const { id, lastName, firstName, gender, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers, indigentStatus } = client
 
-  const nameOca = oca ? `${lastName}, ${firstName} (${gender}, ${age}) #${oca}` : `${lastName}, ${firstName} (${gender}, ${age})`
+  const nameOca = oca ? `${lastName}, ${firstName} (${gender}) #${oca}` : `${lastName}, ${firstName} (${gender})`
 
   let nextSegments = null
   if (nextHearing && nextHearing.date) {
