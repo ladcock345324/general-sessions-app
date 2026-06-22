@@ -38,12 +38,12 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `last_name` | text | |
 | `first_name` | text | |
 | `gender` | text | "M" or "F" |
-| `age` | int | |
+| `age` | int | legacy/dormant column — kept for reversibility; UI no longer reads, writes, or displays it (same pattern as `relieved_as_counsel`) |
 | `oca` | text | optional OCA # |
 | `custody_status` | text | `"in_custody"`, `"bonded_out"`, or `"out"` |
-| `da_name` | text | DA assigned to this client — shown on client file header |
 | `relieved_as_counsel` | boolean | legacy column — kept for reversibility; not read by app logic; section placement driven by `relieved_closed` |
 | `relieved_closed` | boolean | shows CLOSED badge when true |
+| `closed_at` | timestamptz | set when a client is closed, null when reopened; used to sort the Closed section (most recently closed first) |
 | `criminal_history_url` | text | Supabase Storage public URL for criminal history PDF |
 | `criminal_history_text` | text | extracted text from criminal history PDF — populated on upload |
 
@@ -52,13 +52,14 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 |---|---|---|
 | `id` | uuid PK | auto |
 | `client_id` | uuid FK → clients | |
-| `docket_type` | text | "Jail Docket", "Bond Docket", "Review Docket" |
+| `docket_type` | text | "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket" |
 | `reason` | text | optional — "Trial", "Settlement", or blank |
 | `event_date` | text | e.g. "6/7/2026" |
 | `event_time` | text | e.g. "9:05 AM" |
 | `courtroom` | text | e.g. "4B" — displayed as "Courtroom 4B" |
 | `judge` | text | selected from dropdown or custom "Other" value |
 | `subpoenas` | text | "w/ subs", "w/out subs", or blank |
+| `ada_name` | text | Assistant DA name — entered in the Next Event form; displayed in single-client view only |
 
 > One row per client (maybeSingle query). Add/Edit Next Event form upserts this row.
 
@@ -137,6 +138,32 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### Critical Offline Cache-Wipe Fix (2026-06-21)
+
+**Important correction to the offline-layer behavior described elsewhere in this doc.** Commit `feffd17`, `src/syncManager.js`.
+
+**Root cause:** `fullSync` destroyed the entire local Dexie cache on any offline launch. `supabase-js` does not throw when offline — it resolves with `{ data: null, error }`. `fullSync` ignored `error`, destructured only `data`, and ran `clear()` then `bulkPut(data ?? [])` → `bulkPut([])` inside a transaction that committed cleanly because nothing threw. The initial sync in `SyncContext` fired on mount with a valid persisted session and no connectivity guard, so opening the app offline (e.g. a courthouse basement) wiped all 7 tables, producing "No clients yet" / "Client not found". **Server data was never affected** — it repopulated on reconnect.
+
+**The fix — three complementary guards:**
+
+- **FIX A** — `fullSync` returns early if `!navigator.onLine`, so an offline launch never reaches the clear/bulkPut block.
+- **FIX B (the critical backstop)** — each table's result is destructured as `{ data, error }`; the guard `if (error || !Array.isArray(data)) return Promise.resolve()` skips that table and preserves its existing cache. Only a clean response (error null AND data is an array) proceeds to `clear()` + `bulkPut(data)`. The `?? []` fallback was removed. A legitimately empty array (`data = []`, `error = null`) still clears — this preserves cross-device deletion propagation. FIX B is what protects against "lie-fi" (`navigator.onLine` true but server unreachable, e.g. captive portals), which FIX A alone would miss.
+- **FIX C** — `processSyncQueue` returns early if `!navigator.onLine`, preventing offline-created writes from burning their 3-retry limit and being permanently marked `failed`; they stay `pending` until reconnect.
+
+**Verified** via airplane-mode cold-launch test: clients and client files remained fully available offline; a client added offline synced successfully on reconnect.
+
+### Client List + Next Event Batch (2026-06-21)
+
+1. **Settlement Docket** — added as a 4th `docket_type` option alongside Jail/Bond/Review in the Next Event form; behaves identically everywhere `docket_type` is shown.
+
+2. **Age removed from UI** — stripped from the New Client and Edit Client forms and from all name displays (`ClientRow`, `ClientFile` header `nameCore`, and the sticky name bar now read "LASTNAME, FIRSTNAME (gender)" with no age). The `clients.age` column is kept dormant in the DB for reversibility — the app no longer reads, writes, or displays it.
+
+3. **Client List sort toggle** — a badge control (white text, transparent fill, thin rounded-pill border) sits directly above the Active section header. Cycles between "Sorting by: Name" and "Sorting by: Next Event"; selection persisted in `localStorage` (key `clientListSortMode`).
+   - **Active section** — Name mode = alphabetical by last name; Next Event mode = ascending by combined event date+time (soonest first), with clients that have no next event grouped at the bottom, alphabetical among themselves. (A missing `event_time` sorts as start of day, so dateless events precede timed events on the same date.)
+   - **Closed section** — the toggle does NOT apply; always sorted by `closed_at` DESC (most recently closed at top), with legacy null-`closed_at` clients at the bottom. Close Case stamps `closed_at` (`new Date().toISOString()`); Reopen Case clears it back to null. Both written offline-first to Dexie + enqueued via `addToSyncQueue`, same as `relieved_closed`.
+
+4. **ADA moved to Next Event** — removed `clients.da_name` from the forms, the ClientFile header, and all code references; the column was dropped from the DB. Added an "Assistant DA Name" input to the Next Event form (`next_events.ada_name`). The single-client Next Event box now shows "ADA: [name]" appended (e.g. "Trial  |  Courtroom 5C  |  L. Jones  |  ADA: Mary Hamilton") only when set. **Not shown in the client list view.**
 
 ### RLS Enabled on All Tables (2026-06-17)
 
@@ -239,7 +266,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 ### Client List (`/`)
 - Fetches all clients from Supabase via `useClients` hook
 - Two sections: **Active** (`relieved_closed = false`) and **Closed** (`relieved_closed = true`) — header text rendered as "CLOSED" via CSS `text-transform: uppercase`
-- Both sorted alphabetically by last name
+- **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — always sorted by `closed_at` DESC, null-`closed_at` clients at the bottom. (See the 2026-06-21 "Client List + Next Event Batch" entry.)
 - Each section header shows a count badge (e.g. "Active 12")
 - Each row shows: name, next hearing (blue), case numbers + charge abbrevs, custody badge
 - **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), `position: absolute` right-anchored so all case number left edges are flush; charge_abbrev shown if set, falls back to charge
@@ -249,15 +276,15 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Mobile layout** (`max-width: 768px`): 3-line stacked layout — name, next event, case table + badge on same line. Desktop layout unchanged.
 
 ### Add Client (`/client/new`)
-- Fields: Last Name, First Name, Gender, Age, OCA #, Custody Status (In Custody / Bonded Out / Out), DA Name
+- Fields: Last Name, First Name, Gender, OCA #, Custody Status (In Custody / Bonded Out / Out)
 - Inserts into `clients` table, redirects to client list
 
 ### Client File (`/client/:id`)
-- **Header:** full name, custody badge, Total Bond (summed from all associated cases), DA name
+- **Header:** full name, custody badge, Total Bond (summed from all associated cases)
 - **Back button** navigates directly to `/` (not history-based)
 - **Edit button** navigates to `/client/:id/edit`
 - **Next Event block** (blue `#1E3A5F`): "NEXT EVENT" label + Edit button integrated into blue block
-  - Docket type, reason (if set), date/time, courtroom (prefixed "Courtroom"), judge
+  - Docket type, reason (if set), date/time, courtroom (prefixed "Courtroom"), judge, and ADA (shown as "ADA: [name]" only when `ada_name` is set — single-client view only, never in the client list)
   - **Clear button** in the edit form — deletes the `next_events` row for this client, returns block to empty state
 - **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table
 - **Incidents** section:
@@ -283,8 +310,10 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 
 ### Next Event Block
 - Display format: `Jail Docket  |  Thursday 7/16/2026  |  9:00 AM`
+- Docket types: Jail Docket, Bond Docket, Review Docket, Settlement Docket
 - Weekday derived from `event_date` via `new Date()` + `toLocaleDateString`
 - Time is optional — omitted from display if blank
+- **Assistant DA Name** input writes to `next_events.ada_name`; rendered as "ADA: [name]" in the single-client Next Event box only when set (not in the client list)
 - **Clear button** in edit form deletes the record entirely
 
 ### Case View (`/case/:caseNumber`)
@@ -446,9 +475,15 @@ Fully designed and deliberately deferred. Pick up here next session.
 
 - **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)
 
+#### Offline PDF availability (deferred)
+
+Affidavit / criminal-history / courtroom-document PDFs are not cached locally, so the scanned files aren't viewable offline — only their extracted text (`warrant_text`, etc.) is, via the text drawer reading from Dexie. A future option is to cache PDF bytes as Blobs in a new Dexie table (cache-on-upload + cache-on-view as the light version, eager full-download as the heavy version) and render via `pdfjs-dist` canvas in a drawer. Deliberately deferred — extracted text covers the practical need.
+
 ### Known Issues / Things to Revisit
 - Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
 - No pagination — all clients/cases load at once; fine for current scale
+- **`fullSync` uses `select('*')`**, which has a default 1,000-row ceiling in `supabase-js`. Fine at current scale (9 clients); revisit before any large growth.
+- **Successful-but-empty fetch clears the table** — in `fullSync`, a clean response with `error` null and `data` `[]` still clears the corresponding Dexie table by design, to propagate cross-device deletions. Correct for current single-user use; worth knowing.
 - **NULL text columns (as of 2026-06-17):** `cases`: 2 warrant PDFs on file have NULL `warrant_text` — confirmed scanned/non-OCR'd PDFs with no embedded text layer; `pdfjs-dist` cannot extract text from these regardless of re-upload. NULL is the permanent expected state for these two cases. `clients`: 1 client with NULL `criminal_history_text` but no PDF uploaded (no action needed); `courtroom_documents`: 0 documents uploaded (no action needed)
 - ~~Sync status indicator hidden on iPhone PWA~~ — fixed 2026-06-17: `padding-top: env(safe-area-inset-top, 0px)` added to `.screen` in `ClientList.module.css`; falls back to `0px` on desktop/non-notch devices.
 - ~~`.relievedBadge` and `.relievedLabel` CSS classes in `ClientRow.module.css` are dead~~ — removed 2026-06-17
