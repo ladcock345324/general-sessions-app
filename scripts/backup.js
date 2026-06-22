@@ -34,8 +34,13 @@ if (!SERVICE_ROLE_KEY) {
 }
 
 // Service role client — bypasses RLS so it can read every row and every file.
+// This is a server-side backup: it never opens a realtime channel (no
+// .channel()/.subscribe() calls), and we disable session persistence so nothing
+// is written to the runner. The realtime block keeps realtime usage at zero so
+// the websocket-on-Node crash can't recur even if the Node version changes.
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
+  realtime: { /* disabled — backup does not subscribe to realtime */ },
 })
 
 // ── DB dump ──────────────────────────────────────────────────────────────────
