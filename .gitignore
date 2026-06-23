@@ -16,6 +16,10 @@ dist-ssr
 # publishes it to the dedicated `backups` branch instead).
 backup/
 
+# Local restore-test credentials — service role key for the throwaway test
+# project. Must never be committed.
+.env.restore-test
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

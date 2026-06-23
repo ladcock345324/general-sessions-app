@@ -160,7 +160,12 @@ Free ($0/month) self-built nightly backup that covers the gap Supabase's own bac
 
 **One manual setup step only Lucas can do** (the key must never go into chat or any file): copy the Supabase service role key from Project Settings → API Keys, and paste it as a GitHub Actions repo secret named `SUPABASE_SERVICE_ROLE_KEY`. The workflow won't succeed until that secret exists.
 
-**Follow-up (not yet done):** test an actual **restore** — e.g. via Supabase's branching feature — to confirm the backup is real and complete, rather than just trusting the script ran.
+**Restore test — COMPLETE (2026-06-22):** the latest snapshot from the `backups` branch was restored into a **throwaway second Supabase project** (never touching production) via `scripts/restore-test.js`. Results:
+- **All row counts matched the manifest exactly** — clients 9, incidents 10, cases 18, hours 12, next_events 6, personal_notes 5, courtroom_documents 0 (9/10/18/12/6/5/0).
+- Rows were inserted with their **explicit ids** in FK-safe order (clients → incidents → cases → the rest), so the **client→incident→case relationships reconnected with zero orphans**.
+- All **33 Storage files** re-uploaded to a fresh private `warrants` bucket, and one PDF (`warrants/11111111.pdf`) passed a **byte-for-byte round-trip check** — downloaded back from the test project, 90,424 bytes in and out, `%PDF` header intact.
+
+This confirms the backup is genuinely restorable, not just that the script ran. The restore script reads test-only credentials from a gitignored `.env.restore-test` and hard-asserts the test project ref before any write; that creds file was deleted after the test.
 
 ### Offline Cold-Launch Fix — SW Update Model "Option 1" + Offline-Readiness Status Line (2026-06-22)
 
