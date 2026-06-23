@@ -139,6 +139,16 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Indigent Circle — 4-Color Cycle, Gray Removed, Red Default (2026-06-22)
+
+Replaced the indigent-status circle's old 3-state cycle with a 4-state one and removed gray entirely. **Supersedes the cycle/default described in the 2026-06-10 "UI Polish" entry below.**
+
+- **New cycle (wrapping):** `red → yellow → green → gold → red → …` (was `gray → red → green → gray`).
+- **Colors (full map set explicitly):** red `#b85555` (kept), yellow `#E8913A` (warm orange-leaning amber), green `#3d9e6a` (kept), gold `#FFD700` (bright metallic gold). yellow and gold are intentionally distinct at a glance.
+- **Gray fully removed** as a state, default, and fallback. Any non-cycle value (legacy `gray`, null, empty) normalizes to red and advances to yellow on first tap, so no path can render gray. (Unrelated `badgeGray` custody-badge styling was left untouched.)
+- **Red is the new unset default.** Migration `supabase_migration_indigent_default_red.sql` changed the `clients.indigent_status` column DEFAULT from `'gray'` to `'red'` and ran `UPDATE clients SET indigent_status = 'red'` — applied via the Supabase MCP connector; **all 9 client rows set to red**, verified 0 non-red.
+- **Both render sites updated identically** — `ClientRow` (client list) and `ClientFile` header — plus the `ClientList` fallback. Size, hit-area, position, and offline-first sync behavior unchanged.
+
 ### Automated Nightly Backups — DB + Storage (2026-06-22)
 
 Free ($0/month) self-built nightly backup that covers the gap Supabase's own backup products leave: **Supabase Daily Backups and the paid PITR add-on only cover the Postgres database — they explicitly exclude files stored via the Storage API.** No Supabase plan, paid or free, protects the PDFs in the `warrants` bucket (warrant affidavits, criminal history, courtroom documents) on its own. This system backs up both the database and those Storage files. Chosen over Supabase Pro ($25/mo, DB-only) and PITR (~$100+/mo, overkill for current volume).
@@ -272,7 +282,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Indigent circle mobile overflow fix** — added a `@media (max-width: 768px)` block to `ClientFile.module.css` truncating `.name` (`overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0`) so unusually long names (e.g. "Woods-James, Kimberly") can't push the indigent status circle out of the flex row on mobile. `IndigentCircle`'s container already had `flexShrink: 0`, so it stays anchored once the name truncates. Desktop layout (no media query match) and normal-length names are unaffected.
 
 ### UI Polish (2026-06-10)
-- **Indigent status circle** — new `indigent_status text DEFAULT 'gray'` column on `clients` table; Dexie schema bumped to version 2 with `indigent_status` indexed; 14px visible dot inside a 28px transparent hit-area container (`display: inline-flex`, centered); pointer events on the outer container only — inner circle has `pointer-events: none`; cycles gray → red → green → gray on tap; offline-first writes via Dexie + `addToSyncQueue`; renders in `ClientRow` (to the right of the OCA number) and `ClientFile` header (line 1, after name/gender/age); both views stay in sync via `useLiveQuery`
+- **Indigent status circle** — new `indigent_status text DEFAULT 'gray'` column on `clients` table; Dexie schema bumped to version 2 with `indigent_status` indexed; 14px visible dot inside a 28px transparent hit-area container (`display: inline-flex`, centered); pointer events on the outer container only — inner circle has `pointer-events: none`; cycles gray → red → green → gray on tap; offline-first writes via Dexie + `addToSyncQueue`; renders in `ClientRow` (to the right of the OCA number) and `ClientFile` header (line 1, after name/gender/age); both views stay in sync via `useLiveQuery` *(cycle, colors, and `'gray'` default later superseded — see the 2026-06-22 "Indigent Circle — 4-Color Cycle" entry above)*
 - **ClientFile header layout** — `nameCore` (`LASTNAME, FIRSTNAME (gender, age)`) and indigent circle on line 1 as `flex-wrap: nowrap`; OCA number on its own line 2 in muted text (`#9faab8`, `0.85em`) — previously OCA was concatenated into the name string
 - **Mobile custody badge** — font-size, padding, and border-radius all reduced 30% on mobile only (inside `@media (max-width: 768px)`); vertically centered against full row height via `position: absolute` on `.right` with `top: 50%; transform: translateY(-50%)`; `.row` gets `position: relative` and `padding-right: 76px` to keep content clear — desktop layout unchanged
 - **Incident edit calendar overlap fix** — date `<input>` moved below description `<textarea>` in the incident inline edit form so the native mobile date picker no longer covers the description field; `autoFocus` moved to the textarea
@@ -312,6 +322,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - `/assets/*` → `public, max-age=31536000, immutable` (hashed filenames, safe to cache forever)
 - **Supabase credentials** are hardcoded in `src/supabaseClient.js` — no env vars needed in Vercel
 - ⚠️ Preview URLs (containing a hash segment like `4jtwv04l6` in the hostname) are **immutable snapshots** of a specific deployment — never use these for testing current changes; always use the production URL above
+- **Ignored Build Step — main-only builds (2026-06-22):** set in the Vercel dashboard (Project Settings → Git → Ignored Build Step) to the custom command `bash -c "[ \"$VERCEL_GIT_COMMIT_REF\" = main ]"`. Vercel now builds **only** the `main` branch and skips all other branches — specifically the `backups` branch. This stops the failed Vercel deployment ("red X") that the nightly backup workflow's push to `backups` was triggering (the snapshot has no buildable app, so Vercel's auto-build of that branch failed). **This is a Vercel dashboard setting, not a repo change** — it lives in Vercel config, not in `vercel.json` or any committed file.
 
 ### Authentication
 - Login page at `/login` — email/password via `supabase.auth.signInWithPassword()`
@@ -527,6 +538,7 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 - ~~Sync status indicator hidden on iPhone PWA~~ — fixed 2026-06-17: `padding-top: env(safe-area-inset-top, 0px)` added to `.screen` in `ClientList.module.css`; falls back to `0px` on desktop/non-notch devices.
 - ~~`.relievedBadge` and `.relievedLabel` CSS classes in `ClientRow.module.css` are dead~~ — removed 2026-06-17
 - **Leaked Password Protection Disabled** — low-severity advisory in Supabase Auth settings; not yet addressed; can be toggled on in the Supabase dashboard under Auth → Settings whenever ready
+- **Verify next backup push: no failed Vercel deploy on `backups`** — the Ignored Build Step fix (see Deployment, 2026-06-22) only takes effect on the **next** push to `backups`. On the next nightly backup run, confirm the `backups` branch no longer shows a failed Vercel deployment ("red X") in the dashboard / commit status. OPEN until verified.
 
 ---
 
