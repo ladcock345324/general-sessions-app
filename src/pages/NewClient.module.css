@@ -50,6 +50,13 @@
   gap: 12px;
 }
 
+/* Booking field: date input + hour + AM/PM dropdowns, side by side. */
+.bookingGrid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 10px;
+}
+
 .label {
   font-size: 11px;
   font-weight: 700;

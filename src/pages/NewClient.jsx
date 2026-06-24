@@ -9,12 +9,15 @@ const EMPTY = {
   first_name: '',
   gender: 'M',
   booking_date: '',
-  booking_time: '',
+  booking_hour: '',
+  booking_period: '',
   oca: '',
   custody_status: 'in_custody',
 }
 
-// Mirror Next Event's date/time conversions (see ClientFile.jsx).
+const HOURS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
+
+// Mirror Next Event's date conversions (see ClientFile.jsx).
 // "M/D/YYYY" ↔ "YYYY-MM-DD" for <input type="date">
 function toDateInput(mdy) {
   if (!mdy) return ''
@@ -28,26 +31,11 @@ function fromDateInput(iso) {
   const [y, m, d] = iso.split('-')
   return `${Number(m)}/${Number(d)}/${y}`
 }
-// "h:MM AM/PM" ↔ "HH:MM" for <input type="time">
-function toTimeInput(ampm) {
-  if (!ampm) return ''
-  const m = ampm.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
-  if (!m) return ''
-  let h = parseInt(m[1], 10)
-  const min = m[2]
-  const period = m[3].toUpperCase()
-  if (period === 'AM' && h === 12) h = 0
-  if (period === 'PM' && h !== 12) h += 12
-  return `${String(h).padStart(2, '0')}:${min}`
-}
-function fromTimeInput(hhmm) {
-  if (!hhmm) return ''
-  const [hStr, min] = hhmm.split(':')
-  let h = parseInt(hStr, 10)
-  const period = h >= 12 ? 'PM' : 'AM'
-  if (h === 0) h = 12
-  else if (h > 12) h -= 12
-  return `${h}:${min} ${period}`
+// hour + AM/PM dropdowns → "h:00 AM/PM" (same format as next_events.event_time),
+// or null when either is blank.
+function combineTime(hour, period) {
+  if (!hour || !period) return null
+  return `${Number(hour)}:00 ${period}`
 }
 
 export default function NewClient() {
@@ -76,7 +64,7 @@ export default function NewClient() {
       first_name: form.first_name.trim(),
       gender: form.gender,
       booking_date: form.booking_date.trim() || null,
-      booking_time: form.booking_time.trim() || null,
+      booking_time: combineTime(form.booking_hour, form.booking_period),
       oca: form.oca.trim() || null,
       custody_status: form.custody_status,
       relieved_as_counsel: false,
@@ -133,7 +121,7 @@ export default function NewClient() {
 
         <div className={styles.row}>
           <label className={styles.label}>Booked/Initial Appearance</label>
-          <div className={styles.twoCol}>
+          <div className={styles.bookingGrid}>
             <div className={styles.row}>
               <label className={styles.label}>Date</label>
               <input
@@ -144,14 +132,27 @@ export default function NewClient() {
               />
             </div>
             <div className={styles.row}>
-              <label className={styles.label}>Time</label>
-              <input
-                className={styles.input}
-                type="time"
-                step="3600"
-                value={toTimeInput(form.booking_time)}
-                onChange={e => set('booking_time', fromTimeInput(e.target.value))}
-              />
+              <label className={styles.label}>Hour</label>
+              <select
+                className={styles.select}
+                value={form.booking_hour}
+                onChange={e => set('booking_hour', e.target.value)}
+              >
+                <option value="">—</option>
+                {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
+            </div>
+            <div className={styles.row}>
+              <label className={styles.label}>AM/PM</label>
+              <select
+                className={styles.select}
+                value={form.booking_period}
+                onChange={e => set('booking_period', e.target.value)}
+              >
+                <option value="">—</option>
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
             </div>
           </div>
         </div>

@@ -131,11 +131,14 @@ export default function ClientRow({ client, relieved = false, onClick }) {
         <div className={styles.right}>
           <div className={styles.badgeArea}>
             {showPrelim && (
-              <span className={styles.prelimLine}>
-                Booked/In. App.: {formatBookingTimeCompact(bookingTime)} {shortWeekday(bookingDate)} {formatMD(bookingDate)}
-                <span className={styles.prelimPipe}>|</span>
-                <span className={styles.prelimCutoff}>{shortWeekday(cutoffDate)} {formatMD(cutoffDate)}</span>
-              </span>
+              <div className={styles.prelimBlock}>
+                <div className={styles.prelimRow1}>
+                  {formatBookingTimeCompact(bookingTime)} {shortWeekday(bookingDate)} {formatMD(bookingDate)}
+                </div>
+                <div className={styles.prelimRow2}>
+                  → {shortWeekday(cutoffDate)} {formatMD(cutoffDate)}
+                </div>
+              </div>
             )}
             {relieved ? (
               <div className={styles.badgeStack}>

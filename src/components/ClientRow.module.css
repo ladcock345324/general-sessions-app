@@ -119,32 +119,34 @@
   align-items: center;
 }
 
-/* Wraps the in-custody prelim line + custody badge so they center together as a
-   unit within the vertically-centered .right area. */
+/* Wraps the in-custody prelim lines + custody badge. Right-aligned (flex-end) so
+   badges stay flush to the row's right edge — adding the info lines must not push
+   the badge left. Vertically centered as a unit via the .right absolute wrapper. */
 .badgeArea {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 3px;
 }
 
-/* In-custody preliminary-hearing line. Color matches the "In Custody" badge text
-   (#b85555 — see .badgeRed). Right of the pipe is bold; rest is normal weight. */
-.prelimLine {
-  font-size: 11px;
-  line-height: 1;
-  color: #b85555;
+/* In-custody preliminary-hearing block: two compact right-aligned lines stacked
+   above the badge. Color = --prelim-color (tweak in one place). */
+.prelimBlock {
+  --prelim-color: #d96a6a;
+  text-align: right;
+  color: var(--prelim-color);
   white-space: nowrap;
-  text-align: center;
+}
+
+.prelimRow1 {
+  font-size: 8.5px;
+  line-height: 1.15;
   font-weight: 400;
 }
 
-.prelimPipe {
-  margin: 0 0.4em;
-  font-weight: 400;
-}
-
-.prelimCutoff {
+.prelimRow2 {
+  font-size: 8.5px;
+  line-height: 1.15;
   font-weight: 700;
 }
 
@@ -287,12 +289,9 @@
     transform: translateY(-50%);
   }
 
-  .prelimLine {
+  .prelimRow1,
+  .prelimRow2 {
     font-size: 8px;
-  }
-
-  .prelimPipe {
-    margin: 0 0.3em;
   }
 
   .badge {
