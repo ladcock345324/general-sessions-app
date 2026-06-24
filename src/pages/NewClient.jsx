@@ -8,8 +8,46 @@ const EMPTY = {
   last_name: '',
   first_name: '',
   gender: 'M',
+  booking_date: '',
+  booking_time: '',
   oca: '',
   custody_status: 'in_custody',
+}
+
+// Mirror Next Event's date/time conversions (see ClientFile.jsx).
+// "M/D/YYYY" ↔ "YYYY-MM-DD" for <input type="date">
+function toDateInput(mdy) {
+  if (!mdy) return ''
+  const parts = mdy.split('/')
+  if (parts.length !== 3) return ''
+  const [m, d, y] = parts
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+}
+function fromDateInput(iso) {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  return `${Number(m)}/${Number(d)}/${y}`
+}
+// "h:MM AM/PM" ↔ "HH:MM" for <input type="time">
+function toTimeInput(ampm) {
+  if (!ampm) return ''
+  const m = ampm.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (!m) return ''
+  let h = parseInt(m[1], 10)
+  const min = m[2]
+  const period = m[3].toUpperCase()
+  if (period === 'AM' && h === 12) h = 0
+  if (period === 'PM' && h !== 12) h += 12
+  return `${String(h).padStart(2, '0')}:${min}`
+}
+function fromTimeInput(hhmm) {
+  if (!hhmm) return ''
+  const [hStr, min] = hhmm.split(':')
+  let h = parseInt(hStr, 10)
+  const period = h >= 12 ? 'PM' : 'AM'
+  if (h === 0) h = 12
+  else if (h > 12) h -= 12
+  return `${h}:${min} ${period}`
 }
 
 export default function NewClient() {
@@ -37,6 +75,8 @@ export default function NewClient() {
       last_name: form.last_name.trim(),
       first_name: form.first_name.trim(),
       gender: form.gender,
+      booking_date: form.booking_date.trim() || null,
+      booking_time: form.booking_time.trim() || null,
       oca: form.oca.trim() || null,
       custody_status: form.custody_status,
       relieved_as_counsel: false,
@@ -89,6 +129,31 @@ export default function NewClient() {
             <option value="M">M</option>
             <option value="F">F</option>
           </select>
+        </div>
+
+        <div className={styles.row}>
+          <label className={styles.label}>Booked/Initial Appearance</label>
+          <div className={styles.twoCol}>
+            <div className={styles.row}>
+              <label className={styles.label}>Date</label>
+              <input
+                className={styles.input}
+                type="date"
+                value={toDateInput(form.booking_date)}
+                onChange={e => set('booking_date', fromDateInput(e.target.value))}
+              />
+            </div>
+            <div className={styles.row}>
+              <label className={styles.label}>Time</label>
+              <input
+                className={styles.input}
+                type="time"
+                step="3600"
+                value={toTimeInput(form.booking_time)}
+                onChange={e => set('booking_time', fromTimeInput(e.target.value))}
+              />
+            </div>
+          </div>
         </div>
 
         <div className={styles.row}>

@@ -83,6 +83,8 @@ function toRowProps(client) {
     oca: client.oca,
     status: client.relieved_closed ? 'closed' : 'active',
     custodyStatus: client.custody_status,
+    bookingDate: client.booking_date ?? null,
+    bookingTime: client.booking_time ?? null,
     nextHearing: (client.next_events && client.next_events.length > 0)
       ? {
           date:        client.next_events[0].event_date,

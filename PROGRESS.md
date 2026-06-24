@@ -46,6 +46,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `closed_at` | timestamptz | set when a client is closed, null when reopened; used to sort the Closed section (most recently closed first) |
 | `criminal_history_url` | text | Supabase Storage public URL for criminal history PDF |
 | `criminal_history_text` | text | extracted text from criminal history PDF — populated on upload |
+| `booking_date` | text | "M/D/YYYY" — date booked / initial appearance before magistrate; optional. Added 2026-06-24 via MCP. Used to compute the in-custody prelim-hearing cutoff (see entry below). |
+| `booking_time` | text | "h:MM AM/PM" (same format as `next_events.event_time`) — time of booking; optional, hour-only in the UI. Added 2026-06-24 via MCP. |
 
 ### `next_events`
 | Column | Type | Notes |
@@ -138,6 +140,21 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### In-Custody Preliminary-Hearing Countdown (2026-06-24)
+
+Adds a per-client preliminary-hearing deadline line to the client list for in-custody defendants.
+
+- **Legal basis.** TN Rule of Crim. Pro. 5 requires the preliminary hearing within **14 days** of the initial appearance before the magistrate. In Davidson County the commissioner review happens at booking, so the client's **booking date is used as a proxy** for that initial appearance. **Cutoff = booking date + 14 calendar days**, then a **weekend-only rollover** (lands on Saturday → +2 to Monday; Sunday → +1 to Monday). **Rule 45 holidays are intentionally NOT applied** (weekends only). The cutoff is **computed client-side at render time and never stored** — no cutoff column exists.
+- **New columns** (added via Supabase MCP, no migration in-repo): `clients.booking_date` (text, "M/D/YYYY") and `clients.booking_time` (text, "h:MM AM/PM"). Both optional/nullable.
+- **New util `src/prelimDeadline.js`** — pure date math, no deps:
+  - `computePrelimCutoff(bookingDateStr)` → "M/D/YYYY" (+14 days, weekend rollover).
+  - `shortWeekday(dateStr)` → "Sun".."Sat".
+  - `formatMD(dateStr)` → "M/D" (strips year).
+  - `formatBookingTimeCompact(timeStr)` → compact "2PM" (hour + AM/PM, no minutes/space).
+  - **Timezone-safe parsing:** all functions split "M/D/YYYY" into numeric parts and build dates with `new Date(y, m-1, d)` — never `new Date(string)` — to avoid UTC shifting the weekday/date by a day.
+- **Form field** (`NewClient.jsx` + `EditClient.jsx`): a "BOOKED/INITIAL APPEARANCE" group placed **between Gender and OCA #**. Two side-by-side inputs mirroring the Next Event date/time controls — native `<input type="date">` and `<input type="time" step="3600">` (hour-only; minutes locked to :00). Stored as "M/D/YYYY" / "h:MM AM/PM" using the same conversions Next Event uses for `event_date`/`event_time`. Optional (blank → null). EditClient pre-populates by reversing the stored format. Offline-first write path: Dexie first, then `addToSyncQueue`, with `booking_date`/`booking_time` in both the Dexie and sync-queue payloads (INSERT and UPDATE).
+- **Client-list line** (`ClientRow.jsx` + `ClientRow.module.css`): rendered **only when `custody_status === "in_custody"` AND `booking_date` is set**. Sits directly above the "In Custody" `CustodyBadge` in the right-side area, centered with the badge as a unit. Format: `Booked/In. App.: {time} {bookWeekday} {bookMD}  |  {cutoffWeekday} {cutoffMD}` (e.g. `Booked/In. App.: 2PM Wed 6/10  |  Wed 6/29`) — no time on the right of the pipe. Text color matches the In Custody badge (`#b85555`); everything right of the pipe is **bold**, rest normal weight. The entered booking time is shown as-is (no offset).
 
 ### Indigent Circle — 4-Color Cycle, Gray Removed, Red Default (2026-06-22)
 

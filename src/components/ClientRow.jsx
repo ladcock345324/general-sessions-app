@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
+import { computePrelimCutoff, shortWeekday, formatMD, formatBookingTimeCompact } from '../prelimDeadline'
 import styles from './ClientRow.module.css'
 
 // Returns pointer event props that fire `handler` on tap but not on:
@@ -69,7 +70,12 @@ function RelivedBadge() {
 
 export default function ClientRow({ client, relieved = false, onClick }) {
   const navigate = useNavigate()
-  const { id, lastName, firstName, gender, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers, indigentStatus } = client
+  const { id, lastName, firstName, gender, oca, custodyStatus, bookingDate, bookingTime, nextHearing, relievedClosed, caseNumbers, indigentStatus } = client
+
+  // In-custody preliminary-hearing line: only when in custody AND a booking date
+  // is set. Cutoff = booking + 14 days (weekend rollover), computed at render.
+  const showPrelim = custodyStatus === 'in_custody' && !!bookingDate
+  const cutoffDate = showPrelim ? computePrelimCutoff(bookingDate) : ''
 
   const nameOca = oca ? `${lastName}, ${firstName} (${gender}) #${oca}` : `${lastName}, ${firstName} (${gender})`
 
@@ -123,17 +129,26 @@ export default function ClientRow({ client, relieved = false, onClick }) {
           </div>
         )}
         <div className={styles.right}>
-          {relieved ? (
-            <div className={styles.badgeStack}>
-              <CustodyBadge status={custodyStatus} muted />
-              <RelivedBadge />
-            </div>
-          ) : (
-            <div className={styles.badgeStack}>
-              <CustodyBadge status={custodyStatus} muted={!!relievedClosed} />
-              {relievedClosed && <span className={styles.closedBadge}>CLOSED</span>}
-            </div>
-          )}
+          <div className={styles.badgeArea}>
+            {showPrelim && (
+              <span className={styles.prelimLine}>
+                Booked/In. App.: {formatBookingTimeCompact(bookingTime)} {shortWeekday(bookingDate)} {formatMD(bookingDate)}
+                <span className={styles.prelimPipe}>|</span>
+                <span className={styles.prelimCutoff}>{shortWeekday(cutoffDate)} {formatMD(cutoffDate)}</span>
+              </span>
+            )}
+            {relieved ? (
+              <div className={styles.badgeStack}>
+                <CustodyBadge status={custodyStatus} muted />
+                <RelivedBadge />
+              </div>
+            ) : (
+              <div className={styles.badgeStack}>
+                <CustodyBadge status={custodyStatus} muted={!!relievedClosed} />
+                {relievedClosed && <span className={styles.closedBadge}>CLOSED</span>}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
