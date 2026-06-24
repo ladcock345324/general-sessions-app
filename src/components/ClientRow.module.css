@@ -119,21 +119,23 @@
   align-items: center;
 }
 
-/* Wraps the in-custody prelim lines + custody badge. Right-aligned (flex-end) so
-   badges stay flush to the row's right edge — adding the info lines must not push
-   the badge left. Vertically centered as a unit via the .right absolute wrapper. */
+/* Wraps the in-custody prelim lines + custody badge. align-items: center centers
+   the info lines horizontally over the badge so they read as one centered stack.
+   The wrapper stays right-anchored via the .right absolute positioning, so the
+   badge keeps its flush-right location and does not shift left (the badge is the
+   widest child). Vertically centered as a unit. */
 .badgeArea {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: 3px;
 }
 
-/* In-custody preliminary-hearing block: two compact right-aligned lines stacked
-   above the badge. Color = --prelim-color (tweak in one place). */
+/* In-custody preliminary-hearing block: two compact lines centered over the
+   badge. Color = --prelim-color (tweak in one place). */
 .prelimBlock {
   --prelim-color: #d96a6a;
-  text-align: right;
+  text-align: center;
   color: var(--prelim-color);
   white-space: nowrap;
 }
