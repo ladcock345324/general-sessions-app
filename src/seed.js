@@ -40,7 +40,6 @@ async function seed() {
       event_time: '9:05 AM',
       courtroom: 'Courtroom 4B',
       judge: 'A. Walker',
-      subpoenas: 'w/ subs',
     })
 
   if (eventErr) { console.error('Next event insert failed:', eventErr.message); process.exit(1) }

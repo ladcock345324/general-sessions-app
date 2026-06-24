@@ -85,18 +85,6 @@ export default function NewClient() {
 
       <div className={styles.form}>
         <div className={styles.row}>
-          <label className={styles.label}>Last Name *</label>
-          <input
-            className={styles.input}
-            type="text"
-            value={form.last_name}
-            onChange={e => set('last_name', e.target.value)}
-            placeholder="e.g. Woods-James"
-            autoFocus
-          />
-        </div>
-
-        <div className={styles.row}>
           <label className={styles.label}>First Name *</label>
           <input
             className={styles.input}
@@ -104,6 +92,18 @@ export default function NewClient() {
             value={form.first_name}
             onChange={e => set('first_name', e.target.value)}
             placeholder="e.g. Kimberly"
+            autoFocus
+          />
+        </div>
+
+        <div className={styles.row}>
+          <label className={styles.label}>Last Name *</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={form.last_name}
+            onChange={e => set('last_name', e.target.value)}
+            placeholder="e.g. Woods-James"
           />
         </div>
 

@@ -362,6 +362,20 @@
 .formInput::placeholder { color: #3a4a5e; }
 .formInput:focus { border-color: rgba(94, 150, 200, 0.45); }
 
+.formSelect {
+  background: #1E2A3A;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 6px;
+  color: #f0f2f5;
+  font-size: 14px;
+  font-family: inherit;
+  padding: 8px 10px;
+  outline: none;
+  width: 100%;
+}
+
+.formSelect:focus { border-color: rgba(94, 150, 200, 0.45); }
+
 .formPrefixInput {
   display: flex;
   align-items: center;

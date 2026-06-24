@@ -102,7 +102,7 @@ function NextEventBlock({ event, onEdit }) {
               const day = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '
               const t = event.event_time
               const parts = [
-                (event.docket_type || '') + (event.subpoenas ? ` (${event.subpoenas})` : ''),
+                (event.docket_type || ''),
                 day + event.event_date,
                 ...(t && /\d:\d{2}\s*(AM|PM)/i.test(t) ? [t] : []),
               ]
@@ -134,7 +134,7 @@ function NextEventBlock({ event, onEdit }) {
 
 // ─── Next Event form ─────────────────────────────────────────────────────────
 
-const EMPTY_EVENT = { docket_type: 'Jail Docket', reason: '', event_date: '', event_time: '9:00 AM', courtroom: '', judge: '', subpoenas: 'w/ subs', ada_name: '' }
+const EMPTY_EVENT = { docket_type: 'Jail Docket', reason: '', event_date: '', event_time: '9:00 AM', courtroom: '', judge: '', ada_name: '' }
 
 const COURTROOMS = ['', '3A', '3B', '3C', '4B', '4C', '4D', '5C', '5D']
 
@@ -243,7 +243,6 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
           courtroom:   existing.courtroom,
           judge:       judgeInList ? existingJudge : 'Other',
           judgeOther:  judgeInList ? '' : existingJudge,
-          subpoenas:   existing.subpoenas ?? '',
           ada_name:    existing.ada_name ?? '',
         }
       : { ...EMPTY_EVENT, judgeOther: '' }
@@ -293,12 +292,19 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
       <div className={styles.formTwoCol}>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Docket Type</label>
-          <select className={styles.formSelect} value={form.docket_type} onChange={e => set('docket_type', e.target.value)}>
-            <option>Jail Docket</option>
-            <option>Bond Docket</option>
-            <option>Review Docket</option>
-            <option>Settlement Docket</option>
-          </select>
+          <input
+            type="text"
+            className={styles.formInput}
+            list="docketTypeOptions"
+            value={form.docket_type}
+            onChange={e => set('docket_type', e.target.value)}
+          />
+          <datalist id="docketTypeOptions">
+            <option value="Jail Docket" />
+            <option value="Bond Docket" />
+            <option value="Review Docket" />
+            <option value="Settlement Docket" />
+          </datalist>
         </div>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Reason</label>
@@ -350,14 +356,6 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
             autoFocus
           />
         )}
-      </div>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Subpoenas</label>
-        <select className={styles.formSelect} value={form.subpoenas} onChange={e => set('subpoenas', e.target.value)}>
-          <option value="w/ subs">w/ subs</option>
-          <option value="w/out subs">w/out subs</option>
-          <option value="">—</option>
-        </select>
       </div>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Assistant DA Name</label>
@@ -432,7 +430,10 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
 
 // ─── Add Case form (under a specific incident) ────────────────────────────────
 
-const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', bond_amount: '' }
+// Charge classification, least-serious → most-serious. Blank = unset (stored null).
+const CLASSIFICATIONS = ['', 'C Mis', 'B Mis', 'A Mis', 'E Fel', 'D Fel', 'C Fel', 'B Fel', 'A Fel', 'Capital']
+
+const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '' }
 
 function AddCaseForm({ incidentId, onSaved, onCancel }) {
   const [form, setForm] = useState(EMPTY_CASE)
@@ -455,6 +456,7 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
       case_number: form.case_number.trim(),
       charge: form.charge.trim(),
       charge_abbrev: form.charge_abbrev.trim() || null,
+      classification: form.classification || null,
       bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
     }
     await db.cases.put(record)
@@ -475,6 +477,12 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Abbrev. (for client list)</label>
         <input className={styles.formInput} value={form.charge_abbrev} onChange={e => set('charge_abbrev', e.target.value)} placeholder="Optional" />
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Classification</label>
+        <select className={styles.formSelect} value={form.classification} onChange={e => set('classification', e.target.value)}>
+          {CLASSIFICATIONS.map(c => <option key={c} value={c}>{c || '—'}</option>)}
+        </select>
       </div>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Bond Amount</label>
@@ -634,7 +642,7 @@ function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseA
             <div key={c.id} className={styles.caseRow} {...tapHandlers(() => onCaseTap(c.case_number))} style={{ cursor: 'pointer', userSelect: 'text' }}>
               <div className={styles.caseInfo}>
                 <span className={styles.caseNumber}>{c.case_number}</span>
-                <span className={styles.caseCharge}>{c.charge}</span>
+                <span className={styles.caseCharge}>{c.charge}{c.classification ? ` (${c.classification})` : ''}</span>
                 <span className={styles.caseMeta}>
                   {c.warrant_url ? 'Affidavit on File' : 'No Affidavit'}<span className={styles.pipe}>|</span>{formatBond(c.bond_amount)} bond
                 </span>
@@ -1450,7 +1458,7 @@ export default function ClientFile() {
               <IndigentCircle clientId={id} status={client.indigent_status} />
             </div>
             {client.oca && (
-              <div style={{ color: '#9faab8', fontSize: '0.85em', marginTop: 2 }}>#{client.oca}</div>
+              <div style={{ color: '#9faab8', fontSize: '0.85em', marginTop: 2 }}>{client.oca}</div>
             )}
             <div className={styles.bondLine}>
               {[`Total Bond: $${totalBond.toLocaleString()}`].filter(Boolean).map((seg, i) => (

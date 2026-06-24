@@ -54,13 +54,13 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 |---|---|---|
 | `id` | uuid PK | auto |
 | `client_id` | uuid FK → clients | |
-| `docket_type` | text | "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket" |
+| `docket_type` | text | free text via input+datalist combobox (2026-06-24); four presets offered ("Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket") but any custom value can be typed |
 | `reason` | text | optional — "Trial", "Settlement", or blank |
 | `event_date` | text | e.g. "6/7/2026" |
 | `event_time` | text | e.g. "9:05 AM" |
 | `courtroom` | text | e.g. "4B" — displayed as "Courtroom 4B" |
 | `judge` | text | selected from dropdown or custom "Other" value |
-| `subpoenas` | text | "w/ subs", "w/out subs", or blank |
+| `subpoenas` | text | **DEPRECATED 2026-06-24** — all data cleared via MCP, all app code references removed; column drop pending in main chat after verification. No app code reads or writes it. |
 | `ada_name` | text | Assistant DA name — entered in the Next Event form; displayed in single-client view only |
 
 > One row per client (maybeSingle query). Add/Edit Next Event form upserts this row.
@@ -84,6 +84,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `case_number` | text | e.g. "GS1041482" |
 | `charge` | text | required |
 | `charge_abbrev` | text | optional short label shown in client list and case rows |
+| `classification` | text | optional charge classification — one of "C Mis", "B Mis", "A Mis", "E Fel", "D Fel", "C Fel", "B Fel", "A Fel", "Capital" (least→most serious); null = unset. Added 2026-06-24 via MCP. Shown in parens after the charge abbrev (client list) / charge (single view). |
 | `warrant_url` | text | Supabase Storage path for affidavit PDF (e.g. `warrants/GS1041482.pdf`) — signed URL generated on demand |
 | `bond_amount` | numeric | 0 displays as "$0 bond" |
 | `notes` | text | free-text, editable on case view with Save button |
@@ -140,6 +141,16 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### Cleanup Batch — OCA "#", name order, subpoenas, docket combobox, classification (2026-06-24)
+
+Five independent UI/data cleanups:
+
+1. **"#" removed from OCA/inmate number display.** The leading `#` was dropped from the rendered OCA in both the client list row (`ClientRow.jsx`) and the single-client view header (`ClientFile.jsx`). Reads "Boykins, Michael (M) 295180" now. The stored value is unchanged.
+2. **New Client form name order swapped.** In `NewClient.jsx` the First Name input is now above Last Name (autoFocus moved to First Name so the top field still focuses on load). `EditClient.jsx` untouched; storage/display of names unchanged everywhere.
+3. **Subpoenas removed from Next Event.** Removed the Subpoenas `<select>` from the Next Event form, its display in the Next Event block, and every code reference (`EMPTY_EVENT`, form init, payloads, and `seed.js`). Data was cleared via MCP; the `next_events.subpoenas` column is left in place for a later MCP drop — no app code reads or writes it, so nothing breaks when it's dropped.
+4. **Docket Type → typeable combobox.** The Next Event Docket Type `<select>` is now `<input type="text" list="docketTypeOptions">` + a `<datalist>` of the four presets, styled with `.formInput`. Free text is stored to `docket_type` (flows through the existing `...rest` save payload to both Dexie and the sync queue). Display already renders `docket_type` text, so custom values show as-is.
+5. **`cases.classification` added (field + two display spots).** New optional `<select>` placed immediately after "Abbrev. (for client list)" in **both** `CaseView.jsx`'s edit form and `ClientFile.jsx`'s inline `AddCaseForm`. Options in order: blank, "C Mis", "B Mis", "A Mis", "E Fel", "D Fel", "C Fel", "B Fel", "A Fel", "Capital" (least→most serious); blank stores null. Included in both the Dexie write and the sync-queue payload for case INSERT (AddCaseForm) and UPDATE (CaseView); CaseView pre-populates from the existing value. Displayed in parentheses after the charge abbrev in the client list (`ClientRow.jsx`) and after the charge in the single-client case rows (`ClientFile.jsx`), inheriting the surrounding charge-text font exactly, only when set (no empty parens). `classification` reaches `ClientRow` via the full case objects already carried in `ClientList.jsx` `toRowProps` — no extra threading needed.
 
 ### In-Custody Preliminary-Hearing Countdown (2026-06-24)
 

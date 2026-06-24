@@ -13,14 +13,18 @@ function formatBond(amount) {
   return '$' + Number(amount).toLocaleString()
 }
 
+// Charge classification, least-serious → most-serious. Blank = unset (stored null).
+const CLASSIFICATIONS = ['', 'C Mis', 'B Mis', 'A Mis', 'E Fel', 'D Fel', 'C Fel', 'B Fel', 'A Fel', 'Capital']
+
 // ─── Edit form ───────────────────────────────────────────────────────────────
 
 function EditCaseForm({ caseData, onSaved, onCancel }) {
   const [form, setForm] = useState({
-    case_number:   caseData.case_number   ?? '',
-    charge:        caseData.charge        ?? '',
-    charge_abbrev: caseData.charge_abbrev ?? '',
-    bond_amount:   caseData.bond_amount != null ? String(caseData.bond_amount) : '',
+    case_number:    caseData.case_number    ?? '',
+    charge:         caseData.charge         ?? '',
+    charge_abbrev:  caseData.charge_abbrev  ?? '',
+    classification: caseData.classification ?? '',
+    bond_amount:    caseData.bond_amount != null ? String(caseData.bond_amount) : '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -37,9 +41,10 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
 
     const changes = {
       case_number:   form.case_number.trim(),
-      charge:        form.charge.trim(),
-      charge_abbrev: form.charge_abbrev.trim() || null,
-      bond_amount:   form.bond_amount ? Number(form.bond_amount) : null,
+      charge:         form.charge.trim(),
+      charge_abbrev:  form.charge_abbrev.trim() || null,
+      classification: form.classification || null,
+      bond_amount:    form.bond_amount ? Number(form.bond_amount) : null,
     }
     await db.cases.update(caseData.id, changes)
     await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, ...changes })
@@ -59,6 +64,12 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Abbrev. (for client list)</label>
         <input className={styles.formInput} value={form.charge_abbrev} onChange={e => set('charge_abbrev', e.target.value)} placeholder="Optional" />
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Classification</label>
+        <select className={styles.formSelect} value={form.classification} onChange={e => set('classification', e.target.value)}>
+          {CLASSIFICATIONS.map(c => <option key={c} value={c}>{c || '—'}</option>)}
+        </select>
       </div>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Bond Amount</label>

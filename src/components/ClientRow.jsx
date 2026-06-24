@@ -77,7 +77,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
   const showPrelim = custodyStatus === 'in_custody' && !!bookingDate
   const cutoffDate = showPrelim ? computePrelimCutoff(bookingDate) : ''
 
-  const nameOca = oca ? `${lastName}, ${firstName} (${gender}) #${oca}` : `${lastName}, ${firstName} (${gender})`
+  const nameOca = oca ? `${lastName}, ${firstName} (${gender}) ${oca}` : `${lastName}, ${firstName} (${gender})`
 
   let nextSegments = null
   if (nextHearing && nextHearing.date) {
@@ -122,7 +122,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
               return (
                 <div key={c.id} className={styles.caseTableRow}>
                   <span className={styles.caseNum} onPointerDown={pd} onPointerUp={pu}>{c.case_number}</span>
-                  <span className={styles.caseCharge}>| {charge}</span>
+                  <span className={styles.caseCharge}>| {charge}{c.classification ? ` (${c.classification})` : ''}</span>
                 </div>
               )
             })}
