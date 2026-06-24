@@ -57,6 +57,22 @@
   gap: 10px;
 }
 
+/* Explicit Clear for the booking group — iOS Safari's native date picker has no
+   working clear, so this zeroes the controlled state. Matches the Next Event
+   Clear button's reddish styling; compact and right-aligned. */
+.bookingClear {
+  align-self: flex-end;
+  margin-top: 8px;
+  background: rgba(140, 40, 40, 0.18);
+  border: 1px solid rgba(140, 40, 40, 0.4);
+  color: #b85555;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
 .label {
   font-size: 11px;
   font-weight: 700;

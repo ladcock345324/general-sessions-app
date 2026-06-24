@@ -155,6 +155,15 @@ export default function NewClient() {
               </select>
             </div>
           </div>
+          {(form.booking_date || form.booking_hour || form.booking_period) && (
+            <button
+              type="button"
+              className={styles.bookingClear}
+              onClick={() => setForm(prev => ({ ...prev, booking_date: '', booking_hour: '', booking_period: '' }))}
+            >
+              Clear
+            </button>
+          )}
         </div>
 
         <div className={styles.row}>
