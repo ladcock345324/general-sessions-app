@@ -14,7 +14,7 @@ function formatBond(amount) {
 }
 
 // Charge classification, least-serious → most-serious. Blank = unset (stored null).
-const CLASSIFICATIONS = ['', 'C MIS', 'B MIS', 'A MIS', 'E FEL', 'D FEL', 'C FEL', 'B FEL', 'A FEL', 'CAPITAL']
+const CLASSIFICATIONS = ['', 'MIS', 'C MIS', 'B MIS', 'A MIS', 'E FEL', 'D FEL', 'C FEL', 'B FEL', 'A FEL', 'CAPITAL']
 
 // ─── Edit form ───────────────────────────────────────────────────────────────
 

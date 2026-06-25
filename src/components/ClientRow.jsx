@@ -55,9 +55,10 @@ function IndigentCircle({ clientId, status }) {
 
 function CustodyBadge({ status, muted }) {
   const label =
-    status === 'in_custody' ? 'In Custody' :
-    status === 'bonded_out' ? 'Bonded Out' :
-    status === 'out'        ? 'Out'         : null
+    status === 'in_custody'     ? 'In Custody'     :
+    status === 'bonded_out'     ? 'Bonded Out'     :
+    status === 'pretrialed_out' ? 'Pretrialed Out' :
+    status === 'out'            ? 'Out'            : null
   if (!label) return null
   const colorClass = muted ? styles.badgeGray :
     status === 'in_custody' ? styles.badgeRed : styles.badgeGreen

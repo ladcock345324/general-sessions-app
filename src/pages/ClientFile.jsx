@@ -395,7 +395,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
 // ─── Add Case form (under a specific incident) ────────────────────────────────
 
 // Charge classification, least-serious → most-serious. Blank = unset (stored null).
-const CLASSIFICATIONS = ['', 'C MIS', 'B MIS', 'A MIS', 'E FEL', 'D FEL', 'C FEL', 'B FEL', 'A FEL', 'CAPITAL']
+const CLASSIFICATIONS = ['', 'MIS', 'C MIS', 'B MIS', 'A MIS', 'E FEL', 'D FEL', 'C FEL', 'B FEL', 'A FEL', 'CAPITAL']
 
 const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '' }
 
@@ -1433,6 +1433,7 @@ export default function ClientFile() {
           <div className={styles.badgeStack}>
             {client.custody_status === 'in_custody' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeRed}`}>In Custody</span>}
             {client.custody_status === 'bonded_out' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>Bonded Out</span>}
+            {client.custody_status === 'pretrialed_out' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>Pretrialed Out</span>}
             {client.custody_status === 'out' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>Out</span>}
             {isClosed && <span className={styles.closedBadge}>CLOSED</span>}
           </div>

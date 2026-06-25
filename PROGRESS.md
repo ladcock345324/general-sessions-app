@@ -40,7 +40,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `gender` | text | "M" or "F" |
 | `age` | int | legacy/dormant column — kept for reversibility; UI no longer reads, writes, or displays it (same pattern as `relieved_as_counsel`) |
 | `oca` | text | optional OCA # |
-| `custody_status` | text | `"in_custody"`, `"bonded_out"`, or `"out"` |
+| `custody_status` | text | `"in_custody"`, `"bonded_out"`, `"pretrialed_out"`, or `"out"`. `pretrialed_out` added 2026-06-25 (front-end only — existing text column, no schema change); displays "Pretrialed Out", muted-green badge same as bonded_out/out. |
 | `relieved_as_counsel` | boolean | legacy column — kept for reversibility; not read by app logic; section placement driven by `relieved_closed` |
 | `relieved_closed` | boolean | shows CLOSED badge when true |
 | `closed_at` | timestamptz | set when a client is closed, null when reopened; used to sort the Closed section (most recently closed first) |
@@ -84,7 +84,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `case_number` | text | e.g. "GS1041482" |
 | `charge` | text | required |
 | `charge_abbrev` | text | optional short label shown in client list and case rows |
-| `classification` | text | optional charge classification — one of "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (all uppercase; least→most serious); null = unset. Added 2026-06-24 via MCP. Shown in parens after the charge abbrev (client list) / charge (single view). |
+| `classification` | text | optional charge classification — one of "MIS", "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (all uppercase; least→most serious); null = unset. Added 2026-06-24 via MCP; generic "MIS" option added 2026-06-25 (front-end only — same existing text column). Shown in parens after the charge abbrev (client list) / charge (single view). |
 | `warrant_url` | text | Supabase Storage path for affidavit PDF (e.g. `warrants/GS1041482.pdf`) — signed URL generated on demand |
 | `bond_amount` | numeric | 0 displays as "$0 bond" |
 | `notes` | text | free-text, editable on case view with Save button |
@@ -141,6 +141,16 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### "Pretrialed Out" Custody Status + Generic "MIS" Classification (2026-06-25)
+
+Two small front-end-only additions. **No DB/schema changes** — both reuse existing text columns (`clients.custody_status`, `cases.classification`).
+
+1. **New custody status `pretrialed_out` ("Pretrialed Out").** A fourth option alongside `in_custody` / `bonded_out` / `out`.
+   - **Dropdown** (`NewClient.jsx` + `EditClient.jsx`): added `<option value="pretrialed_out">Pretrialed Out</option>` immediately **below** "Bonded Out" — order is now In Custody, Bonded Out, Pretrialed Out, Out.
+   - **Badge rendering:** explicit label mapping added at both render sites so it never shows the raw value. `ClientRow.jsx`'s `CustodyBadge` got a `status === 'pretrialed_out' ? 'Pretrialed Out'` arm; `ClientFile.jsx` header got its own conditional span. Both use the same muted green (`#3d9e6a`, `badgeGreen`) as Bonded Out/Out.
+   - **No regressions (verified):** the in-custody prelim-hearing countdown still gates on `custodyStatus === 'in_custody'` only, so `pretrialed_out` correctly does **not** trigger it (they're out of custody). The closed-section gray override still applies — `ClientRow`'s color logic is `muted ? badgeGray : in_custody ? badgeRed : badgeGreen` (pretrialed_out falls to green, or gray when closed), and `ClientFile`'s per-span `isClosed ? badgeGray : badgeGreen` covers the new span.
+2. **Generic "MIS" classification option.** Added "MIS" as the first **real** option (blank/unset stays at the very top), immediately **above** "C MIS", in the `CLASSIFICATIONS` constant in **both** `CaseView.jsx` and `ClientFile.jsx` (each file holds its own copy of the array — no shared constant exists). No special-casing: both `<select>`s `.map()` over the constant, so it flows through the existing Dexie + sync-queue save payload and the generic `(MIS)` parens display in the client list and single-client view exactly like every other value.
 
 ### Cleanup Batch — OCA "#", name order, subpoenas, docket combobox, classification (2026-06-24)
 
@@ -440,8 +450,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Hanging indent on two-line descriptions: `padding-left: 1.62em; text-indent: -1.62em`
 
 ### Custody Status
-- Three options: `in_custody`, `bonded_out`, `out`
-- "Out" badge styled identically to "Bonded Out" (muted green)
+- Four options: `in_custody`, `bonded_out`, `pretrialed_out`, `out`
+- "Out", "Pretrialed Out", and "Bonded Out" badges all styled identically (muted green `#3d9e6a`); "In Custody" is muted crimson
 - All badges muted from original bright colors
 
 ### charge_abbrev

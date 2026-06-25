@@ -219,6 +219,7 @@ export default function EditClient() {
           >
             <option value="in_custody">In Custody</option>
             <option value="bonded_out">Bonded Out</option>
+            <option value="pretrialed_out">Pretrialed Out</option>
             <option value="out">Out</option>
           </select>
         </div>
