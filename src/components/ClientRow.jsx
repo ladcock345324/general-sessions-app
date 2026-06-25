@@ -122,7 +122,8 @@ export default function ClientRow({ client, relieved = false, onClick }) {
               return (
                 <div key={c.id} className={styles.caseTableRow}>
                   <span className={styles.caseNum} onPointerDown={pd} onPointerUp={pu}>{c.case_number}</span>
-                  <span className={styles.caseCharge}>| {charge}{c.classification ? ` (${c.classification})` : ''}</span>
+                  <span className={styles.caseCharge}>| {charge}</span>
+                  {c.classification && <span className={styles.caseClassification}> ({c.classification})</span>}
                 </div>
               )
             })}

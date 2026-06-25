@@ -110,6 +110,17 @@
   user-select: text;
 }
 
+/* Classification after the charge abbrev — matches the case-number text style
+   (.caseNum): same color/size/weight, not the muted charge-abbrev style. */
+.caseClassification {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b9fd4;
+  line-height: 1.5;
+  white-space: nowrap;
+  user-select: text;
+}
+
 .right {
   position: absolute;
   right: 16px;
@@ -275,6 +286,10 @@
   .caseNum {
     font-size: 11px;
     white-space: nowrap;
+  }
+
+  .caseClassification {
+    font-size: 11px;
   }
 
   .caseCharge {

@@ -134,7 +134,20 @@ function NextEventBlock({ event, onEdit }) {
 
 // ─── Next Event form ─────────────────────────────────────────────────────────
 
-const EMPTY_EVENT = { docket_type: 'Jail Docket', reason: '', event_date: '', event_time: '9:00 AM', courtroom: '', judge: '', ada_name: '' }
+const DOCKET_PRESETS = ['Jail Docket', 'Bond Docket', 'Review Docket', 'Settlement Docket']
+
+// docket_type is one column but edited as a preset <select> + optional append text.
+// Split a stored value back into { docketPreset, docketCustom }: if it begins with
+// a known preset, peel that off; otherwise treat the whole string as custom.
+function splitDocketType(stored) {
+  const s = (stored ?? '').trim()
+  if (!s) return { docketPreset: '', docketCustom: '' }
+  const preset = DOCKET_PRESETS.find(p => s === p || s.startsWith(p + ' '))
+  if (preset) return { docketPreset: preset, docketCustom: s.slice(preset.length).trim() }
+  return { docketPreset: '', docketCustom: s }
+}
+
+const EMPTY_EVENT = { docketPreset: 'Jail Docket', docketCustom: '', reason: '', event_date: '', event_time: '9:00 AM', courtroom: '', judge: '', ada_name: '' }
 
 const COURTROOMS = ['', '3A', '3B', '3C', '4B', '4C', '4D', '5C', '5D']
 
@@ -236,7 +249,7 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
   const [form, setForm] = useState(
     existing
       ? {
-          docket_type: existing.docket_type,
+          ...splitDocketType(existing.docket_type),
           reason:      existing.reason ?? '',
           event_date:  existing.event_date,
           event_time:  existing.event_time,
@@ -272,8 +285,12 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
     setSaving(true)
     setError(null)
 
-    const { judgeOther, ...rest } = form
-    const payload = { ...rest, judge: form.judge === 'Other' ? judgeOther.trim() : form.judge }
+    const { judgeOther, docketPreset, docketCustom, ...rest } = form
+    const payload = {
+      ...rest,
+      docket_type: [docketPreset, docketCustom].filter(Boolean).join(' ').trim() || null,
+      judge: form.judge === 'Other' ? judgeOther.trim() : form.judge,
+    }
 
     if (existing) {
       await db.next_events.update(existing.id, payload)
@@ -292,19 +309,17 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
       <div className={styles.formTwoCol}>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Docket Type</label>
+          <select className={styles.formSelect} value={form.docketPreset} onChange={e => set('docketPreset', e.target.value)}>
+            <option value="">—</option>
+            {DOCKET_PRESETS.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
           <input
-            type="text"
             className={styles.formInput}
-            list="docketTypeOptions"
-            value={form.docket_type}
-            onChange={e => set('docket_type', e.target.value)}
+            style={{ marginTop: 6 }}
+            value={form.docketCustom}
+            onChange={e => set('docketCustom', e.target.value)}
+            placeholder="Add'l text (optional)"
           />
-          <datalist id="docketTypeOptions">
-            <option value="Jail Docket" />
-            <option value="Bond Docket" />
-            <option value="Review Docket" />
-            <option value="Settlement Docket" />
-          </datalist>
         </div>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Reason</label>
@@ -431,7 +446,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
 // ─── Add Case form (under a specific incident) ────────────────────────────────
 
 // Charge classification, least-serious → most-serious. Blank = unset (stored null).
-const CLASSIFICATIONS = ['', 'C Mis', 'B Mis', 'A Mis', 'E Fel', 'D Fel', 'C Fel', 'B Fel', 'A Fel', 'Capital']
+const CLASSIFICATIONS = ['', 'C MIS', 'B MIS', 'A MIS', 'E FEL', 'D FEL', 'C FEL', 'B FEL', 'A FEL', 'CAPITAL']
 
 const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '' }
 
