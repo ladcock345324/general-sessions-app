@@ -123,7 +123,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
                 <div key={c.id} className={styles.caseTableRow}>
                   <span className={styles.caseNum} onPointerDown={pd} onPointerUp={pu}>{c.case_number}</span>
                   <span className={styles.caseCharge}>| {charge}</span>
-                  {c.classification && <span className={styles.caseClassification}> ({c.classification})</span>}
+                  {c.classification && <>{' '}<span className={styles.caseClassification}>({c.classification})</span></>}
                 </div>
               )
             })}
