@@ -84,7 +84,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `case_number` | text | e.g. "GS1041482" |
 | `charge` | text | required |
 | `charge_abbrev` | text | optional short label shown in client list and case rows |
-| `classification` | text | optional charge classification — one of "C Mis", "B Mis", "A Mis", "E Fel", "D Fel", "C Fel", "B Fel", "A Fel", "Capital" (least→most serious); null = unset. Added 2026-06-24 via MCP. Shown in parens after the charge abbrev (client list) / charge (single view). |
+| `classification` | text | optional charge classification — one of "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (all uppercase; least→most serious); null = unset. Added 2026-06-24 via MCP. Shown in parens after the charge abbrev (client list) / charge (single view). |
 | `warrant_url` | text | Supabase Storage path for affidavit PDF (e.g. `warrants/GS1041482.pdf`) — signed URL generated on demand |
 | `bond_amount` | numeric | 0 displays as "$0 bond" |
 | `notes` | text | free-text, editable on case view with Save button |
@@ -156,7 +156,7 @@ Five independent UI/data cleanups:
 
 Adds a per-client preliminary-hearing deadline line to the client list for in-custody defendants.
 
-- **Legal basis.** TN Rule of Crim. Pro. 5 requires the preliminary hearing within **14 days** of the initial appearance before the magistrate. In Davidson County the commissioner review happens at booking, so the client's **booking date is used as a proxy** for that initial appearance. **Cutoff = booking date + 14 calendar days**, then a **weekend-only rollover** (lands on Saturday → +2 to Monday; Sunday → +1 to Monday). **Rule 45 holidays are intentionally NOT applied** (weekends only). The cutoff is **computed client-side at render time and never stored** — no cutoff column exists.
+- **Legal basis.** Tenn. R. Crim. P. 5 requires the preliminary hearing within **14 days** of the initial appearance before the magistrate. The computation follows **Rule 45(a)**: count calendar days from the initial appearance. In Davidson County the commissioner review happens at booking, so the client's **booking date is used as a proxy** for that initial appearance. **Cutoff = booking date + 14 calendar days**, then a **weekend-only rollover** (lands on Saturday → +2 to Monday; Sunday → +1 to Monday). **Rule 45 holidays are intentionally NOT applied** — weekends only. The cutoff is **computed client-side at render time and never stored** — no cutoff column exists.
 - **New columns** (added via Supabase MCP, no migration in-repo): `clients.booking_date` (text, "M/D/YYYY") and `clients.booking_time` (text, "h:MM AM/PM"). Both optional/nullable.
 - **New util `src/prelimDeadline.js`** — pure date math, no deps:
   - `computePrelimCutoff(bookingDateStr)` → "M/D/YYYY" (+14 days, weekend rollover).
@@ -164,15 +164,16 @@ Adds a per-client preliminary-hearing deadline line to the client list for in-cu
   - `formatMD(dateStr)` → "M/D" (strips year).
   - `formatBookingTimeCompact(timeStr)` → compact "2PM" (hour + AM/PM, no minutes/space).
   - **Timezone-safe parsing:** all functions split "M/D/YYYY" into numeric parts and build dates with `new Date(y, m-1, d)` — never `new Date(string)` — to avoid UTC shifting the weekday/date by a day.
-- **Form field** (`NewClient.jsx` + `EditClient.jsx`): a "BOOKED/INITIAL APPEARANCE" group placed **between Gender and OCA #**. Two side-by-side inputs mirroring the Next Event date/time controls — native `<input type="date">` and `<input type="time" step="3600">` (hour-only; minutes locked to :00). Stored as "M/D/YYYY" / "h:MM AM/PM" using the same conversions Next Event uses for `event_date`/`event_time`. Optional (blank → null). EditClient pre-populates by reversing the stored format. Offline-first write path: Dexie first, then `addToSyncQueue`, with `booking_date`/`booking_time` in both the Dexie and sync-queue payloads (INSERT and UPDATE).
-- **Client-list line** (`ClientRow.jsx` + `ClientRow.module.css`): rendered **only when `custody_status === "in_custody"` AND `booking_date` is set**. Sits directly above the "In Custody" `CustodyBadge` in the right-side area. The entered booking time is shown as-is (no offset). **Reformatted 2026-06-24 (see refinement below).**
-
-**Refinements (2026-06-24, same day):**
-- **Time input changed from native to dropdown pair.** `<input type="time" step="3600">` failed to suppress the minutes wheel on both iOS Safari and desktop, so the TIME control in `NewClient.jsx`/`EditClient.jsx` is now two `<select>`s — Hour (blank + 1–12) and AM/PM (blank + AM/PM) — laid out beside the (unchanged) native date input in a 3-column `.bookingGrid`. Form state holds `booking_hour`/`booking_period`; `combineTime()` joins them to "h:00 AM/PM" (null if either blank); EditClient reverses via `parseTime()`. Storage format is unchanged, so `formatBookingTimeCompact` still works.
-- **Client-list line reformatted to two stacked, right-aligned lines.** Line 1 (normal): `{time} {bookWeekday} {bookMD}` (e.g. `7AM Wed 6/10`). Line 2 (**bold**, the deadline): `→ {cutoffWeekday} {cutoffMD}` (e.g. `→ Wed 6/24`) with a real arrow glyph (U+2192). The "Booked/In. App.:" label was **removed**. Color brightened from `#b85555` to **`#d96a6a`** (defined once as `--prelim-color` on `.prelimBlock`). Font shrunk to ~8.5px (8px mobile) with tight line-height.
-- **Custody-badge right-alignment restored.** The badge-area wrapper is `align-items: flex-end` (was `center`), so all custody badges — In Custody, Bonded Out, Out, and the gray CLOSED badge — sit flush against the row's right edge exactly as before the feature; adding the info lines no longer pushes the badge left.
-- **Info lines centered over the badge.** Final tweak: `.badgeArea` is back to `align-items: center` and `.prelimBlock` to `text-align: center`, so the two info lines center horizontally **over the badge** (one centered stack) rather than aligning to the row edge. The badge is the widest child of the right-anchored `.right` wrapper, so it keeps its flush-right position for every status (In Custody, Bonded Out, Out, CLOSED) — only the info lines' horizontal alignment relative to the badge changed.
-- **Explicit Clear control on the booking field.** iOS Safari's native date picker has **no working clear** (its "Reset" does nothing), so once a booking date was set on mobile there was no way to remove it. Added a "Clear" button (`.bookingClear`, reddish like the Next Event Clear) inside the BOOKED/INITIAL APPEARANCE group in `NewClient.jsx`/`EditClient.jsx`, shown only when at least one of date/hour/AM-PM has a value. It zeroes all three controlled React state fields (works on every platform, independent of the native picker). The existing blank→null save logic then writes `booking_date = null` **and** `booking_time = null` to both the Dexie record and the sync-queue payload (insert + update), so after Clear + Save the client-list info line disappears and the cleared state syncs.
+- **Form field** (`NewClient.jsx` + `EditClient.jsx`): a "BOOKED/INITIAL APPEARANCE" group placed **between Gender and OCA #**, laid out in a 3-column `.bookingGrid`:
+  - **Date** — native `<input type="date">` (unchanged throughout; works correctly everywhere).
+  - **Hour** — `<select>` with blank + 1–12. *(A native `<input type="time" step="3600">` was the initial implementation but was replaced because it failed to suppress the minutes wheel on both iOS Safari and desktop.)*
+  - **AM/PM** — `<select>` with blank + AM/PM.
+  - **Clear button** — reddish, shown only when at least one field has a value. iOS Safari's native date picker has no working clear (its "Reset" does nothing), so this button zeroes all three controlled React state fields, works on every platform.
+  - Form state holds `booking_date`, `booking_hour`, `booking_period`; `combineTime()` joins hour + period to "h:00 AM/PM" (null if either blank); `parseTime()` reverses on load. Stored as `booking_date` = "M/D/YYYY" and `booking_time` = "h:MM AM/PM" (same format as `next_events.event_time`). Optional (blank → null). Offline-first: Dexie first, then `addToSyncQueue`, with both fields in the Dexie and sync-queue payloads (INSERT and UPDATE). After Clear + Save, both columns write null and the client-list info lines disappear.
+- **Client-list display** (`ClientRow.jsx` + `ClientRow.module.css`): rendered **only when `custody_status === "in_custody"` AND `booking_date` is set**. Two compact lines (`.prelimBlock`, color `#d96a6a` as `--prelim-color`, ~8.5px desktop / 8px mobile, tight line-height), **centered over the custody badge** (the `.right` wrapper is right-anchored via `position: absolute`; the `.badgeArea` column uses `align-items: center` so the lines center over the badge — badge is the widest child so it stays flush right for all statuses):
+  - Line 1 (normal weight): `{time} {bookWeekday} {bookMD}` — e.g. `7AM Wed 6/10`
+  - Line 2 (**bold**, the cutoff deadline): `→ {cutoffWeekday} {cutoffMD}` — e.g. `→ Wed 6/24` (real U+2192 arrow)
+  - Booking time shown as-is (no offset). No label; no time on the cutoff side.
 
 ### Indigent Circle — 4-Color Cycle, Gray Removed, Red Default (2026-06-22)
 
@@ -357,7 +358,12 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - `/assets/*` → `public, max-age=31536000, immutable` (hashed filenames, safe to cache forever)
 - **Supabase credentials** are hardcoded in `src/supabaseClient.js` — no env vars needed in Vercel
 - ⚠️ Preview URLs (containing a hash segment like `4jtwv04l6` in the hostname) are **immutable snapshots** of a specific deployment — never use these for testing current changes; always use the production URL above
-- **Ignored Build Step — main-only builds (2026-06-22):** set in the Vercel dashboard (Project Settings → Git → Ignored Build Step) to the custom command `bash -c "[ \"$VERCEL_GIT_COMMIT_REF\" = main ]"`. Vercel now builds **only** the `main` branch and skips all other branches — specifically the `backups` branch. This stops the failed Vercel deployment ("red X") that the nightly backup workflow's push to `backups` was triggering (the snapshot has no buildable app, so Vercel's auto-build of that branch failed). **This is a Vercel dashboard setting, not a repo change** — it lives in Vercel config, not in `vercel.json` or any committed file.
+- **Ignored Build Step — main-only builds (2026-06-22):** set in the Vercel dashboard (Project Settings → Git → Ignored Build Step) to the custom command:
+  ```
+  bash -c '[ "$VERCEL_GIT_COMMIT_REF" = "main" ] && exit 1 || exit 0'
+  ```
+  Vercel's semantics: **exit 0 = skip the build; exit 1 = proceed with the build.** This command therefore builds `main` (exits 1) and skips all other branches including `backups` (exits 0). This stops the failed Vercel deployment ("red X") that the nightly backup workflow's push to `backups` was triggering (the snapshot has no buildable app, so Vercel's auto-build of that branch always failed). **This is a Vercel dashboard setting, not a repo change** — it lives in Vercel config, not in `vercel.json` or any committed file.
+  > ⚠️ **Prior inverted version (stale — do not use):** an earlier version of this command was `bash -c "[ \"$VERCEL_GIT_COMMIT_REF\" = main ]"`, which had the logic backwards — the `[` test exits 0 on success (main branch), which told Vercel to *skip* the main build, and exited 1 on any other branch, which told Vercel to *build* those. The corrected command above uses explicit `&& exit 1 || exit 0` to make the intent unambiguous.
 
 ### Authentication
 - Login page at `/login` — email/password via `supabase.auth.signInWithPassword()`
@@ -370,15 +376,15 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Two sections: **Active** (`relieved_closed = false`) and **Closed** (`relieved_closed = true`) — header text rendered as "CLOSED" via CSS `text-transform: uppercase`
 - **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — always sorted by `closed_at` DESC, null-`closed_at` clients at the bottom. (See the 2026-06-21 "Client List + Next Event Batch" entry.)
 - Each section header shows a count badge (e.g. "Active 12")
-- Each row shows: name, next hearing (blue), case numbers + charge abbrevs, custody badge
-- **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), `position: absolute` right-anchored so all case number left edges are flush; charge_abbrev shown if set, falls back to charge
+- Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge
+- **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), `position: absolute` right-anchored so all case number left edges are flush; `charge_abbrev` shown if set, falls back to `charge`; if `classification` is set, it follows in parens (e.g. `Sex Offender Registration Viol (A MIS)`), styled to match the next-event info line (`#6b9fd4`, normal weight, 13px desktop / 11px mobile)
 - Badge colors: **In Custody** → muted crimson (`#b85555`); **Bonded Out** / **Out** → muted green (`#3d9e6a`); **CLOSED** / relieved clients → gray
 - Clients in the Closed section (`relieved_closed = true`) show all custody badges in gray
 - `+` button top-right → Add Client form
 - **Mobile layout** (`max-width: 768px`): 3-line stacked layout — name, next event, case table + badge on same line. Desktop layout unchanged.
 
 ### Add Client (`/client/new`)
-- Fields: Last Name, First Name, Gender, OCA #, Custody Status (In Custody / Bonded Out / Out)
+- Fields (in order): **First Name**, **Last Name**, Gender, **Booked/Initial Appearance** (date + Hour + AM/PM dropdowns + Clear button), OCA #, Custody Status (In Custody / Bonded Out / Out)
 - Inserts into `clients` table, redirects to client list
 
 ### Client File (`/client/:id`)
@@ -407,14 +413,16 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Close Case / Reopen Case / Delete Client** action buttons
 
 ### Edit Client (`/client/:id/edit`)
-- Pre-populated with live Supabase data
+- Fields (in order): Last Name, First Name, Gender, **Booked/Initial Appearance** (date + Hour + AM/PM dropdowns + Clear button), OCA #, Custody Status — same field set as Add Client except name order is Last then First (unchanged from original; only New Client swapped to First-then-Last)
+- Pre-populated from Supabase (including `booking_date`/`booking_time` parsed back into the dropdowns)
 - Save uses `navigate('/client/:id', { replace: true })` — edit page is replaced in history, so Back from client file returns to client list
 
 ### Next Event Block
 - Display format: `Jail Docket  |  Thursday 7/16/2026  |  9:00 AM`
-- Docket types: Jail Docket, Bond Docket, Review Docket, Settlement Docket
+- **Docket Type** — edited as a native `<select>` (blank + "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket") plus a separate optional "Add'l text" `<input>` immediately after; combined into the single `docket_type` column on save via `[preset, custom].filter(Boolean).join(' ').trim() || null`; split back on load (`splitDocketType()` peels a leading known preset into the select; any remainder or non-matching legacy value goes into the text box)
 - Weekday derived from `event_date` via `new Date()` + `toLocaleDateString`
 - Time is optional — omitted from display if blank
+- **Subpoenas field removed** — all UI/code references removed; `next_events.subpoenas` column still exists in DB but is deprecated and pending drop via MCP (no app code reads or writes it)
 - **Assistant DA Name** input writes to `next_events.ada_name`; rendered as "ADA: [name]" in the single-client Next Event box only when set (not in the client list)
 - **Clear button** in edit form deletes the record entirely
 
@@ -423,7 +431,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Upload Affidavit** / **Replace Affidavit** — drag-and-drop or tap; uploads PDF to Supabase Storage; "Replace Affidavit" button resized to match "View Affidavit" and "View Text" buttons
 - **View Affidavit** button when affidavit is on file
 - **Notes** textarea with Save/Saved confirmation
-- **Disposition**, **Edit** (inline form includes `charge_abbrev` field), **Delete Case**
+- **Disposition**, **Edit** (inline form includes `charge_abbrev` and `classification` fields), **Delete Case**
 
 ### Incident Editing
 - Date input constrained to `max-width: 160px`
