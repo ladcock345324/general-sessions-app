@@ -25,7 +25,7 @@ export async function extractPdfText(file) {
       pages.push(content.items.map(item => item.str).join(' '))
     }
     return pages.join('\n').trim() || null
-  } catch (err) {
+  } catch {
     return null
   } finally {
     try { await pdfDoc?.destroy() } catch {}

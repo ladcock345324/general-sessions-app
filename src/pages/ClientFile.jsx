@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -166,57 +166,6 @@ const JUDGES = [
   'A. Walker',
   'Other',
 ]
-
-// Format raw digits → M/DD/YYYY or MM/DD/YYYY as user types.
-// Month: single digit if first digit is 2-9; two digits if first digit is 1
-//        and second digit is 0-2; otherwise single digit.
-// Day:   single digit if first digit is 4-9; two digits otherwise.
-function formatDateInput(raw) {
-  const digits = raw.replace(/\D/g, '').slice(0, 8)
-  if (!digits) return ''
-
-  // ── Parse month ──────────────────────────────────────────────────────────
-  let pos = 0
-  let month = ''
-  const m0 = digits[0]
-  if (m0 >= '2' && m0 <= '9') {
-    month = m0; pos = 1                          // single-digit month complete
-  } else if (m0 === '1') {
-    if (digits.length > 1) {
-      const m1 = digits[1]
-      if (m1 >= '0' && m1 <= '2') { month = m0 + m1; pos = 2 }   // 10/11/12
-      else                         { month = m0;       pos = 1 }   // 1, next digit → day
-    } else {
-      return '1'                                 // still typing month
-    }
-  } else {
-    // '0': always two-digit month
-    if (digits.length > 1) { month = m0 + digits[1]; pos = 2 }
-    else                    return m0
-  }
-
-  const rest = digits.slice(pos)
-  if (!rest.length) return month + '/'
-
-  // ── Parse day ────────────────────────────────────────────────────────────
-  let day = ''
-  let pos2 = 0
-  const d0 = rest[0]
-  if (d0 >= '4' && d0 <= '9') {
-    day = d0; pos2 = 1                           // single-digit day complete
-  } else if (d0 >= '1' && d0 <= '3') {
-    if (rest.length > 1) { day = d0 + rest[1]; pos2 = 2 }
-    else                  return month + '/' + d0
-  } else {
-    // '0': two-digit day
-    if (rest.length > 1) { day = d0 + rest[1]; pos2 = 2 }
-    else                  return month + '/' + d0
-  }
-
-  const year = rest.slice(pos2, pos2 + 4)
-  if (!year.length) return month + '/' + day + '/'
-  return month + '/' + day + '/' + year
-}
 
 // Convert "H:MM AM/PM" or "HH:MM AM/PM" → "HH:MM" for <input type="time">
 function toTimeInput(ampm) {
@@ -517,7 +466,7 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
 
 // ─── Incident group ──────────────────────────────────────────────────────────
 
-function IncidentGroup({ clientId, incident: initialIncident, onCaseTap, onCaseAdded, onDeleted }) {
+function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDeleted }) {
   const [incident, setIncident] = useState(initialIncident)
   const [open, setOpen] = useState(false)
   const [showAddCase, setShowAddCase] = useState(false)
@@ -1530,7 +1479,6 @@ export default function ClientFile() {
         {sortedIncidents.map(incident => (
           <IncidentGroup
             key={incident.id}
-            clientId={id}
             incident={incident}
             onCaseTap={num => navigate(`/case/${num}`)}
             onCaseAdded={refetch}

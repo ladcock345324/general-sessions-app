@@ -24,7 +24,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 - **URL:** `https://afhzkqjrciyoeizrpaxt.supabase.co`
 - **Client file:** `src/supabaseClient.js`
-- **RLS:** Enabled on all 7 tables. Each table has an "authenticated users only" policy (`USING (auth.role() = 'authenticated')`, applies to all commands). Applied to `clients`, `incidents`, `cases`, `hours`, `next_events` at some prior point; applied to `courtroom_documents` and `personal_notes` on 2026-06-17 via Supabase migration (see `supabase_migration_enable_rls_courtroom_personal_notes.sql`).
+- **RLS:** Enabled on all 7 tables. Each table has an "authenticated users only" policy applied to all commands. The policy expression was updated **2026-06-24 via MCP** to wrap the auth call in a subquery — `USING ((select auth.role()) = 'authenticated')` (was `USING (auth.role() = 'authenticated')`) — so Postgres evaluates `auth.role()` once per query instead of once per row. This cleared the "Auth RLS Initialization Plan" performance advisor on all 7 tables (see Known Issues). RLS was applied to `clients`, `incidents`, `cases`, `hours`, `next_events` at some prior point; applied to `courtroom_documents` and `personal_notes` on 2026-06-17 via Supabase migration (see `supabase_migration_enable_rls_courtroom_personal_notes.sql`).
 - **Auth:** Email/password. One user account.
 
 ---
@@ -60,7 +60,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `event_time` | text | e.g. "9:05 AM" |
 | `courtroom` | text | e.g. "4B" — displayed as "Courtroom 4B" |
 | `judge` | text | selected from dropdown or custom "Other" value |
-| `subpoenas` | text | **DEPRECATED 2026-06-24** — all data cleared via MCP, all app code references removed; column drop pending in main chat after verification. No app code reads or writes it. |
+| ~~`subpoenas`~~ | — | **DROPPED 2026-06-24 via MCP.** Previously deprecated (data cleared, all app code references removed); the column itself has now been dropped from `next_events`. No app code reads or writes it; kept here struck-through for history only. |
 | `ada_name` | text | Assistant DA name — entered in the Next Event form; displayed in single-client view only |
 
 > One row per client (maybeSingle query). Add/Edit Next Event form upserts this row.
@@ -148,7 +148,7 @@ Five independent UI/data cleanups:
 
 1. **"#" removed from OCA/inmate number display.** The leading `#` was dropped from the rendered OCA in both the client list row (`ClientRow.jsx`) and the single-client view header (`ClientFile.jsx`). Reads "Boykins, Michael (M) 295180" now. The stored value is unchanged.
 2. **New Client form name order swapped.** In `NewClient.jsx` the First Name input is now above Last Name (autoFocus moved to First Name so the top field still focuses on load). `EditClient.jsx` untouched; storage/display of names unchanged everywhere.
-3. **Subpoenas removed from Next Event.** Removed the Subpoenas `<select>` from the Next Event form, its display in the Next Event block, and every code reference (`EMPTY_EVENT`, form init, payloads, and `seed.js`). Data was cleared via MCP; the `next_events.subpoenas` column is left in place for a later MCP drop — no app code reads or writes it, so nothing breaks when it's dropped.
+3. **Subpoenas removed from Next Event.** Removed the Subpoenas `<select>` from the Next Event form, its display in the Next Event block, and every code reference (`EMPTY_EVENT`, form init, payloads, and `seed.js`). Data was cleared via MCP and all app code references removed; the `next_events.subpoenas` column was subsequently **dropped via MCP (2026-06-24)** — no app code read or wrote it, so nothing broke when it was dropped.
 4. **Docket Type → preset select + optional append text.** ~~Initially shipped as an `<input>+<datalist>` combobox~~ — **revised same day** because the datalist dropdown never opened on iOS or desktop. Now a real native `<select>` (blank + the four presets) plus a separate optional `<input>` ("Add'l text (optional)") right after it. On save the two are combined into the single `docket_type` column via `[docketPreset, docketCustom].filter(Boolean).join(' ').trim() || null`; on load `splitDocketType()` peels a leading known preset back into the select and puts the remainder (or any legacy/custom value) into the text box. Flows through the existing `...rest` save payload to both Dexie and the sync queue. Display renders the combined `docket_type` as-is.
 5. **`cases.classification` added (field + two display spots).** New optional `<select>` placed immediately after "Abbrev. (for client list)" in **both** `CaseView.jsx`'s edit form and `ClientFile.jsx`'s inline `AddCaseForm`. Options in order (**uppercased same-day; existing row migrated via MCP**): blank, "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (least→most serious); blank stores null. Included in both the Dexie write and the sync-queue payload for case INSERT (AddCaseForm) and UPDATE (CaseView); CaseView pre-populates from the existing value. Displayed in parentheses after the charge in the single-client case rows (`ClientFile.jsx`), inheriting the charge-text font exactly, only when set (no empty parens). In the **client list** (`ClientRow.jsx`) it's in its own span styled to match the **next-event info line** (`.caseClassification` ≈ `.next`: blue `#6b9fd4`, normal weight 400, 13px desktop / 11px mobile) — ~~originally matched case-number style (bold, 10/11px); restyled same-day~~. A `{' '}` fragment before the span guarantees exactly one space between the charge abbrev and the `(CLASSIFICATION)`. `classification` reaches `ClientRow` via the full case objects already carried in `ClientList.jsx` `toRowProps` — no extra threading needed.
 
@@ -276,7 +276,7 @@ A check of the other 5 tables confirmed that `clients`, `incidents`, `cases`, `h
 **Fix applied:** Enabled RLS and added the matching "authenticated users only" policy to both `courtroom_documents` and `personal_notes`, applied directly as a Supabase migration via the MCP connector (not through the normal app commit flow). Migration SQL is version-controlled in `supabase_migration_enable_rls_courtroom_personal_notes.sql`.
 
 **Verified:** Supabase security advisor cleared both CRITICAL findings after the fix. Remaining advisory items:
-- "Auth RLS Initialization Plan" warnings on the original 5 tables — performance-only suggestion (re-evaluating `auth.role()` per row instead of once via subquery); not a security issue; acceptable to leave as-is.
+- ~~"Auth RLS Initialization Plan" warnings on the original 5 tables — performance-only suggestion (re-evaluating `auth.role()` per row instead of once via subquery); not a security issue; acceptable to leave as-is.~~ **RESOLVED 2026-06-24:** all 7 tables' policies were rewritten to `USING ((select auth.role()) = 'authenticated')` via MCP; the auth call now evaluates once per query. All 7 "Auth RLS Initialization Plan" WARNs cleared in the advisor.
 - "Leaked Password Protection Disabled" — low-severity Auth setting; not yet addressed (see Known Issues).
 
 ### Collapse "Relieved as Counsel" into "Closed" Model (2026-06-16)
@@ -422,7 +422,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Docket Type** — edited as a native `<select>` (blank + "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket") plus a separate optional "Add'l text" `<input>` immediately after; combined into the single `docket_type` column on save via `[preset, custom].filter(Boolean).join(' ').trim() || null`; split back on load (`splitDocketType()` peels a leading known preset into the select; any remainder or non-matching legacy value goes into the text box)
 - Weekday derived from `event_date` via `new Date()` + `toLocaleDateString`
 - Time is optional — omitted from display if blank
-- **Subpoenas field removed** — all UI/code references removed; `next_events.subpoenas` column still exists in DB but is deprecated and pending drop via MCP (no app code reads or writes it)
+- **Subpoenas field removed** — all UI/code references removed; the `next_events.subpoenas` column has been **dropped from the DB via MCP (2026-06-24)** (no app code reads or writes it)
 - **Assistant DA Name** input writes to `next_events.ada_name`; rendered as "ADA: [name]" in the single-client Next Event box only when set (not in the client list)
 - **Clear button** in edit form deletes the record entirely
 
@@ -516,7 +516,6 @@ src/
   syncManager.js           # fullSync, processSyncQueue, addToSyncQueue, startBackgroundSync
   extractPdfText.js        # PDF text extraction utility — pdfjs-dist v6 + CDN worker
   seed.js                  # One-time seed script (node src/seed.js)
-  Home.jsx                 # (unused legacy placeholder — not imported anywhere)
 
   hooks/
     useClients.js          # Reads all clients + next_events + cases from Dexie via useLiveQuery
@@ -581,9 +580,38 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 - ~~Sync status indicator hidden on iPhone PWA~~ — fixed 2026-06-17: `padding-top: env(safe-area-inset-top, 0px)` added to `.screen` in `ClientList.module.css`; falls back to `0px` on desktop/non-notch devices.
 - ~~`.relievedBadge` and `.relievedLabel` CSS classes in `ClientRow.module.css` are dead~~ — removed 2026-06-17
 - **Leaked Password Protection Disabled** — low-severity advisory in Supabase Auth settings; not yet addressed; can be toggled on in the Supabase dashboard under Auth → Settings whenever ready
+- **FK covering indexes show as "unused index" (INFO)** — the 5 foreign-key indexes added 2026-06-24 (`idx_cases_incident_id`, `idx_courtroom_documents_client_id`, `idx_hours_client_id`, `idx_incidents_client_id`, `idx_next_events_client_id`) currently surface as "unused index" INFO items in the Supabase advisor. **Expected and benign:** the tables are small/new so the planner hasn't needed them yet. Kept deliberately for cascade-delete performance and future growth — do not drop.
 - **Verify next backup push: no failed Vercel deploy on `backups`** — the Ignored Build Step fix (see Deployment, 2026-06-22) only takes effect on the **next** push to `backups`. On the next nightly backup run, confirm the `backups` branch no longer shows a failed Vercel deployment ("red X") in the dashboard / commit status. OPEN until verified.
 
 ---
+
+## Housekeeping Session (2026-06-24)
+
+Repo cleanup + three Supabase advisor fixes (DB changes applied via MCP in the main chat; file edits and pushes here). No user-facing behavior changed beyond the classification-tag CSS polish.
+
+### Database (via MCP — no in-repo migration files)
+
+1. **`next_events.subpoenas` column DROPPED.** Previously deprecated (data cleared, all app code references removed in the 2026-06-24 cleanup batch); the column itself has now been dropped. No app code read or wrote it, so nothing broke. Doc updated everywhere it was mentioned (schema table, cleanup-batch entry, Next Event Block section) from "deprecated / pending drop" to "dropped".
+
+2. **RLS policies rewritten to fix the "Auth RLS Initialization Plan" advisor.** All 7 tables' "authenticated users only" policies were changed from `USING (auth.role() = 'authenticated')` to `USING ((select auth.role()) = 'authenticated')`. Wrapping the auth call in a subquery makes Postgres evaluate it **once per query** instead of once per row. **All 7 performance WARNs cleared** in the advisor. Security semantics unchanged — still authenticated-users-only.
+
+3. **5 covering indexes added on foreign keys** to clear the "unindexed foreign keys" advisor: `idx_cases_incident_id`, `idx_courtroom_documents_client_id`, `idx_hours_client_id`, `idx_incidents_client_id`, `idx_next_events_client_id`. These currently surface as **"unused index" (INFO)** — expected and benign at current table sizes; kept for cascade-delete performance and future growth (see Known Issues).
+
+### Repo cleanup (file edits in this session)
+
+- **Deleted `src/pages/Home.jsx`** — unused legacy placeholder, confirmed zero imports/references repo-wide before removal. (PROGRESS.md previously listed it under `src/` root; it actually lived in `src/pages/`.)
+- **Dead-code removal** (ESLint-driven, conservative — only genuine zero-reference items; lint dropped 26 → 18, the remaining 18 being intentional Node-globals / react-refresh / set-state-in-effect items left as working code):
+  - `src/extractPdfText.js` — dropped the unused `err` binding from `catch (err)` → `catch`.
+  - `src/pages/ClientFile.jsx` — removed the unused `useEffect` import; removed the entirely uncalled `formatDateInput()` helper (46 lines, zero callers); removed the unused `clientId` prop from `IncidentGroup` (both the destructure and the `clientId={id}` call site).
+- Production build verified clean after removal (only the pre-existing >500 kB single-chunk size notice remains).
+
+### CSS — `.caseClassification` tag polish (client list)
+
+Three small follow-up tweaks to the case-classification tag (e.g. "(A MIS)") shipped earlier in the session, in `src/components/ClientRow.module.css`:
+- **font-size:** desktop 13 → 9px; mobile 11 → 8 → **9px** (final).
+- **margin-left** (gap from the charge text): added 6 → **5.5px** desktop; 5 → **4.5px** mobile (replaced reliance on the single `{' '}` space in JSX, which left no visible gap).
+- **vertical-align: baseline** added so the tag shares the charge-abbrev (`.caseCharge`) baseline (`line-height: 1.5` on both) — fixes the tag sitting slightly low on mobile.
+- Color `#6b9fd4` and weight `400` unchanged throughout.
 
 ## Maintenance Session (2026-06-17)
 
