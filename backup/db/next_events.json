@@ -1,0 +1,24 @@
+[
+  {
+    "id": "56c0aedd-2b2d-4865-9477-64bd54eb1da6",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "docket_type": "Jail Docket",
+    "event_date": "7/2/2026",
+    "event_time": "9:15 AM",
+    "courtroom": "3A",
+    "judge": "S. Coleman",
+    "reason": "Trial",
+    "ada_name": "Jenny Charles"
+  },
+  {
+    "id": "e9c085b7-9484-4fed-8545-a12d1ac89079",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "docket_type": "Bond Docket",
+    "event_date": "7/16/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "L. Jones",
+    "reason": "Trial",
+    "ada_name": ""
+  }
+]

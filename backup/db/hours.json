@@ -1,0 +1,106 @@
+[
+  {
+    "id": "15b5859c-7baa-4052-b019-946001c41e64",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "6/15/2026",
+    "hours": 0.9,
+    "description": "Take phone call with client to discuss how missing physical work authorization card is affecting ability to acquire driver's license",
+    "created_at": "2026-06-16T19:42:22.88497"
+  },
+  {
+    "id": "1a84a15d-7e52-42e2-b1b2-01c6ec6c7126",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "7/11/2026",
+    "hours": 0.1,
+    "description": "Talk on phone with girlfriend about charges",
+    "created_at": "2026-06-16T18:55:55.985975"
+  },
+  {
+    "id": "258bec5e-7854-439a-804a-c01b53d08e5a",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/29/2026",
+    "hours": 0.5,
+    "description": "Zoom meeting with client, gather details for preliminary hearing, inform client about process",
+    "created_at": "2026-06-29T23:59:04.210339"
+  },
+  {
+    "id": "45461685-b875-4558-84da-7ae9cd450fee",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/15/2026",
+    "hours": 0.9,
+    "description": "Research/Investigate holds from other counties",
+    "created_at": "2026-06-15T23:58:22.601718"
+  },
+  {
+    "id": "57ff0122-697d-41bb-af60-a3e7724e6747",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "6/2/2026",
+    "hours": 0.3,
+    "description": "tried to get in touch with this dude",
+    "created_at": "2026-06-02T20:56:45.977237"
+  },
+  {
+    "id": "5da91094-7c55-4bd4-b24c-d92e7a5fd559",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "5/22/2026",
+    "hours": 0.3,
+    "description": "First meeting and discussion with client",
+    "created_at": "2026-06-03T22:13:01.348792"
+  },
+  {
+    "id": "7f8570a8-09aa-4be5-819f-631d0560d6a6",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/15/2026",
+    "hours": 0.9,
+    "description": "Research/Investigate local criminal court hold",
+    "created_at": "2026-06-16T00:01:25.809542"
+  },
+  {
+    "id": "a7ed91fc-b4ce-4bd8-a3b1-389fc7d24770",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "6/1/2026",
+    "hours": 0.5,
+    "description": "testing",
+    "created_at": "2026-06-02T20:58:45.277604"
+  },
+  {
+    "id": "a8dd9bb3-f1b1-4bcb-8677-8d634de5876d",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/15/2026",
+    "hours": 0.9,
+    "description": "Prepare for Preliminary hearing",
+    "created_at": "2026-06-15T23:58:52.419826"
+  },
+  {
+    "id": "be07408a-3b5a-4c59-a795-192ac6fe1819",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "5/22/2026",
+    "hours": 0.2,
+    "description": "Communicate client circumstances to DA in re: immigration status and driver license eligibility",
+    "created_at": "2026-06-03T22:15:31.466727"
+  },
+  {
+    "id": "bfd6dc13-0581-49f1-9a79-fbbfbcc1f762",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "7/11/2026",
+    "hours": 0.1,
+    "description": "Talk on phone with girlfriend about charges",
+    "created_at": "2026-06-16T18:55:55.865659"
+  },
+  {
+    "id": "d2789858-bc66-446a-b68a-2a695ff55d39",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/4/2026",
+    "hours": 0.1,
+    "description": "Review hearing",
+    "created_at": "2026-06-09T04:38:48.903143"
+  },
+  {
+    "id": "f40eacc2-4cc6-4cc6-96e9-d0ac322fd887",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "6/1/2026",
+    "hours": 0.3,
+    "description": "Initial client meeting",
+    "created_at": "2026-06-02T19:52:16.082731"
+  }
+]
