@@ -33,7 +33,14 @@ export function useClientFile(clientId) {
       cases: casesByIncidentId.get(incident.id) ?? [],
     }))
 
-    allHours.sort((a, b) => (a.entry_date < b.entry_date ? 1 : a.entry_date > b.entry_date ? -1 : 0))
+    // Hours are ordered by sort_order ASC (lowest = top); the user can drag to
+    // reorder. Fall back to a stable id tiebreak when sort_order is missing/equal.
+    allHours.sort((a, b) => {
+      const sa = a.sort_order ?? 0
+      const sb = b.sort_order ?? 0
+      if (sa !== sb) return sa - sb
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+    })
 
     return { client, incidents, nextEvent: nextEvent ?? null, hours: allHours, personalNote: personalNote ?? null }
   }, [clientId])

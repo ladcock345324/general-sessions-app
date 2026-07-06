@@ -31,7 +31,18 @@
       "Bash(grep -v \"^$\")",
       "PowerShell(npm run build)",
       "mcp__ce5b625c-1365-4a6c-93f0-4f9590518d10__apply_migration",
-      "Bash(node --check scripts/backup.js)"
+      "Bash(node --check scripts/backup.js)",
+      "Bash(git ls-remote *)",
+      "Bash(echo \"Desktop rule:\" *)",
+      "Bash(git rm *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('scripts:', JSON.stringify\\(p.scripts,null,2\\)\\); console.log\\('eslint-ish deps:', Object.keys\\({...p.dependencies,...p.devDependencies}\\).filter\\(d=>/eslint/i.test\\(d\\)\\).join\\(', '\\)||'none'\\)\")",
+      "Bash(git restore *)",
+      "Bash(git fetch *)",
+      "Bash(command -v gh)",
+      "Bash(gh --version)",
+      "Bash(echo \"gh installed: $\\(gh --version)",
+      "PowerShell($g = Get-Command gh -ErrorAction SilentlyContinue; if \\($g\\) { \"gh found at: $\\($g.Source\\)\"; gh --version 2>&1 | Select-Object -First 1 } else { \"gh NOT found on PowerShell PATH either\" })",
+      "PowerShell(npm run build 2>&1)"
     ]
   }
 }

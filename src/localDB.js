@@ -17,4 +17,9 @@ db.version(2).stores({
   sync_queue:          '++id, table_name, operation, status, created_at',
 })
 
+// v3: index hours.sort_order so entries can be ordered/reordered by it.
+db.version(3).stores({
+  hours:               'id, client_id, sort_order',
+})
+
 export default db

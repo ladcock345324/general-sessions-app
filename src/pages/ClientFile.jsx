@@ -8,6 +8,21 @@ import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import styles from './ClientFile.module.css'
 import TextViewerDrawer from '../components/TextViewerDrawer'
+import {
+  DndContext,
+  closestCenter,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 // ─── Indigent status circle ──────────────────────────────────────────────────
 
@@ -770,13 +785,35 @@ function PersonalNotesSection({ clientId, initialNote }) {
 
 const HOURS_OPTIONS = Array.from({ length: 25 }, (_, i) => ((i + 1) / 10).toFixed(1))
 
+// Common descriptions offered as a dropdown; picking one fills the (still
+// editable) description text field. Shared by AddHoursForm and EditHoursForm.
+const DESCRIPTION_OPTIONS = [
+  'Client zoom visit',
+  'Close file',
+  'Draft, file bond reduction motion',
+  'Draft, send email',
+  'Jail visit with client',
+  'Met with state',
+  'Open file',
+  'Prepare defense',
+  'Review () affidavits; Review criminal history',
+]
+
+// localStorage key holding the last entry_date the user saved, used to default
+// the date field on the next new hours entry.
+const LAST_HOURS_DATE_KEY = 'gsapp:lastHoursDate'
+
 function todayString() {
   const d = new Date()
   return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
 }
 
-function AddHoursForm({ clientId, onSaved, onCancel }) {
-  const [form, setForm] = useState({ entry_date: todayString(), hours: '0.5', description: '' })
+function AddHoursForm({ clientId, topSortOrder, onSaved, onCancel }) {
+  const [form, setForm] = useState({
+    entry_date: localStorage.getItem(LAST_HOURS_DATE_KEY) || todayString(),
+    hours: '0.5',
+    description: '',
+  })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -796,9 +833,11 @@ function AddHoursForm({ clientId, onSaved, onCancel }) {
       entry_date: form.entry_date.trim(),
       hours: Number(form.hours),
       description: form.description.trim(),
+      sort_order: topSortOrder,
     }
     await db.hours.put(record)
     await addToSyncQueue('hours', 'INSERT', newId, record)
+    localStorage.setItem(LAST_HOURS_DATE_KEY, record.entry_date)
     onSaved()
   }
 
@@ -819,6 +858,15 @@ function AddHoursForm({ clientId, onSaved, onCancel }) {
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Description</label>
         <input className={styles.formInput} value={form.description} onChange={e => set('description', e.target.value)} placeholder="e.g. Court appearance" />
+        <select
+          className={styles.formSelect}
+          style={{ marginTop: 6 }}
+          value=""
+          onChange={e => { if (e.target.value) set('description', e.target.value) }}
+        >
+          <option value="">Pick a common description…</option>
+          {DESCRIPTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
       </div>
       {error && <div className={styles.formError}>{error}</div>}
       <div className={styles.formActions}>
@@ -854,6 +902,7 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
     }
     await db.hours.update(entry.id, changes)
     await addToSyncQueue('hours', 'UPDATE', entry.id, { id: entry.id, ...changes })
+    localStorage.setItem(LAST_HOURS_DATE_KEY, changes.entry_date)
     onSaved()
   }
 
@@ -874,6 +923,15 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Description</label>
         <input className={styles.formInput} value={form.description} onChange={e => set('description', e.target.value)} placeholder="e.g. Court appearance" />
+        <select
+          className={styles.formSelect}
+          style={{ marginTop: 6 }}
+          value=""
+          onChange={e => { if (e.target.value) set('description', e.target.value) }}
+        >
+          <option value="">Pick a common description…</option>
+          {DESCRIPTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
       </div>
       {error && <div className={styles.formError}>{error}</div>}
       <div className={styles.formActions}>
@@ -884,12 +942,105 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
   )
 }
 
+// One hours row wrapped as a @dnd-kit sortable item. The whole row moves during
+// a drag, but only the dedicated ≡ handle activates dragging — so the × delete
+// button, row-tap-to-edit, and text selection are never hijacked.
+function SortableHoursRow({ entry, editing, confirming, onEdit, onEditSaved, onEditCancel, onConfirm, onConfirmYes, onConfirmCancel }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id: entry.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    ...(isDragging ? { position: 'relative', zIndex: 2 } : null),
+  }
+
+  if (editing) {
+    return (
+      <div ref={setNodeRef} style={style}>
+        <EditHoursForm entry={entry} onSaved={onEditSaved} onCancel={onEditCancel} />
+      </div>
+    )
+  }
+  if (confirming) {
+    return (
+      <div ref={setNodeRef} style={style} className={styles.hoursConfirmRow}>
+        <span className={styles.hoursConfirmText}>Delete this entry?</span>
+        <div className={styles.hoursConfirmActions}>
+          <button className={styles.hoursConfirmYes} onClick={onConfirmYes}>Yes, delete</button>
+          <button className={styles.hoursConfirmCancel} onClick={onConfirmCancel}>Cancel</button>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ ...style, cursor: 'pointer' }}
+      className={styles.hoursRow}
+      onClick={onEdit}
+    >
+      <button
+        ref={setActivatorNodeRef}
+        className={styles.hoursDragHandle}
+        style={{ touchAction: 'none' }}
+        aria-label="Drag to reorder"
+        onClick={e => e.stopPropagation()}
+        {...attributes}
+        {...listeners}
+      >≡</button>
+      <span>{entry.entry_date}</span>
+      <span className={styles.hoursValue}>{entry.hours}</span>
+      <span>{entry.description}</span>
+      <button
+        className={styles.hoursDeleteBtn}
+        onClick={e => { e.stopPropagation(); onConfirm() }}
+      >×</button>
+    </div>
+  )
+}
+
 function HoursSection({ clientId, hours }) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
 
-  const total = (hours ?? []).reduce((sum, e) => sum + Number(e.hours), 0)
+  const list = hours ?? []
+  const total = list.reduce((sum, e) => sum + Number(e.hours), 0)
+
+  // New entries go to the top of the list: min existing sort_order − 10
+  // (0 − 10 = −10 when there are no entries yet).
+  const orders = list.map(e => e.sort_order ?? 0)
+  const topSortOrder = (orders.length ? Math.min(...orders) : 0) - 10
+
+  // MouseSensor for desktop; TouchSensor with a short press-delay for iPhone so a
+  // normal finger-scroll on the list still scrolls and only a deliberate hold on
+  // the handle starts a drag.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+  )
+
+  // On drop, rewrite ONLY the moved row's sort_order to sit between its new
+  // neighbors (top slot = minNeighbor − 10, bottom = maxNeighbor + 10). The rest
+  // of the list keeps its existing values. Persist offline-first.
+  async function handleDragEnd(event) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = list.findIndex(h => h.id === active.id)
+    const newIndex = list.findIndex(h => h.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+    const reordered = arrayMove(list, oldIndex, newIndex)
+    const pos = reordered.findIndex(h => h.id === active.id)
+    const prev = reordered[pos - 1]
+    const next = reordered[pos + 1]
+    let newSort
+    if (!prev) newSort = (next.sort_order ?? 0) - 10
+    else if (!next) newSort = (prev.sort_order ?? 0) + 10
+    else newSort = ((prev.sort_order ?? 0) + (next.sort_order ?? 0)) / 2
+    await db.hours.update(active.id, { sort_order: newSort })
+    await addToSyncQueue('hours', 'UPDATE', active.id, { id: active.id, sort_order: newSort })
+  }
 
   function handleSaved() {
     setShowForm(false)
@@ -914,58 +1065,37 @@ function HoursSection({ clientId, hours }) {
       {showForm && (
         <AddHoursForm
           clientId={clientId}
+          topSortOrder={topSortOrder}
           onSaved={handleSaved}
           onCancel={() => setShowForm(false)}
         />
       )}
       <div className={styles.hoursTable}>
         <div className={styles.hoursHead}>
-          <span>Date</span><span>Hours</span><span>Description</span>
+          <span /><span>Date</span><span>Hours</span><span>Description</span>
         </div>
-        {(hours ?? []).length === 0 && <div className={styles.hoursEmpty}>No entries yet</div>}
-        {(hours ?? []).map((entry, i) => {
-          if (editingId === entry.id) {
-            return (
-              <div key={entry.id ?? i}>
-                <EditHoursForm
-                  entry={entry}
-                  onSaved={handleEditSaved}
-                  onCancel={() => setEditingId(null)}
-                />
-              </div>
-            )
-          }
-          if (confirmingId === entry.id) {
-            return (
-              <div key={entry.id ?? i} className={styles.hoursConfirmRow}>
-                <span className={styles.hoursConfirmText}>Delete this entry?</span>
-                <div className={styles.hoursConfirmActions}>
-                  <button className={styles.hoursConfirmYes} onClick={() => confirmDelete(entry)}>Yes, delete</button>
-                  <button className={styles.hoursConfirmCancel} onClick={() => setConfirmingId(null)}>Cancel</button>
-                </div>
-              </div>
-            )
-          }
-          return (
-            <div
-              key={entry.id ?? i}
-              className={styles.hoursRow}
-              onClick={() => { if (entry.id) setEditingId(entry.id) }}
-              style={{ cursor: 'pointer' }}
-            >
-              <span>{entry.entry_date}</span>
-              <span className={styles.hoursValue}>{entry.hours}</span>
-              <span>{entry.description}</span>
-              <button
-                className={styles.hoursDeleteBtn}
-                onClick={e => { e.stopPropagation(); setConfirmingId(entry.id) }}
-              >×</button>
-            </div>
-          )
-        })}
-        {(hours ?? []).length > 0 && (
+        {list.length === 0 && <div className={styles.hoursEmpty}>No entries yet</div>}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={list.map(e => e.id)} strategy={verticalListSortingStrategy}>
+            {list.map(entry => (
+              <SortableHoursRow
+                key={entry.id ?? entry.entry_date}
+                entry={entry}
+                editing={editingId === entry.id}
+                confirming={confirmingId === entry.id}
+                onEdit={() => { if (entry.id) setEditingId(entry.id) }}
+                onEditSaved={handleEditSaved}
+                onEditCancel={() => setEditingId(null)}
+                onConfirm={() => setConfirmingId(entry.id)}
+                onConfirmYes={() => confirmDelete(entry)}
+                onConfirmCancel={() => setConfirmingId(null)}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+        {list.length > 0 && (
           <div className={styles.hoursTotal}>
-            <span>Total</span>
+            <span /><span>Total</span>
             <span className={styles.hoursValue}>{total % 1 === 0 ? total : total.toFixed(1)}</span>
             <span />
           </div>
