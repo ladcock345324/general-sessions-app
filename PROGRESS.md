@@ -142,6 +142,10 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Hours Dropdown Range Expanded 0.1–0.9 → 0.1–2.5 (2026-07-06)
+
+Small front-end-only change (commit `de736ea`). `ClientFile.jsx`'s shared `HOURS_OPTIONS` constant now generates 0.1–2.5 in 0.1 increments (25 values) instead of the hardcoded 0.1–0.9 list. The first 9 values are byte-identical, so no existing entries or the running total are affected. `HOURS_OPTIONS` is shared by both `AddHoursForm` and `EditHoursForm`, so both dropdowns were updated together **intentionally** — keeping them in sync avoids a latent bug where an entry saved above 0.9 would render an `EditHoursForm` `<select>` with no matching option. No changes to the hours table display, running-total logic, or any other form/file.
+
 ### "Pretrialed Out" Custody Status + Generic "MIS" Classification (2026-06-25)
 
 Two small front-end-only additions. **No DB/schema changes** — both reuse existing text columns (`clients.custody_status`, `cases.classification`).
