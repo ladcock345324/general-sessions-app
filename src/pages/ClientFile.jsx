@@ -768,7 +768,7 @@ function PersonalNotesSection({ clientId, initialNote }) {
 
 // ─── Hours section ───────────────────────────────────────────────────────────
 
-const HOURS_OPTIONS = ['0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9']
+const HOURS_OPTIONS = Array.from({ length: 25 }, (_, i) => ((i + 1) / 10).toFixed(1))
 
 function todayString() {
   const d = new Date()
