@@ -113,6 +113,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `entry_date` | text | e.g. "6/1/2026" |
 | `hours` | numeric | selected from 0.1–0.9 dropdown |
 | `description` | text | |
+| `created_at` | timestamptz | row creation timestamp |
+| `sort_order` | double precision | drag-to-reorder position, lowest = top of list; added 2026-07-06 via MCP, backfilled to existing date-desc order (newest date on top, same-day rows by `created_at` ascending). See "Hours: Drag-to-Reorder..." entry below. |
 
 ### `personal_notes`
 | Column | Type | Notes |
@@ -141,6 +143,14 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### Hours: Drag-to-Reorder, Smart Date Default, Description Dropdown (2026-07-06)
+
+Three scoped changes to the Hours section of `ClientFile.jsx` (commit `71804b3`).
+
+1. **Drag-to-reorder.** New `hours.sort_order` column (double precision) added via Supabase MCP and backfilled to the existing date-desc order (newest date on top, same-day rows seeded by `created_at` ascending) — no in-repo migration file. Dexie `hours` store schema bumped to **v3** with `sort_order` indexed; `useClientFile.js`'s read path now sorts by `sort_order` ASC (replacing the old `entry_date` DESC sort). Drag implemented with **@dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`) via a dedicated ≡ grip handle per row, so dragging never conflicts with the × delete button, tap-to-edit, or text selection. Sensors: `MouseSensor` (desktop) + `TouchSensor` with a 150ms press-delay (iPhone), so normal list scrolling still works. On drop, only the moved row is rewritten to the midpoint of its new neighbors' `sort_order` (top slot = min−10, bottom = max+10), persisted offline-first (Dexie update + `addToSyncQueue` UPDATE) — the rest of the list is never renumbered. New entries get `sort_order` = current minimum − 10 so they land on top; included in the INSERT payload for both Dexie and the sync queue. Running total and delete behavior unchanged.
+2. **Date-field default.** `AddHoursForm` now defaults the date to `localStorage` key `gsapp:lastHoursDate`, falling back to today. Every successful add **and** edit save writes that entry's `entry_date` back to the key. `EditHoursForm` still initializes from the entry's own saved date (unchanged; verified no regression).
+3. **Description dropdown.** New shared `DESCRIPTION_OPTIONS` constant (same pattern as `HOURS_OPTIONS`) with 9 preset descriptions in alphabetical order. Both `AddHoursForm` and `EditHoursForm` gained a `<select>` (blank + presets) beside the description field; picking one fills the text field and resets the select to blank — the field stays fully editable and remains what saves to `hours.description`. Typing directly is unchanged.
 
 ### Hours Dropdown Range Expanded 0.1–0.9 → 0.1–2.5 (2026-07-06)
 
