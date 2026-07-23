@@ -40,7 +40,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `gender` | text | "M" or "F" |
 | `age` | int | legacy/dormant column — kept for reversibility; UI no longer reads, writes, or displays it (same pattern as `relieved_as_counsel`) |
 | `oca` | text | optional OCA # |
-| `custody_status` | text | `"in_custody"`, `"bonded_out"`, `"pretrialed_out"`, `"ror"`, or `"out"`. `pretrialed_out` added 2026-06-25; `ror` ("ROR'd") added 2026-07-23 — both front-end only (existing text column, no schema change). `ror`/`pretrialed_out`/`bonded_out`/`out` all display a muted-green badge (`#3d9e6a`); only `in_custody` is crimson. **Client-level** — where the client physically is, net of all cases; independent of the case-level `cases.release_status`. |
+| `custody_status` | text | `"in_custody"`, `"no_bond_held"`, `"bonded_out"`, `"pretrialed_out"`, `"ror"`, or `"out"`. `pretrialed_out` added 2026-06-25; `ror` ("ROR'd") and `no_bond_held` ("No Bond/Held") added 2026-07-23 — all front-end only (existing text column, no schema change). `out`/`ror`/`pretrialed_out`/`bonded_out` display a muted-green badge (`#3d9e6a`); `in_custody` and `no_bond_held` are muted crimson (`#b85555`) — both are physically in custody. **Client-level** — where the client physically is, net of all cases; independent of the case-level `cases.release_status`. |
 | `relieved_as_counsel` | boolean | legacy column — kept for reversibility; not read by app logic; section placement driven by `relieved_closed` |
 | `relieved_closed` | boolean | shows CLOSED badge when true |
 | `closed_at` | timestamptz | set when a client is closed, null when reopened; used to sort the Closed section (most recently closed first) |
@@ -116,7 +116,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `description` | text | |
 | `created_at` | timestamptz | row creation timestamp |
 | `sort_order` | double precision | drag-to-reorder position, lowest = top of list; added 2026-07-06 via MCP, backfilled to existing date-desc order (newest date on top, same-day rows by `created_at` ascending). See "Hours: Drag-to-Reorder..." entry below. |
-| `checked` | boolean | not null, default false. Added 2026-07-23 via MCP. Purely visual "reviewed" flag — a checked row renders grayed. **Not** indexed and **not** added to the Dexie schema declaration (Dexie stores whole objects; the store stays at v3). No effect on running total, sort order, or delete. See 2026-07-23 feature entry. |
+
+> **Note:** a `checked` boolean column was added **and then dropped the same day (2026-07-23)** — the check-off feature was reworked from persisted to **session-only** (ephemeral React state, no DB column). No `checked` column exists on `hours`. See the revised check-off note in the 2026-07-23 feature entries.
 
 ### `personal_notes`
 | Column | Type | Notes |
@@ -162,7 +163,8 @@ Eight changes — four Next Event, four Hours. **One DB change**, applied via Su
 5. **Selection-safe tap-to-edit.** A row's tap-to-open is suppressed when `window.getSelection().toString()` is non-empty **or** the pointer moved > 8px between pointerdown and pointerup (the movement check is what makes desktop click-drag text selection work — long-press detection alone misses mouse-drag). Implemented as a suppress flag set on the row's own pointer handlers while keeping `onClick`, so the child buttons (which `stopPropagation` their own click) still bypass edit exactly as before. **The @dnd-kit grip handle and its sensors are untouched** — drag-reorder is unaffected.
 6. **New entries insert in date order, not at the top.** `sort_order` for a new row is computed by scanning the current displayed order (`sort_order` ASC) top→bottom for the first row whose date is same-or-older than the new entry's, then inserting immediately above it at the midpoint of its neighbors; oldest → bottom (`max + 10`), very top → `min − 10`. Dates parsed to a numeric key `year*10000 + month*100 + day` (new helper `dateKey()`) — **not** `new Date()` and **not** string compare, both unreliable for hand-entered "M/D/YYYY". Yields dates descending with the most-recently-created on top among same-date rows. Only the new row gets a `sort_order`; the existing list is never renumbered, so a manual drag arrangement is preserved (the new entry slots into it).
 7. **DESCRIPTION_OPTIONS replaced** with a 24-item process-stage list (verbatim, incl. the `Reviewed () affidavits 0. ; …` fill-in template). Shared by AddHoursForm + EditHoursForm; blank option and select-then-clear behavior unchanged.
-8. **Check-off toggle.** A small CSS-drawn checkbox on each row, immediately left of ×, writes `hours.checked` offline-first (Dexie + `addToSyncQueue` UPDATE, same pattern as drag-reorder). A checked row is grayed with the existing gray tokens (`rgba(74,74,74,0.5)` bg / `#c0c0c0` text) but stays fully readable, clickable, editable, and draggable. A minor **"clear checks"** control on the Hours header (shown only when at least one row is checked) resets all of the client's rows to `checked = false` in one action. Purely visual — no effect on running total, sort order, or delete. The hours grid gained a 6th column (`24px 90px 60px 1fr 24px 28px`) across head/rows/total.
+8. **Check-off toggle (revised same day to session-only — see below).** A small CSS-drawn checkbox on each row, immediately left of ×. A checked row is grayed with the existing gray tokens (`rgba(74,74,74,0.5)` bg / `#c0c0c0` text) but stays fully readable, clickable, editable, and draggable. A minor **"clear checks"** control on the Hours header (shown only when at least one row is checked) clears all checks in one action. Purely visual — no effect on running total, sort order, or delete. The hours grid gained a 6th column (`24px 90px 60px 1fr 24px 28px`) across head/rows/total.
+   - **Revised to session-only (2026-07-23, same day).** Originally persisted to an `hours.checked` boolean column (Dexie + sync-queue UPDATE). Reworked to **ephemeral React state** — a `Set` of checked row ids held in `HoursSection`, toggled in local state only, with **no persistence** (no insert-payload field, no Dexie write, no sync-queue entry, no read of any `checked` field). **Checks reset on every page load** and on navigating away and back — intended. Code was pushed with all `checked` references removed *before* the `hours.checked` column was dropped from the DB, so the sync queue never references a missing column. The toggle button, grayed styling, and "clear checks" control are unchanged.
 
 ### Case Release Status + Bond Null Fix, ROR'd Custody, Next-Event/Form Polish (2026-07-23)
 
@@ -466,7 +468,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - Running total at bottom
   - `+` button opens inline form (date defaults to last-used/today, hours dropdown 0.1–2.5)
   - Rows ordered by `sort_order` ASC; drag-to-reorder. New entries slot in by **date** (see 2026-07-23 feature entry) rather than jumping to the top
-  - **Check-off toggle** per row (left of ×) writes `hours.checked`; a checked row is grayed (reviewed marker). A "clear checks" control appears on the Hours header when any row is checked. Purely visual — no effect on total/sort/delete
+  - **Check-off toggle** per row (left of ×) grays a reviewed row — **session-only** local state (a Set of ids in `HoursSection`), **not persisted**; resets on reload. A "clear checks" control appears on the Hours header when any row is checked. Purely visual — no effect on total/sort/delete
   - Tap a row to edit — **except** while selecting text or click-dragging (so descriptions can be copied out for ACAP)
 - **Section headers** (Incidents, Hours, Personal Notes, Criminal History, Courtroom Documents) use inline styles (`background: #0f1820`)
 - **Criminal History** section: Upload/Replace/View Criminal History PDF; drag-and-drop supported
@@ -512,10 +514,10 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Hanging indent on two-line descriptions: `padding-left: 1.62em; text-indent: -1.62em`
 
 ### Custody Status
-- Five options: `in_custody`, `out`, `ror` ("ROR'd"), `pretrialed_out`, `bonded_out` (**dropdown display order as of 2026-07-23: In Custody, Out, ROR'd, Pretrialed Out, Bonded Out** — display order only in both New/Edit Client; stored values, badge colors, and the prelim-countdown gate unchanged)
-- "Out", "Pretrialed Out", "ROR'd", and "Bonded Out" badges all styled identically (muted green `#3d9e6a`); "In Custody" is muted crimson
-- All badges muted from original bright colors
-- Rendered in three places, all kept in sync: `ClientRow`'s `CustodyBadge` (label arm; falls through to green since only `in_custody` is red), the `ClientFile` header (per-status span; gray when the client is closed), and the New/Edit Client `<select>`s. The in-custody prelim-hearing countdown gates on `in_custody` only, so `ror` (out of custody) correctly does not trigger it.
+- Six options: `out`, `ror` ("ROR'd"), `pretrialed_out`, `bonded_out`, `in_custody`, `no_bond_held` ("No Bond/Held"). **Dropdown display order as of 2026-07-23 (2nd batch): Out, ROR'd, Pretrialed Out, Bonded Out, In Custody, No Bond/Held** — display order only in both New/Edit Client; stored values unchanged. `no_bond_held` added front-end only (existing text column, no schema change).
+- **Badge colors:** "Out", "ROR'd", "Pretrialed Out", "Bonded Out" → muted green (`#3d9e6a`); **"In Custody" and "No Bond/Held" → muted crimson (`#b85555`)** — both are physically in custody. The closed-section gray override wins over both. All badges muted from original bright colors.
+- Rendered in three places, all kept in sync: `ClientRow`'s `CustodyBadge` (explicit label map + red arm covering `in_custody` **or** `no_bond_held`, else green), the `ClientFile` header (per-status span; gray when the client is closed), and the New/Edit Client `<select>`s.
+- **In-custody preliminary-hearing countdown** gates on `custody_status === 'in_custody' || custody_status === 'no_bond_held'` (both in custody). The other four statuses (`out`/`ror`/`pretrialed_out`/`bonded_out`) do **not** trigger it.
 
 ### charge_abbrev
 - `cases` table has `charge_abbrev text` column (added via `ALTER TABLE cases ADD COLUMN charge_abbrev text`)

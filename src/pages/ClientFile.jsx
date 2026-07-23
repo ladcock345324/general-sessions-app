@@ -882,7 +882,6 @@ function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
       description: form.description.trim(),
       // Slot into the current displayed order by date (see computeInsertSortOrder).
       sort_order: computeSortOrder(entryDate),
-      checked: false,
     }
     await db.hours.put(record)
     await addToSyncQueue('hours', 'INSERT', newId, record)
@@ -1070,10 +1069,13 @@ function HoursSection({ clientId, hours }) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
+  // Check-off is session-only: a Set of checked row ids held in local state, never
+  // persisted. Resets naturally on reload or on navigating away and back.
+  const [checkedIds, setCheckedIds] = useState(() => new Set())
 
   const list = hours ?? []
   const total = list.reduce((sum, e) => sum + Number(e.hours), 0)
-  const anyChecked = list.some(e => e.checked)
+  const anyChecked = checkedIds.size > 0
 
   // A new entry slots into the CURRENT displayed order (sort_order ASC) by date,
   // rather than jumping to the top. Scan top→bottom for the first row whose date
@@ -1096,19 +1098,19 @@ function HoursSection({ clientId, hours }) {
     return ((above.sort_order ?? 0) + (target.sort_order ?? 0)) / 2
   }
 
-  // Check-off toggle — purely visual (grays a reviewed row). Offline-first, same
-  // persistence pattern as drag-reorder. No effect on total, sort, or delete.
-  async function toggleCheck(entry) {
-    const next = !entry.checked
-    await db.hours.update(entry.id, { checked: next })
-    await addToSyncQueue('hours', 'UPDATE', entry.id, { id: entry.id, checked: next })
+  // Check-off toggle — purely visual (grays a reviewed row). Session-only local
+  // state, no persistence. No effect on total, sort, or delete.
+  function toggleCheck(id) {
+    setCheckedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
-  async function clearAllChecks() {
-    for (const e of list.filter(e => e.checked)) {
-      await db.hours.update(e.id, { checked: false })
-      await addToSyncQueue('hours', 'UPDATE', e.id, { id: e.id, checked: false })
-    }
+  function clearAllChecks() {
+    setCheckedIds(new Set())
   }
 
   // MouseSensor for desktop; TouchSensor with a short press-delay for iPhone so a
@@ -1184,8 +1186,8 @@ function HoursSection({ clientId, hours }) {
               <SortableHoursRow
                 key={entry.id ?? entry.entry_date}
                 entry={entry}
-                checked={!!entry.checked}
-                onToggleCheck={() => toggleCheck(entry)}
+                checked={checkedIds.has(entry.id)}
+                onToggleCheck={() => toggleCheck(entry.id)}
                 editing={editingId === entry.id}
                 confirming={confirmingId === entry.id}
                 onEdit={() => { if (entry.id) setEditingId(entry.id) }}
@@ -1678,6 +1680,7 @@ export default function ClientFile() {
           </div>
           <div className={styles.badgeStack}>
             {client.custody_status === 'in_custody' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeRed}`}>In Custody</span>}
+            {client.custody_status === 'no_bond_held' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeRed}`}>No Bond/Held</span>}
             {client.custody_status === 'bonded_out' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>Bonded Out</span>}
             {client.custody_status === 'pretrialed_out' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>Pretrialed Out</span>}
             {client.custody_status === 'ror' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>ROR&apos;d</span>}

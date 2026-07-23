@@ -56,13 +56,16 @@ function IndigentCircle({ clientId, status }) {
 function CustodyBadge({ status, muted }) {
   const label =
     status === 'in_custody'     ? 'In Custody'     :
+    status === 'no_bond_held'   ? 'No Bond/Held'   :
     status === 'bonded_out'     ? 'Bonded Out'     :
     status === 'pretrialed_out' ? 'Pretrialed Out' :
     status === 'ror'            ? "ROR'd"          :
     status === 'out'            ? 'Out'            : null
   if (!label) return null
+  // In-custody statuses (in_custody, no_bond_held) → crimson; the rest → green.
+  // The closed-section gray override wins over both.
   const colorClass = muted ? styles.badgeGray :
-    status === 'in_custody' ? styles.badgeRed : styles.badgeGreen
+    (status === 'in_custody' || status === 'no_bond_held') ? styles.badgeRed : styles.badgeGreen
   return <span className={`${styles.badge} ${colorClass}`}>{label}</span>
 }
 
@@ -74,9 +77,10 @@ export default function ClientRow({ client, relieved = false, onClick }) {
   const navigate = useNavigate()
   const { id, lastName, firstName, gender, oca, custodyStatus, bookingDate, bookingTime, nextHearing, relievedClosed, caseNumbers, indigentStatus } = client
 
-  // In-custody preliminary-hearing line: only when in custody AND a booking date
-  // is set. Cutoff = booking + 14 days (weekend rollover), computed at render.
-  const showPrelim = custodyStatus === 'in_custody' && !!bookingDate
+  // In-custody preliminary-hearing line: only when in custody (in_custody OR
+  // no_bond_held — both are physically in custody) AND a booking date is set.
+  // Cutoff = booking + 14 days (weekend rollover), computed at render.
+  const showPrelim = (custodyStatus === 'in_custody' || custodyStatus === 'no_bond_held') && !!bookingDate
   const cutoffDate = showPrelim ? computePrelimCutoff(bookingDate) : ''
 
   let nextSegments = null

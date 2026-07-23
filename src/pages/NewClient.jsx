@@ -184,11 +184,12 @@ export default function NewClient() {
             value={form.custody_status}
             onChange={e => set('custody_status', e.target.value)}
           >
-            <option value="in_custody">In Custody</option>
             <option value="out">Out</option>
             <option value="ror">ROR'd</option>
             <option value="pretrialed_out">Pretrialed Out</option>
             <option value="bonded_out">Bonded Out</option>
+            <option value="in_custody">In Custody</option>
+            <option value="no_bond_held">No Bond/Held</option>
           </select>
         </div>
 
