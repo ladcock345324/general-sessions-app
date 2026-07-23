@@ -88,8 +88,8 @@ export default function ClientRow({ client, relieved = false, onClick }) {
     nextSegments = [
       `${weekday}${nextHearing.date}`,
       ...(validTime ? [t] : []),
-      ...(nextHearing.docket_type ? [nextHearing.docket_type] : []),
       ...(nextHearing.courtroom ? [nextHearing.courtroom] : []),
+      ...(nextHearing.reason ? [nextHearing.reason] : []),
     ]
   }
 

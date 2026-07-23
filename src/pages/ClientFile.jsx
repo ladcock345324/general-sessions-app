@@ -125,8 +125,11 @@ function NextEventBlock({ event, onEdit }) {
               const d = new Date(event.event_date)
               const day = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '
               const t = event.event_time
+              // Line 1: reason | day & date | time. Blank segments drop out with
+              // their separator (no leading/doubled pipes) — reason is the common
+              // blank case and is now the first segment.
               const parts = [
-                (event.docket_type || ''),
+                ...(event.reason ? [event.reason] : []),
                 day + event.event_date,
                 ...(t && /\d:\d{2}\s*(AM|PM)/i.test(t) ? [t] : []),
               ]
@@ -137,8 +140,9 @@ function NextEventBlock({ event, onEdit }) {
           </div>
           <div className={styles.nextEventMeta}>
             {(() => {
+              // Line 2: docket type | "Courtroom" + number | judge | ADA.
               const segments = [
-                ...(event.reason ? [event.reason] : []),
+                ...(event.docket_type ? [event.docket_type] : []),
                 ...(event.courtroom ? [`Courtroom ${event.courtroom}`] : []),
                 ...(event.judge ? [event.judge] : []),
                 ...(event.ada_name ? [`ADA: ${event.ada_name}`] : []),
@@ -279,7 +283,10 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
 
   return (
     <div className={styles.inlineForm}>
-      <div className={styles.nextEventLabel} style={{ marginBottom: 10 }}>Next Event</div>
+      <div className={styles.nextEventTopRow}>
+        <span className={styles.nextEventLabel}>Next Event</span>
+        <button className={styles.nextEventEditBtn} onClick={onCancel} disabled={saving}>Close</button>
+      </div>
       <div className={styles.formTwoCol}>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Docket Type</label>
@@ -360,7 +367,7 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
       {error && <div className={styles.formError}>{error}</div>}
       <div className={styles.formActions}>
         <button className={styles.formSave} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-        <button className={styles.formCancel} onClick={onCancel} disabled={saving}>Cancel</button>
+        <button className={styles.formCancel} onClick={onCancel} disabled={saving}>Close</button>
         {existing && <button className={styles.formClear} onClick={clear} disabled={saving}>Clear</button>}
       </div>
     </div>
@@ -803,15 +810,30 @@ const HOURS_OPTIONS = Array.from({ length: 25 }, (_, i) => ((i + 1) / 10).toFixe
 // Common descriptions offered as a dropdown; picking one fills the (still
 // editable) description text field. Shared by AddHoursForm and EditHoursForm.
 const DESCRIPTION_OPTIONS = [
-  'Client zoom visit',
-  'Close file',
-  'Draft, file bond reduction motion',
-  'Draft, send email',
+  'Opened file',
+  'Reviewed () affidavits 0. ; Reviewed criminal history 0. ; TOTAL:',
   'Jail visit with client',
-  'Met with state',
-  'Open file',
-  'Prepare defense',
-  'Review () affidavits; Review criminal history',
+  'Initial client meeting',
+  'Met with ADA',
+  'Met, negotiated with ADA',
+  'Rescheduled Appearance',
+  'Draft, send letter to client',
+  'Draft, send email requesting client zoom visit',
+  'Client zoom visit',
+  'Met with client',
+  'Research, investigate',
+  'Read, review',
+  'Draft, send email to ADA re: bond motion',
+  'Draft, file bond reduction motion',
+  'Prepared defense',
+  'Prepared for trial',
+  'Prepared for preliminary hearing',
+  'Met with client; updated client re:',
+  'Arrange BWC viewing appointment, obtain & sign form',
+  'Reviewed file',
+  'Guilty plea taken by judge',
+  'Case dismissed',
+  'Closed file',
 ]
 
 // localStorage key holding the last entry_date the user saved, used to default
@@ -823,7 +845,16 @@ function todayString() {
   return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
 }
 
-function AddHoursForm({ clientId, topSortOrder, onSaved, onCancel }) {
+// Parse "M/D/YYYY" → a numeric key (year*10000 + month*100 + day) for reliable
+// date comparison. NOT new Date() and NOT string compare — both are unreliable
+// for these hand-entered "M/D/YYYY" strings. Unparseable → -Infinity (oldest).
+function dateKey(mdy) {
+  const m = (mdy ?? '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!m) return -Infinity
+  return Number(m[3]) * 10000 + Number(m[1]) * 100 + Number(m[2])
+}
+
+function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
   const [form, setForm] = useState({
     entry_date: localStorage.getItem(LAST_HOURS_DATE_KEY) || todayString(),
     hours: '0.5',
@@ -842,13 +873,16 @@ function AddHoursForm({ clientId, topSortOrder, onSaved, onCancel }) {
     setSaving(true)
     setError(null)
     const newId = crypto.randomUUID()
+    const entryDate = form.entry_date.trim()
     const record = {
       id: newId,
       client_id: clientId,
-      entry_date: form.entry_date.trim(),
+      entry_date: entryDate,
       hours: Number(form.hours),
       description: form.description.trim(),
-      sort_order: topSortOrder,
+      // Slot into the current displayed order by date (see computeInsertSortOrder).
+      sort_order: computeSortOrder(entryDate),
+      checked: false,
     }
     await db.hours.put(record)
     await addToSyncQueue('hours', 'INSERT', newId, record)
@@ -960,9 +994,15 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
 // One hours row wrapped as a @dnd-kit sortable item. The whole row moves during
 // a drag, but only the dedicated ≡ handle activates dragging — so the × delete
 // button, row-tap-to-edit, and text selection are never hijacked.
-function SortableHoursRow({ entry, editing, confirming, onEdit, onEditSaved, onEditCancel, onConfirm, onConfirmYes, onConfirmCancel }) {
+function SortableHoursRow({ entry, checked, onToggleCheck, editing, confirming, onEdit, onEditSaved, onEditCancel, onConfirm, onConfirmYes, onConfirmCancel }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: entry.id })
+  // Tap-to-edit is suppressed when the user is selecting text (so descriptions can
+  // be highlighted/copied for ACAP) or click-dragging on desktop. The dnd grip
+  // handle and its sensors are untouched. Child buttons stopPropagation their own
+  // click, so keeping onClick here means they still bypass edit as before.
+  const suppressRef = useRef(false)
+  const startRef = useRef({ x: 0, y: 0 })
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -992,8 +1032,14 @@ function SortableHoursRow({ entry, editing, confirming, onEdit, onEditSaved, onE
     <div
       ref={setNodeRef}
       style={{ ...style, cursor: 'pointer' }}
-      className={styles.hoursRow}
-      onClick={onEdit}
+      className={`${styles.hoursRow} ${checked ? styles.hoursRowChecked : ''}`}
+      onPointerDown={e => { startRef.current = { x: e.clientX, y: e.clientY }; suppressRef.current = false }}
+      onPointerUp={e => {
+        const sel = window.getSelection ? window.getSelection().toString() : ''
+        const moved = Math.abs(e.clientX - startRef.current.x) > 8 || Math.abs(e.clientY - startRef.current.y) > 8
+        if (sel.trim() !== '' || moved) suppressRef.current = true
+      }}
+      onClick={() => { if (suppressRef.current) { suppressRef.current = false; return } onEdit() }}
     >
       <button
         ref={setActivatorNodeRef}
@@ -1007,6 +1053,11 @@ function SortableHoursRow({ entry, editing, confirming, onEdit, onEditSaved, onE
       <span>{entry.entry_date}</span>
       <span className={styles.hoursValue}>{entry.hours}</span>
       <span>{entry.description}</span>
+      <button
+        className={`${styles.hoursCheckBtn} ${checked ? styles.hoursCheckBtnOn : ''}`}
+        onClick={e => { e.stopPropagation(); onToggleCheck() }}
+        aria-label={checked ? 'Mark unreviewed' : 'Mark reviewed'}
+      >{checked ? '✓' : ''}</button>
       <button
         className={styles.hoursDeleteBtn}
         onClick={e => { e.stopPropagation(); onConfirm() }}
@@ -1022,11 +1073,43 @@ function HoursSection({ clientId, hours }) {
 
   const list = hours ?? []
   const total = list.reduce((sum, e) => sum + Number(e.hours), 0)
+  const anyChecked = list.some(e => e.checked)
 
-  // New entries go to the top of the list: min existing sort_order − 10
-  // (0 − 10 = −10 when there are no entries yet).
-  const orders = list.map(e => e.sort_order ?? 0)
-  const topSortOrder = (orders.length ? Math.min(...orders) : 0) - 10
+  // A new entry slots into the CURRENT displayed order (sort_order ASC) by date,
+  // rather than jumping to the top. Scan top→bottom for the first row whose date
+  // is the same as or older than the new entry's; insert immediately ABOVE it
+  // (midpoint between it and the row above). No such row → new entry is the oldest
+  // → bottom (max + 10). Belongs at the very top → min − 10. Only the new row gets
+  // a sort_order; the existing list is never renumbered, so a manual drag order is
+  // preserved. Dates compared via numeric dateKey (not new Date / string compare).
+  function computeInsertSortOrder(newDateStr) {
+    if (list.length === 0) return 0
+    const newKey = dateKey(newDateStr)
+    const idx = list.findIndex(row => dateKey(row.entry_date) <= newKey)
+    if (idx === -1) {
+      const maxOrder = Math.max(...list.map(e => e.sort_order ?? 0))
+      return maxOrder + 10
+    }
+    const target = list[idx]
+    const above = list[idx - 1]
+    if (!above) return (target.sort_order ?? 0) - 10
+    return ((above.sort_order ?? 0) + (target.sort_order ?? 0)) / 2
+  }
+
+  // Check-off toggle — purely visual (grays a reviewed row). Offline-first, same
+  // persistence pattern as drag-reorder. No effect on total, sort, or delete.
+  async function toggleCheck(entry) {
+    const next = !entry.checked
+    await db.hours.update(entry.id, { checked: next })
+    await addToSyncQueue('hours', 'UPDATE', entry.id, { id: entry.id, checked: next })
+  }
+
+  async function clearAllChecks() {
+    for (const e of list.filter(e => e.checked)) {
+      await db.hours.update(e.id, { checked: false })
+      await addToSyncQueue('hours', 'UPDATE', e.id, { id: e.id, checked: false })
+    }
+  }
 
   // MouseSensor for desktop; TouchSensor with a short press-delay for iPhone so a
   // normal finger-scroll on the list still scrolls and only a deliberate hold on
@@ -1075,12 +1158,17 @@ function HoursSection({ clientId, hours }) {
     <div className={styles.section}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
         <span className={styles.sectionTitle}>Hours</span>
-        {!showForm && <button className={styles.addBtn} onClick={() => setShowForm(true)}>+</button>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {anyChecked && (
+            <button className={styles.hoursClearChecks} onClick={clearAllChecks}>clear checks</button>
+          )}
+          {!showForm && <button className={styles.addBtn} onClick={() => setShowForm(true)}>+</button>}
+        </div>
       </div>
       {showForm && (
         <AddHoursForm
           clientId={clientId}
-          topSortOrder={topSortOrder}
+          computeSortOrder={computeInsertSortOrder}
           onSaved={handleSaved}
           onCancel={() => setShowForm(false)}
         />
@@ -1096,6 +1184,8 @@ function HoursSection({ clientId, hours }) {
               <SortableHoursRow
                 key={entry.id ?? entry.entry_date}
                 entry={entry}
+                checked={!!entry.checked}
+                onToggleCheck={() => toggleCheck(entry)}
                 editing={editingId === entry.id}
                 confirming={confirmingId === entry.id}
                 onEdit={() => { if (entry.id) setEditingId(entry.id) }}

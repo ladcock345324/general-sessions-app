@@ -112,10 +112,11 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `id` | uuid PK | auto |
 | `client_id` | uuid FK → clients | |
 | `entry_date` | text | e.g. "6/1/2026" |
-| `hours` | numeric | selected from 0.1–0.9 dropdown |
+| `hours` | numeric | selected from 0.1–2.5 dropdown |
 | `description` | text | |
 | `created_at` | timestamptz | row creation timestamp |
 | `sort_order` | double precision | drag-to-reorder position, lowest = top of list; added 2026-07-06 via MCP, backfilled to existing date-desc order (newest date on top, same-day rows by `created_at` ascending). See "Hours: Drag-to-Reorder..." entry below. |
+| `checked` | boolean | not null, default false. Added 2026-07-23 via MCP. Purely visual "reviewed" flag — a checked row renders grayed. **Not** indexed and **not** added to the Dexie schema declaration (Dexie stores whole objects; the store stays at v3). No effect on running total, sort order, or delete. See 2026-07-23 feature entry. |
 
 ### `personal_notes`
 | Column | Type | Notes |
@@ -144,6 +145,24 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### Next Event Reorder + Hours Check-off, Date-Ordered Insert, Selection-Safe Tap (2026-07-23, second batch)
+
+Eight changes — four Next Event, four Hours. **One DB change**, applied via Supabase MCP (no in-repo migration): `hours.checked` (boolean, not null, default false). **No Dexie version bump** — `checked` is not indexed, Dexie stores whole objects, so the `hours` store stays at v3. Everything else is front-end.
+
+**Next Event**
+1. **"NEXT EVENT" label +20%** — `.nextEventLabel` font-size 10px → 12px; one class change covers both the display block and the edit-form label.
+2. **Custody dropdown order** (New + Edit Client) → In Custody, Out, ROR'd, Pretrialed Out, Bonded Out. **Display order only** — stored values, badge colors, and the `in_custody` prelim gate unchanged.
+3. **Info segment reorder** (formatting/pipes unchanged; blank segments drop out with their separator via filter-then-join, so no leading/dangling/doubled pipes):
+   - **Client list (ClientRow):** `day-of-week → date → time → courtroom → reason`. Docket type **removed** from this view; `reason` **added** (threaded via `toRowProps`, replacing `docket_type` in the `nextHearing` mapping).
+   - **Single-client (ClientFile blue block):** line 1 `reason | day & date | time`; line 2 `docket type | "Courtroom" + number | judge | ADA`. `reason` is now the first segment of line 1 and is blank on most records (the common tested case).
+4. **Edit/Close buttons.** The expanded edit form gets a **Close** button in the top-right (same slot the display block's **Edit** occupies), and the bottom "Cancel" is renamed **Close**. Both call the same `onCancel` (discard) — identical behavior, intentional.
+
+**Hours**
+5. **Selection-safe tap-to-edit.** A row's tap-to-open is suppressed when `window.getSelection().toString()` is non-empty **or** the pointer moved > 8px between pointerdown and pointerup (the movement check is what makes desktop click-drag text selection work — long-press detection alone misses mouse-drag). Implemented as a suppress flag set on the row's own pointer handlers while keeping `onClick`, so the child buttons (which `stopPropagation` their own click) still bypass edit exactly as before. **The @dnd-kit grip handle and its sensors are untouched** — drag-reorder is unaffected.
+6. **New entries insert in date order, not at the top.** `sort_order` for a new row is computed by scanning the current displayed order (`sort_order` ASC) top→bottom for the first row whose date is same-or-older than the new entry's, then inserting immediately above it at the midpoint of its neighbors; oldest → bottom (`max + 10`), very top → `min − 10`. Dates parsed to a numeric key `year*10000 + month*100 + day` (new helper `dateKey()`) — **not** `new Date()` and **not** string compare, both unreliable for hand-entered "M/D/YYYY". Yields dates descending with the most-recently-created on top among same-date rows. Only the new row gets a `sort_order`; the existing list is never renumbered, so a manual drag arrangement is preserved (the new entry slots into it).
+7. **DESCRIPTION_OPTIONS replaced** with a 24-item process-stage list (verbatim, incl. the `Reviewed () affidavits 0. ; …` fill-in template). Shared by AddHoursForm + EditHoursForm; blank option and select-then-clear behavior unchanged.
+8. **Check-off toggle.** A small CSS-drawn checkbox on each row, immediately left of ×, writes `hours.checked` offline-first (Dexie + `addToSyncQueue` UPDATE, same pattern as drag-reorder). A checked row is grayed with the existing gray tokens (`rgba(74,74,74,0.5)` bg / `#c0c0c0` text) but stays fully readable, clickable, editable, and draggable. A minor **"clear checks"** control on the Hours header (shown only when at least one row is checked) resets all of the client's rows to `checked = false` in one action. Purely visual — no effect on running total, sort order, or delete. The hours grid gained a 6th column (`24px 90px 60px 1fr 24px 28px`) across head/rows/total.
 
 ### Case Release Status + Bond Null Fix, ROR'd Custody, Next-Event/Form Polish (2026-07-23)
 
@@ -443,10 +462,12 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - `+` icon button on section header bar opens inline Add Incident form
   - Each expanded incident shows case rows + "+ add a case" at bottom
   - Case rows link to `/case/:caseNumber`
-- **Hours** table: date, hours (green), description, × delete button per row
+- **Hours** table: drag grip (≡), date, hours (green), description, check-off toggle, × delete button per row
   - Running total at bottom
-  - `+` button opens inline form (date defaults to today, hours dropdown 0.1–0.9)
-  - Saves to Supabase, sorted most recent first
+  - `+` button opens inline form (date defaults to last-used/today, hours dropdown 0.1–2.5)
+  - Rows ordered by `sort_order` ASC; drag-to-reorder. New entries slot in by **date** (see 2026-07-23 feature entry) rather than jumping to the top
+  - **Check-off toggle** per row (left of ×) writes `hours.checked`; a checked row is grayed (reviewed marker). A "clear checks" control appears on the Hours header when any row is checked. Purely visual — no effect on total/sort/delete
+  - Tap a row to edit — **except** while selecting text or click-dragging (so descriptions can be copied out for ACAP)
 - **Section headers** (Incidents, Hours, Personal Notes, Criminal History, Courtroom Documents) use inline styles (`background: #0f1820`)
 - **Criminal History** section: Upload/Replace/View Criminal History PDF; drag-and-drop supported
 - **Courtroom Documents** section: up to 5 documents; rename/delete per document; tappable tiles open via signed URL
@@ -459,11 +480,17 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Save uses `navigate('/client/:id', { replace: true })` — edit page is replaced in history, so Back from client file returns to client list
 
 ### Next Event Block
-- Display format: `Jail Docket  |  Thursday 7/16/2026  |  9:00 AM`
+- **Display segment order (2026-07-23).** Formatting/separators/pipes unchanged — only segment order differs by view, and every blank segment drops out with its separator (built by filtering empties then joining, so no leading/dangling/doubled pipes). `reason`, `time`, and `courtroom` are all optional; `reason` is blank on most records.
+  - **Single-client view (ClientFile blue block), two lines:**
+    - Line 1: `reason | day-of-week & date | time` — reason is now the FIRST segment and is usually blank (drops cleanly).
+    - Line 2: `docket type | "Courtroom" + number | judge | ADA` (ADA still appended when set).
+  - **Client list (ClientRow), one line:** `day-of-week → date → time → courtroom → reason`. **Docket type is NOT shown here** (removed); `reason` is now shown (threaded through `toRowProps`).
+- Legacy display format for reference: `Jail Docket  |  Thursday 7/16/2026  |  9:00 AM`
 - **Docket Type** — edited as a native `<select>` (blank + "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket", "Criminal Court") plus a separate optional "Add'l text" `<input>` immediately after; combined into the single `docket_type` column on save via `[preset, custom].filter(Boolean).join(' ').trim() || null`; split back on load (`splitDocketType()` peels a leading known preset into the select; any remainder or non-matching legacy value goes into the text box). "Criminal Court" added 2026-07-23 — added to **both** `DOCKET_PRESETS` (the dropdown) and, critically, the same list `splitDocketType()` reads, so a saved "Criminal Court [+ append]" round-trips back into the select rather than dumping into the free-text box.
 - **Reason** — `<select>`: blank + Review, Trial, Settlement, Discussion (this exact order, 2026-07-23). No enum validation; stored/displayed as-is.
 - **Courtroom** — `<select>`: blank + 3A, 3B, 3C, 4B, 4C, 4D, 5C, 5D, 6A, 6B, 6C, 6D (6A–6D added 2026-07-23 at the bottom).
-- **"NEXT EVENT" label** at the top of the edit form (2026-07-23) — all-caps/bold `#5b9fd4`, reusing the `.nextEventLabel` class from the non-editing block.
+- **"NEXT EVENT" label** appears on both the blue display block and the top of the edit form (all-caps/bold `#5b9fd4`, shared `.nextEventLabel` class). Font size bumped 10px → **12px** (+20%, 2026-07-23) — one class change covers both sites.
+- **Edit/Close buttons (2026-07-23).** On the display block the top-right button reads **Edit** (opens the form). On the expanded edit form that same top-right slot shows a **Close** button, and the bottom action button (formerly "Cancel") is also renamed **Close**. Both Close buttons call the same `onCancel` (discard, no save) — identical behavior, by design.
 - Weekday derived from `event_date` via `new Date()` + `toLocaleDateString`
 - Time is optional — omitted from display if blank
 - **Subpoenas field removed** — all UI/code references removed; the `next_events.subpoenas` column has been **dropped from the DB via MCP (2026-06-24)** (no app code reads or writes it)
@@ -485,7 +512,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Hanging indent on two-line descriptions: `padding-left: 1.62em; text-indent: -1.62em`
 
 ### Custody Status
-- Five options: `in_custody`, `bonded_out`, `pretrialed_out`, `ror` ("ROR'd"), `out` (dropdown order: In Custody, Bonded Out, Pretrialed Out, ROR'd, Out)
+- Five options: `in_custody`, `out`, `ror` ("ROR'd"), `pretrialed_out`, `bonded_out` (**dropdown display order as of 2026-07-23: In Custody, Out, ROR'd, Pretrialed Out, Bonded Out** — display order only in both New/Edit Client; stored values, badge colors, and the prelim-countdown gate unchanged)
 - "Out", "Pretrialed Out", "ROR'd", and "Bonded Out" badges all styled identically (muted green `#3d9e6a`); "In Custody" is muted crimson
 - All badges muted from original bright colors
 - Rendered in three places, all kept in sync: `ClientRow`'s `CustodyBadge` (label arm; falls through to green since only `in_custody` is red), the `ClientFile` header (per-status span; gray when the client is closed), and the New/Edit Client `<select>`s. The in-custody prelim-hearing countdown gates on `in_custody` only, so `ror` (out of custody) correctly does not trigger it.
