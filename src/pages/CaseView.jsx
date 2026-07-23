@@ -8,13 +8,21 @@ import { addToSyncQueue } from '../syncManager'
 import styles from './CaseView.module.css'
 import TextViewerDrawer from '../components/TextViewerDrawer'
 
-function formatBond(amount) {
-  if (amount == null) return null
-  return '$' + Number(amount).toLocaleString()
-}
-
 // Charge classification, least-serious → most-serious. Blank = unset (stored null).
 const CLASSIFICATIONS = ['', 'MIS', 'C MIS', 'B MIS', 'A MIS', 'E FEL', 'D FEL', 'C FEL', 'B FEL', 'A FEL', 'CAPITAL']
+
+// Case-level release condition. release_status is independent of the client-level
+// custody_status (a case's condition vs. where the client physically is).
+const RELEASE_LABELS = { held_without_bond: 'Held without bond', pretrial_released: 'Pretrial Released', ror: "ROR'd" }
+
+// Per-case bond/status line — decides independently. bond set (incl. 0) → "$X bond";
+// release_status set → its label; both → "$X bond · Label"; both null → "".
+function bondStatusText(bondAmount, releaseStatus) {
+  const segs = []
+  if (bondAmount != null) segs.push(`$${Number(bondAmount).toLocaleString()} bond`)
+  if (releaseStatus && RELEASE_LABELS[releaseStatus]) segs.push(RELEASE_LABELS[releaseStatus])
+  return segs.join(' · ')
+}
 
 // ─── Edit form ───────────────────────────────────────────────────────────────
 
@@ -25,6 +33,7 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
     charge_abbrev:  caseData.charge_abbrev  ?? '',
     classification: caseData.classification ?? '',
     bond_amount:    caseData.bond_amount != null ? String(caseData.bond_amount) : '',
+    release_status: caseData.release_status ?? '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -39,12 +48,16 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
     setSaving(true)
     setError(null)
 
+    // Bond: empty string → null (NOT 0). An explicit "0" stays 0 and displays
+    // "$0 bond". This is the root of the ticket — never coerce blank to 0.
+    const bondRaw = form.bond_amount.trim()
     const changes = {
       case_number:   form.case_number.trim(),
       charge:         form.charge.trim(),
       charge_abbrev:  form.charge_abbrev.trim() || null,
       classification: form.classification || null,
-      bond_amount:    form.bond_amount ? Number(form.bond_amount) : null,
+      bond_amount:    bondRaw === '' ? null : Number(bondRaw),
+      release_status: form.release_status || null,
     }
     await db.cases.update(caseData.id, changes)
     await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, ...changes })
@@ -71,17 +84,28 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
           {CLASSIFICATIONS.map(c => <option key={c} value={c}>{c || '—'}</option>)}
         </select>
       </div>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Bond Amount</label>
-        <div className={styles.formPrefixInput}>
-          <span className={styles.formPrefix}>$</span>
-          <input
-            className={`${styles.formInput} ${styles.formInputPrefixed}`}
-            type="number" min="0"
-            value={form.bond_amount}
-            onChange={e => set('bond_amount', e.target.value)}
-            placeholder="Optional"
-          />
+      <div className={styles.formTwoCol}>
+        <div className={styles.formRow}>
+          <label className={styles.formLabel}>Bond Amount</label>
+          <div className={styles.formPrefixInput}>
+            <span className={styles.formPrefix}>$</span>
+            <input
+              className={`${styles.formInput} ${styles.formInputPrefixed}`}
+              type="number" min="0"
+              value={form.bond_amount}
+              onChange={e => set('bond_amount', e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+        </div>
+        <div className={styles.formRow}>
+          <label className={styles.formLabel}>Status</label>
+          <select className={styles.formSelect} value={form.release_status} onChange={e => set('release_status', e.target.value)}>
+            <option value="">—</option>
+            <option value="held_without_bond">Held without bond</option>
+            <option value="pretrial_released">Pretrial Released</option>
+            <option value="ror">ROR&apos;d</option>
+          </select>
         </div>
       </div>
       {error && <div className={styles.formError}>{error}</div>}
@@ -246,7 +270,10 @@ export default function CaseView() {
         <div className={styles.caseNumberLabel}>{caseData.case_number}</div>
         <div className={styles.charge}>{caseData.charge}</div>
         <div className={styles.meta}>
-          {warrantStatus}<span className={styles.pipe}>|</span>{formatBond(caseData.bond_amount)} bond
+          {warrantStatus}
+          {bondStatusText(caseData.bond_amount, caseData.release_status) && (
+            <><span className={styles.pipe}>|</span>{bondStatusText(caseData.bond_amount, caseData.release_status)}</>
+          )}
         </div>
       </div>
 

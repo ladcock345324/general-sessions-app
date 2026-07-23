@@ -79,9 +79,18 @@ function tapHandlers(handler) {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function formatBond(amount) {
-  if (amount == null) return null
-  return '$' + Number(amount).toLocaleString()
+// Case-level release condition labels. release_status is independent of the
+// client-level custody_status (a case's condition vs. where the client is).
+const RELEASE_LABELS = { held_without_bond: 'Held without bond', pretrial_released: 'Pretrial Released', ror: "ROR'd" }
+
+// Per-case bond/status line — each case decides independently, no dependence on
+// siblings. bond set (incl. 0) → "$X bond"; release_status set → its label; both
+// → "$X bond · Label"; both null → "" (caller renders nothing).
+function bondStatusText(bondAmount, releaseStatus) {
+  const segs = []
+  if (bondAmount != null) segs.push(`$${Number(bondAmount).toLocaleString()} bond`)
+  if (releaseStatus && RELEASE_LABELS[releaseStatus]) segs.push(RELEASE_LABELS[releaseStatus])
+  return segs.join(' · ')
 }
 
 // Convert "M/D/YYYY" → "YYYY-MM-DD" for <input type="date">
@@ -149,7 +158,7 @@ function NextEventBlock({ event, onEdit }) {
 
 // ─── Next Event form ─────────────────────────────────────────────────────────
 
-const DOCKET_PRESETS = ['Jail Docket', 'Bond Docket', 'Review Docket', 'Settlement Docket']
+const DOCKET_PRESETS = ['Jail Docket', 'Bond Docket', 'Review Docket', 'Settlement Docket', 'Criminal Court']
 
 // docket_type is one column but edited as a preset <select> + optional append text.
 // Split a stored value back into { docketPreset, docketCustom }: if it begins with
@@ -164,7 +173,7 @@ function splitDocketType(stored) {
 
 const EMPTY_EVENT = { docketPreset: 'Jail Docket', docketCustom: '', reason: '', event_date: '', event_time: '9:00 AM', courtroom: '', judge: '', ada_name: '' }
 
-const COURTROOMS = ['', '3A', '3B', '3C', '4B', '4C', '4D', '5C', '5D']
+const COURTROOMS = ['', '3A', '3B', '3C', '4B', '4C', '4D', '5C', '5D', '6A', '6B', '6C', '6D']
 
 const JUDGES = [
   '',
@@ -270,6 +279,7 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
 
   return (
     <div className={styles.inlineForm}>
+      <div className={styles.nextEventLabel} style={{ marginBottom: 10 }}>Next Event</div>
       <div className={styles.formTwoCol}>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Docket Type</label>
@@ -289,8 +299,10 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
           <label className={styles.formLabel}>Reason</label>
           <select className={styles.formSelect} value={form.reason} onChange={e => set('reason', e.target.value)}>
             <option value="">—</option>
+            <option>Review</option>
             <option>Trial</option>
             <option>Settlement</option>
+            <option>Discussion</option>
           </select>
         </div>
       </div>
@@ -623,7 +635,10 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
                 <span className={styles.caseNumber}>{c.case_number}</span>
                 <span className={styles.caseCharge}>{c.charge}{c.classification ? ` (${c.classification})` : ''}</span>
                 <span className={styles.caseMeta}>
-                  {c.warrant_url ? 'Affidavit on File' : 'No Affidavit'}<span className={styles.pipe}>|</span>{formatBond(c.bond_amount)} bond
+                  {c.warrant_url ? 'Affidavit on File' : 'No Affidavit'}
+                  {bondStatusText(c.bond_amount, c.release_status) && (
+                    <><span className={styles.pipe}>|</span>{bondStatusText(c.bond_amount, c.release_status)}</>
+                  )}
                 </span>
               </div>
               <span className={styles.caseChevron}>›</span>
@@ -1530,14 +1545,27 @@ export default function ClientFile() {
 
   const nameCore = `${client.last_name}, ${client.first_name} (${client.gender})`
 
-  const totalBond = incidents.flatMap(inc => inc.cases ?? []).reduce((sum, c) => sum + (Number(c.bond_amount) || 0), 0)
+  // Sticky scroll header: name + gender + OCA, each parenthetical omitted cleanly
+  // when missing (no empty "()" and no stray spaces). No "#" prefix on the OCA.
+  const stickyName = [
+    `${client.last_name}, ${client.first_name}`,
+    client.gender ? `(${client.gender})` : '',
+    client.oca ? `(${client.oca})` : '',
+  ].filter(Boolean).join(' ')
+
+  // Total Bond: hide the whole line when EVERY case has a null bond_amount.
+  // A case with bond_amount = 0 counts as present (0 != null), so the line shows.
+  // Sum only the non-null values.
+  const bondCases = incidents.flatMap(inc => inc.cases ?? []).filter(c => c.bond_amount != null)
+  const showTotalBond = bondCases.length > 0
+  const totalBond = bondCases.reduce((sum, c) => sum + Number(c.bond_amount), 0)
   const sortedIncidents = [...incidents].sort((a, b) => new Date(b.incident_date) - new Date(a.incident_date))
 
   return (
     <div className={styles.screen}>
 
       {/* ── Sticky name bar ── */}
-      <div className={styles.stickyNameBar}>{nameCore}</div>
+      <div className={styles.stickyNameBar}>{stickyName}</div>
 
       {/* ── Client header ── */}
       <div className={styles.clientHeader}>
@@ -1554,16 +1582,15 @@ export default function ClientFile() {
             {client.oca && (
               <div style={{ color: '#9faab8', fontSize: '0.85em', marginTop: 2 }}>{client.oca}</div>
             )}
-            <div className={styles.bondLine}>
-              {[`Total Bond: $${totalBond.toLocaleString()}`].filter(Boolean).map((seg, i) => (
-                <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
-              ))}
-            </div>
+            {showTotalBond && (
+              <div className={styles.bondLine}>Total Bond: ${totalBond.toLocaleString()}</div>
+            )}
           </div>
           <div className={styles.badgeStack}>
             {client.custody_status === 'in_custody' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeRed}`}>In Custody</span>}
             {client.custody_status === 'bonded_out' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>Bonded Out</span>}
             {client.custody_status === 'pretrialed_out' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>Pretrialed Out</span>}
+            {client.custody_status === 'ror' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>ROR&apos;d</span>}
             {client.custody_status === 'out' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeGreen}`}>Out</span>}
             {isClosed && <span className={styles.closedBadge}>CLOSED</span>}
           </div>

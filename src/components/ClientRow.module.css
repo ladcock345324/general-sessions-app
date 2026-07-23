@@ -47,6 +47,12 @@
   padding: 0;
 }
 
+/* OCA number only — subtle character spacing. Scoped to its own span so it never
+   affects the client name, case numbers, or anything else on the line. */
+.oca {
+  letter-spacing: 0.4px;
+}
+
 .next {
   font-size: 13px;
   color: #6b9fd4;

@@ -58,6 +58,7 @@ function CustodyBadge({ status, muted }) {
     status === 'in_custody'     ? 'In Custody'     :
     status === 'bonded_out'     ? 'Bonded Out'     :
     status === 'pretrialed_out' ? 'Pretrialed Out' :
+    status === 'ror'            ? "ROR'd"          :
     status === 'out'            ? 'Out'            : null
   if (!label) return null
   const colorClass = muted ? styles.badgeGray :
@@ -78,8 +79,6 @@ export default function ClientRow({ client, relieved = false, onClick }) {
   const showPrelim = custodyStatus === 'in_custody' && !!bookingDate
   const cutoffDate = showPrelim ? computePrelimCutoff(bookingDate) : ''
 
-  const nameOca = oca ? `${lastName}, ${firstName} (${gender}) ${oca}` : `${lastName}, ${firstName} (${gender})`
-
   let nextSegments = null
   if (nextHearing && nextHearing.date) {
     const d = new Date(nextHearing.date)
@@ -98,7 +97,10 @@ export default function ClientRow({ client, relieved = false, onClick }) {
     <div className={styles.row} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
       <div className={styles.info}>
         <div className={styles.nameLine}>
-          <span className={styles.name}>{nameOca}</span>
+          <span className={styles.name}>
+            {lastName}, {firstName} ({gender})
+            {oca && <>{' '}<span className={styles.oca}>{oca}</span></>}
+          </span>
           <IndigentCircle clientId={id} status={indigentStatus} />
         </div>
         {nextSegments

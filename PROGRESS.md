@@ -40,7 +40,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `gender` | text | "M" or "F" |
 | `age` | int | legacy/dormant column — kept for reversibility; UI no longer reads, writes, or displays it (same pattern as `relieved_as_counsel`) |
 | `oca` | text | optional OCA # |
-| `custody_status` | text | `"in_custody"`, `"bonded_out"`, `"pretrialed_out"`, or `"out"`. `pretrialed_out` added 2026-06-25 (front-end only — existing text column, no schema change); displays "Pretrialed Out", muted-green badge same as bonded_out/out. |
+| `custody_status` | text | `"in_custody"`, `"bonded_out"`, `"pretrialed_out"`, `"ror"`, or `"out"`. `pretrialed_out` added 2026-06-25; `ror` ("ROR'd") added 2026-07-23 — both front-end only (existing text column, no schema change). `ror`/`pretrialed_out`/`bonded_out`/`out` all display a muted-green badge (`#3d9e6a`); only `in_custody` is crimson. **Client-level** — where the client physically is, net of all cases; independent of the case-level `cases.release_status`. |
 | `relieved_as_counsel` | boolean | legacy column — kept for reversibility; not read by app logic; section placement driven by `relieved_closed` |
 | `relieved_closed` | boolean | shows CLOSED badge when true |
 | `closed_at` | timestamptz | set when a client is closed, null when reopened; used to sort the Closed section (most recently closed first) |
@@ -86,7 +86,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `charge_abbrev` | text | optional short label shown in client list and case rows |
 | `classification` | text | optional charge classification — one of "MIS", "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (all uppercase; least→most serious); null = unset. Added 2026-06-24 via MCP; generic "MIS" option added 2026-06-25 (front-end only — same existing text column). Shown in parens after the charge abbrev (client list) / charge (single view). |
 | `warrant_url` | text | Supabase Storage path for affidavit PDF (e.g. `warrants/GS1041482.pdf`) — signed URL generated on demand |
-| `bond_amount` | numeric | 0 displays as "$0 bond" |
+| `bond_amount` | numeric | nullable. `null` = unset (no bond figure); an explicit `0` is a real value and displays "$0 bond". The edit form saves `null` on a blank field, never `0` (see 2026-07-23 feature entry). |
+| `release_status` | text | nullable release condition for **this specific case**: `"held_without_bond"` \| `"pretrial_released"` \| `"ror"`; `null` = unset. Added 2026-07-23 via MCP (no in-repo migration). Displays "Held without bond" / "Pretrial Released" / "ROR'd". **Independent of the client-level `clients.custody_status`** — this is the condition on the case; custody_status is where the client physically is, net of all cases. |
 | `notes` | text | free-text, editable on case view with Save button |
 | `disposition` | text | null = open; shown when set |
 | `status` | text | default "open" |
@@ -143,6 +144,22 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### Case Release Status + Bond Null Fix, ROR'd Custody, Next-Event/Form Polish (2026-07-23)
+
+Nine scoped changes. **One DB change**, applied via Supabase MCP (no in-repo migration): `cases.release_status` (text, nullable) — `'held_without_bond'` \| `'pretrial_released'` \| `'ror'`, `null` = unset. The two pre-existing $0-bond cases (SCE437694, SU26540) were converted to `bond_amount = NULL, release_status = 'pretrial_released'`. Everything else is front-end.
+
+**Key independence principle:** `cases.release_status` (case-level — the condition on that specific case) and `clients.custody_status` (client-level — where the client physically is, net of all cases) are deliberately **independent**. Neither derives from the other; each is set and displayed on its own.
+
+1. **Next Event REASON options** → exactly Review, Trial, Settlement, Discussion (blank stays on top), in that order. `ClientFile.jsx` `NextEventForm`.
+2. **Custody status "ROR'd" (`ror`)** — new option in New/Edit Client `<select>`s (after Pretrialed Out), a `CustodyBadge` label arm in `ClientRow` (falls through to muted green `#3d9e6a`; only `in_custody` is red), and a per-status span in the `ClientFile` header (green, gray when closed). Front-end only. Does **not** trigger the in-custody prelim countdown (gated on `in_custody`).
+3. **Bond Amount / Status split on the CaseView edit form.** Bond Amount is now half-width with a new **Status** `<select>` beside it (blank / Held without bond / Pretrial Released / ROR'd → `release_status`), in a `.formTwoCol` grid that stacks to one column ≤480px. **Bond null fix (root of the ticket):** the save path now writes `null` for a blank bond (`bondRaw === '' ? null : Number(bondRaw)`), and an explicit `0` still saves as `0` and displays "$0 bond". Per-case display (CaseView meta + ClientFile case rows) via a shared `bondStatusText()`: bond set → "$X bond"; release set → its label; both → "$X bond · Label"; both null → nothing. **Total Bond** in the ClientFile header now sums only non-null bonds and the whole line hides when every case's bond is null (a `0` counts as present, so it shows "$0"). `release_status` flows through the offline layer automatically — Dexie stores it as a non-indexed field (no schema bump needed), `fullSync`'s `select('*')` carries it, and the CaseView UPDATE payload includes it. **Per the session decision, the client-list case rows were intentionally left unchanged** (they show no bond text today).
+4. **"NEXT EVENT" label** added to the top of the Next Event edit form (reuses `.nextEventLabel`).
+5. **ClientFile sticky scroll header** now shows name + gender + OCA as `Aydin, Azad (M) (645261)` (no "#", each parenthetical omitted cleanly when missing). The main header (h1 name + separate OCA line) is unchanged.
+6. **Client-list OCA letter-spacing** — OCA wrapped in its own `.oca` span with `letter-spacing: 0.4px`, scoped so it never touches the name, case numbers, or anything else on the line.
+7. **Docket Type preset "Criminal Court"** added at the bottom of `DOCKET_PRESETS` **and** the `splitDocketType()` known-preset list, so saved values round-trip back into the select instead of the free-text box.
+8. *(Covered by #1.)*
+9. **Courtroom options 6A, 6B, 6C, 6D** appended to the bottom of the `COURTROOMS` list.
 
 ### Hours: Drag-to-Reorder, Smart Date Default, Description Dropdown (2026-07-06)
 
@@ -443,7 +460,10 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 
 ### Next Event Block
 - Display format: `Jail Docket  |  Thursday 7/16/2026  |  9:00 AM`
-- **Docket Type** — edited as a native `<select>` (blank + "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket") plus a separate optional "Add'l text" `<input>` immediately after; combined into the single `docket_type` column on save via `[preset, custom].filter(Boolean).join(' ').trim() || null`; split back on load (`splitDocketType()` peels a leading known preset into the select; any remainder or non-matching legacy value goes into the text box)
+- **Docket Type** — edited as a native `<select>` (blank + "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket", "Criminal Court") plus a separate optional "Add'l text" `<input>` immediately after; combined into the single `docket_type` column on save via `[preset, custom].filter(Boolean).join(' ').trim() || null`; split back on load (`splitDocketType()` peels a leading known preset into the select; any remainder or non-matching legacy value goes into the text box). "Criminal Court" added 2026-07-23 — added to **both** `DOCKET_PRESETS` (the dropdown) and, critically, the same list `splitDocketType()` reads, so a saved "Criminal Court [+ append]" round-trips back into the select rather than dumping into the free-text box.
+- **Reason** — `<select>`: blank + Review, Trial, Settlement, Discussion (this exact order, 2026-07-23). No enum validation; stored/displayed as-is.
+- **Courtroom** — `<select>`: blank + 3A, 3B, 3C, 4B, 4C, 4D, 5C, 5D, 6A, 6B, 6C, 6D (6A–6D added 2026-07-23 at the bottom).
+- **"NEXT EVENT" label** at the top of the edit form (2026-07-23) — all-caps/bold `#5b9fd4`, reusing the `.nextEventLabel` class from the non-editing block.
 - Weekday derived from `event_date` via `new Date()` + `toLocaleDateString`
 - Time is optional — omitted from display if blank
 - **Subpoenas field removed** — all UI/code references removed; the `next_events.subpoenas` column has been **dropped from the DB via MCP (2026-06-24)** (no app code reads or writes it)
@@ -455,7 +475,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Upload Affidavit** / **Replace Affidavit** — drag-and-drop or tap; uploads PDF to Supabase Storage; "Replace Affidavit" button resized to match "View Affidavit" and "View Text" buttons
 - **View Affidavit** button when affidavit is on file
 - **Notes** textarea with Save/Saved confirmation
-- **Disposition**, **Edit** (inline form includes `charge_abbrev` and `classification` fields), **Delete Case**
+- **Disposition**, **Edit** (inline form includes `charge_abbrev`, `classification`, and a half-width **Bond Amount + Status** row — Status is a `<select>` writing `cases.release_status`), **Delete Case**
+- **Bond/status meta line** (header, under the charge) shows the affidavit status and then the per-case bond/status independently: `$X bond` when a bond is set, the release-status label when `release_status` is set, both joined by ` · ` when both are set, and nothing when both are null. Same independent logic drives the ClientFile case rows.
 
 ### Incident Editing
 - Date input constrained to `max-width: 160px`
@@ -464,9 +485,10 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Hanging indent on two-line descriptions: `padding-left: 1.62em; text-indent: -1.62em`
 
 ### Custody Status
-- Four options: `in_custody`, `bonded_out`, `pretrialed_out`, `out`
-- "Out", "Pretrialed Out", and "Bonded Out" badges all styled identically (muted green `#3d9e6a`); "In Custody" is muted crimson
+- Five options: `in_custody`, `bonded_out`, `pretrialed_out`, `ror` ("ROR'd"), `out` (dropdown order: In Custody, Bonded Out, Pretrialed Out, ROR'd, Out)
+- "Out", "Pretrialed Out", "ROR'd", and "Bonded Out" badges all styled identically (muted green `#3d9e6a`); "In Custody" is muted crimson
 - All badges muted from original bright colors
+- Rendered in three places, all kept in sync: `ClientRow`'s `CustodyBadge` (label arm; falls through to green since only `in_custody` is red), the `ClientFile` header (per-status span; gray when the client is closed), and the New/Edit Client `<select>`s. The in-custody prelim-hearing countdown gates on `in_custody` only, so `ror` (out of custody) correctly does not trigger it.
 
 ### charge_abbrev
 - `cases` table has `charge_abbrev text` column (added via `ALTER TABLE cases ADD COLUMN charge_abbrev text`)
@@ -474,7 +496,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Client list shows `charge_abbrev` if set, falls back to `charge`
 
 ### Total Bond
-- Computed in ClientFile as sum of `bond_amount` across all cases associated with the client
+- Computed in ClientFile as the sum of `bond_amount` across the client's cases, counting **only non-null** values
+- The entire "Total Bond:" line is **hidden when every case has a null `bond_amount`** (2026-07-23). A case with `bond_amount = 0` counts as present (0 ≠ null), so the line shows and reads "Total Bond: $0"
 - Labeled "Total Bond:" in the client header
 - `bond_amount` field removed from Edit Client and New Client forms
 

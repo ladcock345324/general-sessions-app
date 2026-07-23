@@ -339,6 +339,20 @@
   gap: 5px;
 }
 
+/* Two half-width fields on one row (Bond Amount + Status). Stacks to one column
+   on narrow phones so neither field gets too cramped. */
+.formTwoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .formTwoCol {
+    grid-template-columns: 1fr;
+  }
+}
+
 .formLabel {
   font-size: 10px;
   font-weight: 700;
