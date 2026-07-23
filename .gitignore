@@ -20,6 +20,9 @@ backup/
 # project. Must never be committed.
 .env.restore-test
 
+# Per-machine Claude Code settings — local to each developer, not shared.
+.claude/settings.local.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
