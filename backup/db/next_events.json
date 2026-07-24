@@ -1,0 +1,46 @@
+[
+  {
+    "id": "6832b5f5-9b74-4baa-acf3-ec07e44ffa4c",
+    "client_id": "e485ed9e-73d0-4bb3-a87b-f05c55e6d1a5",
+    "docket_type": "Bond Docket",
+    "event_date": "8/26/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "J. Bell",
+    "reason": "Review",
+    "ada_name": ""
+  },
+  {
+    "id": "83e5e87e-28c0-48a3-b013-8828b81f0bc4",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "docket_type": "Bond Docket",
+    "event_date": "8/25/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "J. Bell",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "e9c085b7-9484-4fed-8545-a12d1ac89079",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "docket_type": "Bond Docket",
+    "event_date": "7/16/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "L. Jones",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "ea81a528-0868-405a-8863-cea66ea112da",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "docket_type": "Criminal Court 2026-I-473",
+    "event_date": "8/19/2026",
+    "event_time": "10:00 AM",
+    "courtroom": "6B",
+    "judge": "Dalton",
+    "reason": "Discussion",
+    "ada_name": ""
+  }
+]
