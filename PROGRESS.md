@@ -72,7 +72,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 |---|---|---|
 | `id` | uuid PK | auto |
 | `client_id` | uuid FK → clients | |
-| `incident_date` | text | e.g. "7/16/2026" — used as display label |
+| `incident_date` | text | e.g. "7/16/2026" — used as display label. **NULLABLE as of 2026-07-28** (migration applied outside the app); the Add Incident form and the inline edit both accept a blank date and write `null`. |
 | `incident_description` | text | e.g. "Watch Theft Incident" — shown as header with date in parens |
 
 > Incidents are collapsible on the client file page. Sorted most recent first.
@@ -83,8 +83,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 |---|---|---|
 | `id` | uuid PK | auto |
 | `incident_id` | uuid FK → incidents | |
-| `case_number` | text | e.g. "GS1041482" |
-| `charge` | text | required |
+| `case_number` | text | e.g. "GS1041482". **NULLABLE as of 2026-07-28.** ⚠️ This column is also the URL key (`/case/:caseNumber`), so a case without one is addressed by its `id` instead — see the 2026-07-28 entry. |
+| `charge` | text | **NULLABLE as of 2026-07-28** (was required). |
 | `charge_abbrev` | text | optional short label shown in client list and case rows |
 | `classification` | text | optional charge classification — one of "MIS", "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (all uppercase; least→most serious); null = unset. Added 2026-06-24 via MCP; generic "MIS" option added 2026-06-25 (front-end only — same existing text column). Shown in parens after the charge abbrev (client list) / charge (single view). |
 | `warrant_url` | text | Supabase Storage path for affidavit PDF (e.g. `warrants/GS1041482.pdf`) — signed URL generated on demand |
@@ -149,6 +149,44 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Nullable Incident Date / Case Number / Charge + Narrowed Time Dropdown (2026-07-28, commit `b8fcde4`)
+
+Completes the item 8 work started earlier the same day. **One DB change, applied outside the app and verified against the live schema:** `incidents.incident_date`, `cases.case_number` and `cases.charge` are now **NULLABLE** (they were NOT NULL). Everything else is front-end. No Dexie version bump.
+
+**Validation removed** from the four corresponding forms — Add Incident (date), Add Case and Edit Case (number and charge). A blank field writes `null`, not `''`, via the existing `.trim() || null` pattern used by every other nullable field. The `*` markers came off those labels.
+
+#### The crash this caught
+
+Making `case_number` nullable exposed a latent crash that would have fired the first time a case was saved without a number:
+
+```js
+[...cases].sort((a, b) => a.case_number.localeCompare(b.case_number))   // TypeError on null
+```
+
+`ClientFile.jsx` sorted an incident's cases this way. On a real `null` this throws `TypeError: Cannot read properties of null (reading 'localeCompare')` — and because the sort runs during render, it takes down **the entire client file**, not just the offending row. Now guarded with `(a.case_number ?? '')`. Confirmed by direct test that the old form threw and the new one doesn't. **This is the reason to sweep display and sort sites whenever a column becomes nullable** — the form change is the easy half.
+
+#### Keeping an unnumbered case reachable
+
+`case_number` is the URL key (`/case/:caseNumber`), so a blank one breaks addressing in several places at once:
+
+- **Client list.** The tap target is the case-number `<span>` alone (deliberately tightened on 2026-06-10), so a blank number meant a **zero-width hit area** — the case would have been permanently unreachable from the list. It now renders a `—` as a tap target.
+- **Routing.** Both list views link to `` `/case/${c.case_number || c.id}` ``, and `CaseView`'s lookup falls back to a primary-key `db.cases.get()` when the `case_number` match misses. Normal case numbers resolve exactly as before; the fallback only engages for a UUID.
+- **Post-edit navigate.** `onSaved()` passes `changes.case_number || caseData.id`, so blanking the number in the edit form doesn't navigate to `/case/` (which would fall through the catch-all route back to the client list).
+- **Warrant upload path.** `` `warrants/${caseData.case_number || caseData.id}.pdf` `` — previously this would have written the literal `warrants/null.pdf` and **every unnumbered case would have overwritten the same file** (uploads use `upsert: true`).
+
+#### Blank-value display
+
+- **Conditional separators.** The client-list case row emitted a bare `| ` with no charge; the incident header emitted a leading `—` with no date. Both now render only when the adjoining value exists, extending the filter-then-join convention already used for the Next Event line.
+- **Empty-header fallback.** An incident with neither date nor description, and a case with no number, render a lone `—` so the header stays visible and tappable instead of collapsing to an invisible strip.
+- **Inline incident edit no longer discards a cleared date.** The old `if (!newDate || unchanged)` guard silently abandoned the commit when the date was cleared; it now saves `null`.
+- **Verified against real `null`, not just `''`** — the incident comparator still sorts nulls to the end, an all-null list is stable with no `NaN` comparison, and `formatDateDisplay`/`toDateInput` return `''` for `null`/`undefined`/`''`.
+
+#### Next Event time dropdown narrowed
+
+Range cut to **8:00 AM – 3:00 PM inclusive** — the span the docket actually runs. **53 options, down from 144.** UI and increment logic unchanged: 5-minute steps at the 8, 9 and 10 o'clock hours (12 each), 15-minute at 11 AM / 12 PM / 1 PM / 2 PM (4 each), plus `3:00 PM` alone to close the window. Everything outside is discarded. Format is still `"h:MM AM/PM"`. **All five distinct `event_time` values in the DB (9:00 AM, 9:15 AM, 1:00 PM, 10:00 AM, 8:30 AM) fall inside the window** — re-verified against the live DB after the change — so no record was altered or blanked. An off-list stored value is still preserved as an extra option at the top rather than silently blanked on edit.
+
+**Verification:** `npm run build` clean; `npx eslint .` still 18 errors.
+
 ### Affidavit Text Data-Loss Fix + Seven Form/Display Changes (2026-07-28)
 
 Eight scoped changes. **No DB or schema changes; no Dexie version bump** (nothing added is indexed). The headline item is #1 — a silent data-loss bug, not a feature.
@@ -190,7 +228,27 @@ if (text != null) {
 - **Awaited before the handler returns.** Extraction completes and both writes land before the upload handler exits, so the "Uploading…" / saving state stays up for the duration and navigation can't race it. For courtroom docs this means the form no longer closes until the text is persisted; the document row itself is written *before* extraction, so it survives even if extraction yields nothing.
 - **A `null` extraction skips the write entirely** rather than overwriting. Deliberate: a null result means either a scanned PDF with no text layer *or* an unreachable CDN worker, and the two are indistinguishable at the call site — so writing null risks destroying good text on re-upload for no gain. **Trade-off:** replacing a text-PDF with a scanned one leaves the previous text stale. Accepted; losing real text is the worse failure. A `console.warn` records the skip.
 
-**The 7 pre-existing NULL rows are NOT repaired by this change** — it prevents new losses only. All 7 still have their PDF in Storage, so re-extraction is possible: GS1041481 (Woods-James), GS1093939 (Lee), GS1115757 (Johnson), GS1116065 (McMillan), GS1120368 (Slayden), SCE322490 (Roche), SU26540 (Granberry). Note that **2 of these were confirmed on 2026-06-17 to be scanned/non-OCR'd with no text layer** and are permanently unrecoverable — the doc doesn't record which 2, so ~5 are likely recoverable and the only way to identify them is to run extraction. No recovery script has been written.
+**The 7 pre-existing NULL rows are NOT repaired by this change** — it prevents new losses only. See the triage results immediately below.
+
+#### Recoverability triage of the 7 NULL rows (2026-07-28)
+
+Each PDF was pulled from the **`backups` branch** (which holds the real bytes, so no auth or live access was needed) and re-extracted locally with the same pdfjs version. Method validated against a known-good control: GS1041482 extracted 3,967 chars, exactly matching the DB.
+
+| Case | Client | Size | Result |
+|---|---|---|---|
+| GS1115757 | Johnson | 93 KB | **Recoverable** — 3,971 chars |
+| GS1116065 | McMillan | 83 KB | **Recoverable** — 2,778 chars |
+| GS1120368 | Slayden | — | ✅ **RECOVERED 2026-07-28** — re-uploaded on production through the fixed path; verified in the live DB at **3,925 chars**, clean electronic extraction. Confirms the fix works end-to-end. |
+| GS1041481 | Woods-James | 3.4 MB | Scanned — no text layer |
+| GS1093939 | Lee | 3.7 MB | Scanned — no text layer |
+| SCE322490 | Roche | 2.7 MB | Scanned — no text layer |
+| SU26540 | Granberry | 1.9 MB | Scanned — no text layer |
+
+> ⚠️ **Corrects the "2 scanned PDFs" figure recorded on 2026-06-17 — it is WRONG.** Of the 6 probed here, **4 have no text layer**, not 2. That note dates from when there were only 11 cases; more scanned affidavits have been uploaded since and it was never revisited. Do not rely on the old number.
+
+> **Reliable tell, discovered here: file size predicts the text layer perfectly.** Every multi-megabyte affidavit (1.9–3.7 MB) is a scan with no extractable text; every ~80–105 KB file has a clean text layer. Scanned page images are one to two orders of magnitude larger than the same document as electronic text. This is a much faster triage than running extraction, and it held for all 7 files tested.
+
+**Recovery method — no script.** A temporary in-app trigger was built and then discarded in favour of simply **re-uploading the PDF on production through the fixed upload path**, which is how GS1120368 was repaired. That needs no special tooling, exercises the real code path, and doubles as a live test of the fix. The remaining two are tracked under Open Items.
 
 #### 2–8. Form and display changes
 
@@ -721,6 +779,22 @@ src/
 
 Affidavit / criminal-history / courtroom-document PDFs are not cached locally, so the scanned files aren't viewable offline — only their extracted text (`warrant_text`, etc.) is, via the text drawer reading from Dexie. A future option is to cache PDF bytes as Blobs in a new Dexie table (cache-on-upload + cache-on-view as the light version, eager full-download as the heavy version) and render via `pdfjs-dist` canvas in a drawer. Deliberately deferred — extracted text covers the practical need.
 
+### Open Items — carried forward from 2026-07-28
+
+Things explicitly identified and **not** done. Rough priority order.
+
+1. **`EditClient.jsx` still reads from Supabase, not Dexie — the last remaining offline gap.** [`EditClient.jsx`](src/pages/EditClient.jsx) loads the client with a live `supabase.from('clients').select('*').eq('id', id).single()` inside a `useEffect`. Every other read path was migrated to Dexie in the Phase 2 offline work; this one was missed. **Offline it resolves with an error and the page renders "Client not found" instead of the form — so editing a client is the single thing that does not work in a courthouse basement,** which is the exact scenario the offline layer exists for. The fix is to read it through `useLiveQuery` like `useClientFile` does. Note the doc previously described this neutrally as "Pre-populated from Supabase" and did not flag it as a gap.
+
+2. **Two cases still need `warrant_text` recovered — both confirmed to have text layers.** GS1115757 (Johnson, ~3,971 chars) and GS1116065 (McMillan, ~2,778 chars). Method: re-upload the PDF on production via **Replace Affidavit**, exactly as GS1120368 was repaired. No script needed. **GS1041481, GS1093939, SCE322490 and SU26540 are scans and are permanently unrecoverable** without an OCR step, which the app does not have — treat their NULL as final.
+
+3. **`src/seed.js` is broken and carries a duplicate credential.** It inserts into three columns that no longer exist — `cases.da_name` (dropped 2026-06-09), `clients.criminal_history` (dropped 2026-06-09) — and also writes the dormant `clients.bond_amount`. Running it would fail at the first case insert. It additionally holds a **second hardcoded copy of the Supabase anon key**, independent of `supabaseClient.js`. It is referenced by nothing. **Either repair it against the current schema or delete it**; leaving a broken seed script that looks runnable is the worst of the three options.
+
+4. **Out-of-custody preliminary-hearing countdown is not implemented.** Tenn. R. Crim. P. 5 sets a **30-day** period for defendants released from custody; only the 14-day in-custody branch exists, so out-of-custody clients show no deadline at all despite having one. **Deliberately deferred, not forgotten** — see the fuller Rule 5 discussion under Known Issues, including the misdemeanor-coverage and Rule 45 holiday caveats.
+
+5. **Still NOT NULL, still required by design — do not remove these guards without a migration.** `clients.first_name`, `clients.last_name`, `hours.entry_date`, `hours.hours`, `hours.description`, `courtroom_documents.name`, `courtroom_documents.file_url`. Removing client-side validation on any of these would let the Dexie write succeed and the background Supabase sync **fail silently**, which is worse than the validation message.
+
+6. **Uploads are slower now, by design.** PDF text extraction is `await`ed before the upload handler returns, so "Uploading…" / "Saving…" stays up until the text is persisted. **That delay is the fix** — it is exactly the window that was previously losing data — so do not "optimize" it back into a fire-and-forget call. **Open question:** whether to surface extraction progress (or a distinct "Extracting text…" state) for large PDFs, rather than making the change faster.
+
 ### Known Issues / Things to Revisit
 - **Preliminary-hearing countdown — verified correct, but incomplete. Revisit.** The 14-day figure was re-verified against Tenn. R. Crim. P. 5 on 2026-07-23 and is CURRENT. Rule 5 was amended in 2018, raising the in-custody period from 10 days to 14; many practitioners and secondary sources still say "the ten-day rule," which is the pre-2018 version. **Do not "correct" 14 back to 10.** Known gaps in the current implementation, in rough priority order:
   - **Only the in-custody branch is implemented.** Rule 5 also sets a 30-day period for defendants released from custody. The tool shows nothing for out-of-custody clients, who still have a deadline.
@@ -734,7 +808,7 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 - No pagination — all clients/cases load at once; fine for current scale
 - **`fullSync` uses `select('*')`**, which has a default 1,000-row ceiling in `supabase-js`. Fine at current scale (as of 2026-07-28: 20 clients / 22 incidents / 34 cases / **166 hours** — `hours` is the fastest-growing table and the one that will hit the ceiling first); revisit before any large growth.
 - **Successful-but-empty fetch clears the table** — in `fullSync`, a clean response with `error` null and `data` `[]` still clears the corresponding Dexie table by design, to propagate cross-device deletions. Correct for current single-user use; worth knowing.
-- **NULL text columns (as of 2026-06-17):** `cases`: 2 warrant PDFs on file have NULL `warrant_text` — confirmed scanned/non-OCR'd PDFs with no embedded text layer; `pdfjs-dist` cannot extract text from these regardless of re-upload. NULL is the permanent expected state for these two cases. `clients`: 1 client with NULL `criminal_history_text` but no PDF uploaded (no action needed); `courtroom_documents`: 0 documents uploaded (no action needed)
+- **NULL text columns (as of 2026-06-17 — ⚠️ the `cases` figure is STALE, see the 2026-07-28 triage table):** ~~`cases`: 2 warrant PDFs on file have NULL `warrant_text` — confirmed scanned/non-OCR'd~~ — **superseded.** As of 2026-07-28 the real count is **4 confirmed scans** (GS1041481, GS1093939, SCE322490, SU26540), plus 2 recoverable rows still pending re-upload. The "scanned PDFs cannot be extracted regardless of re-upload" principle still holds for those 4; only the count was wrong. `clients`: 1 client with NULL `criminal_history_text` but no PDF uploaded (no action needed); `courtroom_documents`: 0 documents uploaded (no action needed)
 - ~~Sync status indicator hidden on iPhone PWA~~ — fixed 2026-06-17: `padding-top: env(safe-area-inset-top, 0px)` added to `.screen` in `ClientList.module.css`; falls back to `0px` on desktop/non-notch devices.
 - ~~`.relievedBadge` and `.relievedLabel` CSS classes in `ClientRow.module.css` are dead~~ — removed 2026-06-17
 - **Leaked Password Protection Disabled** — low-severity advisory in Supabase Auth settings; not yet addressed; can be toggled on in the Supabase dashboard under Auth → Settings whenever ready
@@ -798,7 +872,7 @@ Documentation-only pass + dead code removal. No app behavior changed.
 ### Known-Issues Findings (no changes made)
 
 **NULL text columns (Supabase query 2026-06-17):**
-- `cases` (11 total): 3 rows have NULL `warrant_text`; 2 of those have a `warrant_url` — subsequently confirmed (2026-06-17 follow-up) to be scanned/non-OCR'd PDFs with no embedded text layer; `pdfjs-dist` cannot extract text from these; NULL is permanent expected state. 1 NULL row has no PDF and requires no action.
+- `cases` (11 total): 3 rows have NULL `warrant_text`; 2 of those have a `warrant_url` — subsequently confirmed (2026-06-17 follow-up) to be scanned/non-OCR'd PDFs with no embedded text layer; `pdfjs-dist` cannot extract text from these; NULL is permanent expected state. 1 NULL row has no PDF and requires no action. **⚠️ Historical snapshot — do not read the "2" as current.** The table has since grown to 34 cases and the 2026-07-28 triage found 4 confirmed scans; more importantly, most later NULLs were caused by the extraction bug, not by scanning. See the 2026-07-28 triage table.
 - `clients` (5 total): 1 row has NULL `criminal_history_text` but also has no `criminal_history_url` — no PDF on file, nothing to re-upload
 - `courtroom_documents` (0 total): no documents uploaded yet; no action needed
 
