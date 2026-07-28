@@ -42,7 +42,6 @@ export default function Login() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="you@example.com"
-              required
             />
           </div>
           <div className={styles.field}>
@@ -54,7 +53,6 @@ export default function Login() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
-              required
             />
           </div>
           {error && <div className={styles.error}>{error}</div>}

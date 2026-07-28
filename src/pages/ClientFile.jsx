@@ -109,6 +109,29 @@ function fromDateInput(iso) {
   return `${Number(m)}/${Number(d)}/${y}`
 }
 
+// Display a stored date without leading zeros ("08/05/2026" → "8/5/2026").
+// Write paths already normalize via fromDateInput, so this is the display-side
+// guarantee for any value that arrived by another route. Anything that isn't a
+// plain M/D/YYYY passes through untouched rather than being blanked.
+function formatDateDisplay(mdy) {
+  const m = String(mdy ?? '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!m) return mdy ?? ''
+  return `${Number(m[1])}/${Number(m[2])}/${m[3]}`
+}
+
+// Makes a whole <input type="date"> open the native picker, not just its little
+// calendar icon. showPicker() is unavailable on older browsers and throws when
+// the call isn't user-activated, so both are guarded — the field degrades to a
+// normal date input rather than breaking.
+function pickerHandlers() {
+  const open = e => {
+    const el = e.currentTarget
+    if (typeof el.showPicker !== 'function') return
+    try { el.showPicker() } catch { /* unsupported or not user-activated */ }
+  }
+  return { onClick: open, onFocus: open }
+}
+
 // ─── Next Event block ────────────────────────────────────────────────────────
 
 function NextEventBlock({ event, onEdit }) {
@@ -125,12 +148,16 @@ function NextEventBlock({ event, onEdit }) {
               const d = new Date(event.event_date)
               const day = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ' '
               const t = event.event_time
+              // The date is optional now that Next Event no longer requires one,
+              // so it drops out like every other blank segment instead of leaving
+              // a stray pipe behind.
+              const dateText = (day + formatDateDisplay(event.event_date)).trim()
               // Line 1: reason | day & date | time. Blank segments drop out with
               // their separator (no leading/doubled pipes) — reason is the common
               // blank case and is now the first segment.
               const parts = [
                 ...(event.reason ? [event.reason] : []),
-                day + event.event_date,
+                ...(dateText ? [dateText] : []),
                 ...(t && /\d:\d{2}\s*(AM|PM)/i.test(t) ? [t] : []),
               ]
               return parts.map((p, i) => (
@@ -195,29 +222,25 @@ const JUDGES = [
   'Other',
 ]
 
-// Convert "H:MM AM/PM" or "HH:MM AM/PM" → "HH:MM" for <input type="time">
-function toTimeInput(ampm) {
-  if (!ampm) return ''
-  const m = ampm.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
-  if (!m) return ''
-  let h = parseInt(m[1], 10)
-  const min = m[2]
-  const period = m[3].toUpperCase()
-  if (period === 'AM' && h === 12) h = 0
-  if (period === 'PM' && h !== 12) h += 12
-  return `${String(h).padStart(2, '0')}:${min}`
-}
+// Event time is a dropdown rather than free entry. 15-minute increments through
+// the day, except the 8, 9 and 10 o'clock hours (both AM and PM) which step by 5
+// — those are the docket-call hours that need the finer granularity.
+// Hours run 12 → 11 within each period so the list reads chronologically.
+const HOUR_ORDER = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+const FINE_HOURS = [8, 9, 10]
 
-// Convert "HH:MM" → "H:MM AM/PM" for storage and display
-function fromTimeInput(hhmm) {
-  if (!hhmm) return ''
-  const [hStr, min] = hhmm.split(':')
-  let h = parseInt(hStr, 10)
-  const period = h >= 12 ? 'PM' : 'AM'
-  if (h === 0) h = 12
-  else if (h > 12) h -= 12
-  return `${h}:${min} ${period}`
-}
+// Emits "h:MM AM/PM" — byte-identical to the format next_events.event_time
+// already holds (e.g. "9:05 AM"), so existing records keep displaying correctly.
+const TIME_OPTIONS = ['AM', 'PM'].flatMap(period =>
+  HOUR_ORDER.flatMap(h => {
+    const step = FINE_HOURS.includes(h) ? 5 : 15
+    const slots = []
+    for (let m = 0; m < 60; m += step) {
+      slots.push(`${h}:${String(m).padStart(2, '0')} ${period}`)
+    }
+    return slots
+  })
+)
 
 function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
   const existingJudge = existing?.judge ?? ''
@@ -242,6 +265,14 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
+  // A stored time that isn't on the increment list (legacy or hand-entered, e.g.
+  // "9:07 AM") is kept as an extra option rather than silently blanked on edit.
+  // It drops off once the user picks a listed value.
+  const storedTime = form.event_time ?? ''
+  const timeOptions = storedTime && !TIME_OPTIONS.includes(storedTime)
+    ? [storedTime, ...TIME_OPTIONS]
+    : TIME_OPTIONS
+
   async function clear() {
     setSaving(true)
     setError(null)
@@ -255,10 +286,6 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
   }
 
   async function save() {
-    if (!form.event_date.trim()) {
-      setError('Date is required.')
-      return
-    }
     setSaving(true)
     setError(null)
 
@@ -321,16 +348,15 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
             className={styles.formInput}
             value={toDateInput(form.event_date)}
             onChange={e => set('event_date', fromDateInput(e.target.value))}
+            {...pickerHandlers()}
           />
         </div>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Time</label>
-          <input
-            type="time"
-            className={styles.formInput}
-            value={toTimeInput(form.event_time)}
-            onChange={e => set('event_time', fromTimeInput(e.target.value))}
-          />
+          <select className={styles.formSelect} value={form.event_time ?? ''} onChange={e => set('event_time', e.target.value)}>
+            <option value="">—</option>
+            {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
         </div>
       </div>
       <div className={styles.formRow}>
@@ -384,8 +410,11 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
   async function save() {
-    if (!form.incident_description.trim() || !form.incident_date.trim()) {
-      setError('Description and date are required.')
+    // incident_description is nullable, so it is no longer required. incident_date
+    // is NOT NULL in Postgres — dropping this check would let the Dexie write
+    // succeed and the background Supabase sync fail silently, so it stays.
+    if (!form.incident_date.trim()) {
+      setError('Date is required.')
       return
     }
     setSaving(true)
@@ -394,7 +423,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
     const record = {
       id: newId,
       client_id: clientId,
-      incident_description: form.incident_description.trim(),
+      incident_description: form.incident_description.trim() || null,
       incident_date: form.incident_date.trim(),
     }
     await db.incidents.put(record)
@@ -405,7 +434,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
   return (
     <div className={styles.inlineForm}>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Description *</label>
+        <label className={styles.formLabel}>Description</label>
         <input className={styles.formInput} value={form.incident_description} onChange={e => set('incident_description', e.target.value)} placeholder="e.g. Watch Theft Incident" />
       </div>
       <div className={styles.formRow}>
@@ -415,6 +444,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
           className={styles.formInput}
           value={toDateInput(form.incident_date)}
           onChange={e => set('incident_date', fromDateInput(e.target.value))}
+          {...pickerHandlers()}
         />
       </div>
       {error && <div className={styles.formError}>{error}</div>}
@@ -431,7 +461,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
 // Charge classification, least-serious → most-serious. Blank = unset (stored null).
 const CLASSIFICATIONS = ['', 'MIS', 'C MIS', 'B MIS', 'A MIS', 'E FEL', 'D FEL', 'C FEL', 'B FEL', 'A FEL', 'CAPITAL']
 
-const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '' }
+const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '', release_status: '' }
 
 function AddCaseForm({ incidentId, onSaved, onCancel }) {
   const [form, setForm] = useState(EMPTY_CASE)
@@ -456,6 +486,7 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
       charge_abbrev: form.charge_abbrev.trim() || null,
       classification: form.classification || null,
       bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
+      release_status: form.release_status || null,
     }
     await db.cases.put(record)
     await addToSyncQueue('cases', 'INSERT', newId, record)
@@ -482,11 +513,22 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
           {CLASSIFICATIONS.map(c => <option key={c} value={c}>{c || '—'}</option>)}
         </select>
       </div>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Bond Amount</label>
-        <div className={styles.formPrefixInput}>
-          <span className={styles.formPrefix}>$</span>
-          <input className={`${styles.formInput} ${styles.formInputPrefixed}`} type="number" min="0" value={form.bond_amount} onChange={e => set('bond_amount', e.target.value)} placeholder="Optional" />
+      <div className={styles.formTwoCol}>
+        <div className={styles.formRow}>
+          <label className={styles.formLabel}>Bond Amount</label>
+          <div className={styles.formPrefixInput}>
+            <span className={styles.formPrefix}>$</span>
+            <input className={`${styles.formInput} ${styles.formInputPrefixed}`} type="number" min="0" value={form.bond_amount} onChange={e => set('bond_amount', e.target.value)} placeholder="Optional" />
+          </div>
+        </div>
+        <div className={styles.formRow}>
+          <label className={styles.formLabel}>Status</label>
+          <select className={styles.formSelect} value={form.release_status} onChange={e => set('release_status', e.target.value)}>
+            <option value="">—</option>
+            <option value="held_without_bond">Held without bond</option>
+            <option value="pretrial_released">Pretrial Released</option>
+            <option value="ror">ROR&apos;d</option>
+          </select>
         </div>
       </div>
       {error && <div className={styles.formError}>{error}</div>}
@@ -609,11 +651,12 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
                 value={editDate}
                 onChange={e => setEditDate(e.target.value)}
                 onKeyDown={onKeyDown}
+                {...pickerHandlers()}
               />
             </div>
           ) : (
             <div className={styles.incidentNameRow}>
-              <span className={styles.incidentDatePart}>{incident.incident_date}</span>
+              <span className={styles.incidentDatePart}>{formatDateDisplay(incident.incident_date)}</span>
               {incident.incident_description && (
                 <span className={styles.incidentDescPart}>&nbsp;—&nbsp;{incident.incident_description}</span>
               )}
@@ -633,9 +676,6 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
 
       {open && (
         <div className={styles.incidentBody}>
-          {(initialIncident.cases ?? []).length === 0 && !showAddCase && (
-            <div className={styles.noCasesMsg}>No cases yet</div>
-          )}
           {[...(initialIncident.cases ?? [])].sort((a, b) => a.case_number.localeCompare(b.case_number)).map(c => (
             <div key={c.id} className={styles.caseRow} {...tapHandlers(() => onCaseTap(c.case_number))} style={{ cursor: 'pointer', userSelect: 'text' }}>
               <div className={styles.caseInfo}>
@@ -854,6 +894,18 @@ function dateKey(mdy) {
   return Number(m[3]) * 10000 + Number(m[1]) * 100 + Number(m[2])
 }
 
+// Incidents render oldest-first (earliest incident_date at top). incident_date is
+// TEXT, so compare the parsed numeric key — never new Date() or a string compare.
+// Rows with a missing/unparseable date sort to the end instead of blowing up.
+function compareIncidentsByDate(a, b) {
+  const ka = dateKey(a.incident_date)
+  const kb = dateKey(b.incident_date)
+  const aMissing = ka === -Infinity
+  const bMissing = kb === -Infinity
+  if (aMissing || bMissing) return aMissing === bMissing ? 0 : aMissing ? 1 : -1
+  return ka - kb
+}
+
 function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
   const [form, setForm] = useState({
     entry_date: localStorage.getItem(LAST_HOURS_DATE_KEY) || todayString(),
@@ -894,7 +946,7 @@ function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
       <div className={styles.formTwoCol}>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Date</label>
-          <input type="date" className={styles.formInput} value={toDateInput(form.entry_date)} onChange={e => set('entry_date', fromDateInput(e.target.value))} />
+          <input type="date" className={styles.formInput} value={toDateInput(form.entry_date)} onChange={e => set('entry_date', fromDateInput(e.target.value))} {...pickerHandlers()} />
         </div>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Hours</label>
@@ -959,7 +1011,7 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
       <div className={styles.formTwoCol}>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Date</label>
-          <input type="date" className={styles.formInput} value={toDateInput(form.entry_date)} onChange={e => set('entry_date', fromDateInput(e.target.value))} />
+          <input type="date" className={styles.formInput} value={toDateInput(form.entry_date)} onChange={e => set('entry_date', fromDateInput(e.target.value))} {...pickerHandlers()} />
         </div>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Hours</label>
@@ -1049,7 +1101,7 @@ function SortableHoursRow({ entry, checked, onToggleCheck, editing, confirming, 
         {...attributes}
         {...listeners}
       >≡</button>
-      <span>{entry.entry_date}</span>
+      <span>{formatDateDisplay(entry.entry_date)}</span>
       <span className={styles.hoursValue}>{entry.hours}</span>
       <span>{entry.description}</span>
       <button
@@ -1238,16 +1290,19 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
     await db.clients.update(clientId, { criminal_history_url: urlData.publicUrl })
     await addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, criminal_history_url: urlData.publicUrl })
     setUrl(urlData.publicUrl)
-    // Text extraction — .then() must be async so the await executes the query
-    // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
-    extractPdfText(file).then(async text => {
-      const { error: textErr } = await supabase
-        .from('clients')
-        .update({ criminal_history_text: text ?? null })
-        .eq('id', clientId)
-      if (textErr) console.error('[criminal_history_text] PATCH failed:', textErr.message)
-      else await db.clients.update(clientId, { criminal_history_text: text ?? null })
-    }).catch(err => console.error('[criminal_history_text] extraction error:', err))
+    // Text extraction — offline-first and awaited, same as every other write in
+    // the app. This was previously fired unawaited and written to Supabase first,
+    // so navigating away or the PWA being killed lost the text with nothing
+    // queued to retry. extractPdfText never throws (null = no text layer, or the
+    // CDN worker was unreachable); a null result leaves the stored text alone
+    // rather than overwriting good text with null.
+    const text = await extractPdfText(file)
+    if (text != null) {
+      await db.clients.update(clientId, { criminal_history_text: text })
+      await addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, criminal_history_text: text })
+    } else {
+      console.warn('[criminal_history_text] no text extracted; existing value left unchanged')
+    }
     setUploading(false)
   }
 
@@ -1393,23 +1448,22 @@ function CourtroomDocsSection({ clientId }) {
     await db.courtroom_documents.put(record)
     await addToSyncQueue('courtroom_documents', 'INSERT', newId, record)
 
-    const fileRef = formFile
+    // Text extraction — offline-first and awaited BEFORE the form closes, so the
+    // text can't be lost to a navigation or the PWA being killed (see the note in
+    // CriminalHistorySection). The document row is already persisted above, so it
+    // survives even if extraction yields nothing.
+    const text = await extractPdfText(formFile)
+    if (text != null) {
+      await db.courtroom_documents.update(newId, { extracted_text: text })
+      await addToSyncQueue('courtroom_documents', 'UPDATE', newId, { id: newId, extracted_text: text })
+    } else {
+      console.warn('[extracted_text] no text extracted; existing value left unchanged')
+    }
+
     setFormName('')
     setFormFile(null)
     setShowForm(false)
     setSaving(false)
-
-    // Text extraction — rule 7: keep direct Supabase write + update Dexie
-    // .then() must be async so the await executes the query
-    // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
-    extractPdfText(fileRef).then(async text => {
-      const { error: textErr } = await supabase
-        .from('courtroom_documents')
-        .update({ extracted_text: text ?? null })
-        .eq('id', newId)
-      if (textErr) console.error('[extracted_text] PATCH failed:', textErr.message)
-      else await db.courtroom_documents.update(newId, { extracted_text: text ?? null })
-    }).catch(err => console.error('[extracted_text] extraction error:', err))
   }
 
   async function handleView(doc) {
@@ -1651,7 +1705,7 @@ export default function ClientFile() {
   const bondCases = incidents.flatMap(inc => inc.cases ?? []).filter(c => c.bond_amount != null)
   const showTotalBond = bondCases.length > 0
   const totalBond = bondCases.reduce((sum, c) => sum + Number(c.bond_amount), 0)
-  const sortedIncidents = [...incidents].sort((a, b) => new Date(b.incident_date) - new Date(a.incident_date))
+  const sortedIncidents = [...incidents].sort(compareIncidentsByDate)
 
   return (
     <div className={styles.screen}>

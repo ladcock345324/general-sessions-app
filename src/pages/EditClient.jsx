@@ -34,6 +34,17 @@ function parseTime(timeStr) {
   if (!m) return { hour: '', period: '' }
   return { hour: String(Number(m[1])), period: m[2].toUpperCase() }
 }
+// Makes the whole date field open the native picker, not just the calendar icon.
+// showPicker() is missing on older browsers and throws without user activation,
+// so both are guarded — the field degrades to a normal date input.
+function pickerHandlers() {
+  const open = e => {
+    const el = e.currentTarget
+    if (typeof el.showPicker !== 'function') return
+    try { el.showPicker() } catch { /* unsupported or not user-activated */ }
+  }
+  return { onClick: open, onFocus: open }
+}
 
 export default function EditClient() {
   const { id } = useParams()
@@ -162,6 +173,7 @@ export default function EditClient() {
                 type="date"
                 value={toDateInput(form.booking_date)}
                 onChange={e => set('booking_date', fromDateInput(e.target.value))}
+                {...pickerHandlers()}
               />
             </div>
             <div className={styles.row}>

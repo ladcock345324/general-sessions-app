@@ -25,6 +25,14 @@ function tapHandlers(handler) {
   }
 }
 
+// Display a stored date without leading zeros ("08/05/2026" → "8/5/2026").
+// Anything that isn't a plain M/D/YYYY passes through untouched.
+function formatDateDisplay(mdy) {
+  const m = String(mdy ?? '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!m) return mdy ?? ''
+  return `${Number(m[1])}/${Number(m[2])}/${m[3]}`
+}
+
 const INDIGENT_CYCLE = { red: 'yellow', yellow: 'green', green: 'gold', gold: 'red' }
 const INDIGENT_COLOR = { red: '#b85555', yellow: '#E8913A', green: '#3d9e6a', gold: '#FFD700' }
 
@@ -90,7 +98,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
     const t = nextHearing.time
     const validTime = t && /\d:\d{2}\s*(AM|PM)/i.test(t)
     nextSegments = [
-      `${weekday}${nextHearing.date}`,
+      `${weekday}${formatDateDisplay(nextHearing.date)}`,
       ...(validTime ? [t] : []),
       ...(nextHearing.courtroom ? [nextHearing.courtroom] : []),
       ...(nextHearing.reason ? [nextHearing.reason] : []),

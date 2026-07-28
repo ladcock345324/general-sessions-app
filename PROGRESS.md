@@ -41,7 +41,9 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `age` | int | legacy/dormant column — kept for reversibility; UI no longer reads, writes, or displays it (same pattern as `relieved_as_counsel`) |
 | `oca` | text | optional OCA # |
 | `custody_status` | text | `"in_custody"`, `"no_bond_held"`, `"bonded_out"`, `"pretrialed_out"`, `"ror"`, or `"out"`. `pretrialed_out` added 2026-06-25; `ror` ("ROR'd") and `no_bond_held` ("No Bond/Held") added 2026-07-23 — all front-end only (existing text column, no schema change). `out`/`ror`/`pretrialed_out`/`bonded_out` display a muted-green badge (`#3d9e6a`); `in_custody` and `no_bond_held` are muted crimson (`#b85555`) — both are physically in custody. **Client-level** — where the client physically is, net of all cases; independent of the case-level `cases.release_status`. |
+| `bond_amount` | int4 | legacy/dormant column — kept for reversibility; the field was removed from the New/Edit Client forms and bond now lives per-case on `cases.bond_amount`. The column itself still exists and was never dropped (same pattern as `age` and `relieved_as_counsel`). Not read or written by app logic. |
 | `relieved_as_counsel` | boolean | legacy column — kept for reversibility; not read by app logic; section placement driven by `relieved_closed` |
+| `created_at` | timestamp | row creation timestamp, default `now()`. Not read or displayed by the app. |
 | `relieved_closed` | boolean | shows CLOSED badge when true |
 | `closed_at` | timestamptz | set when a client is closed, null when reopened; used to sort the Closed section (most recently closed first) |
 | `criminal_history_url` | text | Supabase Storage public URL for criminal history PDF |
@@ -86,7 +88,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `charge_abbrev` | text | optional short label shown in client list and case rows |
 | `classification` | text | optional charge classification — one of "MIS", "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (all uppercase; least→most serious); null = unset. Added 2026-06-24 via MCP; generic "MIS" option added 2026-06-25 (front-end only — same existing text column). Shown in parens after the charge abbrev (client list) / charge (single view). |
 | `warrant_url` | text | Supabase Storage path for affidavit PDF (e.g. `warrants/GS1041482.pdf`) — signed URL generated on demand |
-| `bond_amount` | numeric | nullable. `null` = unset (no bond figure); an explicit `0` is a real value and displays "$0 bond". The edit form saves `null` on a blank field, never `0` (see 2026-07-23 feature entry). |
+| `bond_amount` | int4 | **integer**, not numeric — cents are not storable. Nullable: `null` = unset (no bond figure); an explicit `0` is a real value and displays "$0 bond". The edit form saves `null` on a blank field, never `0` (see 2026-07-23 feature entry). |
 | `release_status` | text | nullable release condition for **this specific case**: `"held_without_bond"` \| `"pretrial_released"` \| `"ror"`; `null` = unset. Added 2026-07-23 via MCP (no in-repo migration). Displays "Held without bond" / "Pretrial Released" / "ROR'd". **Independent of the client-level `clients.custody_status`** — this is the condition on the case; custody_status is where the client physically is, net of all cases. |
 | `notes` | text | free-text, editable on case view with Save button |
 | `disposition` | text | null = open; shown when set |
@@ -146,6 +148,61 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### Affidavit Text Data-Loss Fix + Seven Form/Display Changes (2026-07-28)
+
+Eight scoped changes. **No DB or schema changes; no Dexie version bump** (nothing added is indexed). The headline item is #1 — a silent data-loss bug, not a feature.
+
+#### 1. PDF text extraction was silently losing data — FIXED
+
+**Symptom:** 7 of the 29 cases with an affidavit on file had `warrant_url` set but `warrant_text` NULL (e.g. GS1120368 / Dicole Slayden). The extracted text was never reaching Supabase.
+
+**Root cause — the extraction write was the one write in the app that bypassed the offline-first path.** All three upload handlers did this:
+
+```js
+extractPdfText(file).then(async text => {
+  const { error } = await supabase.from('cases').update({ warrant_text: text ?? null })...
+  if (error) console.error(...)      // Dexie never written
+  else await db.cases.update(...)    // Dexie only on success
+})                                    // ← never awaited
+```
+
+Four independent failure modes, any one of which loses the text:
+
+- **Supabase-first, Dexie-second.** A failed PATCH discarded the extracted text entirely — not written to Dexie, not queued, nothing to retry from.
+- **No sync-queue entry, ever.** Every other write goes Dexie → `addToSyncQueue` (durable, 3 retries). This one didn't. Critically, a Dexie-only write would *also* have been wiped by the next `fullSync` (`clear()` + `bulkPut(server data)`) — **the queue entry is what makes the value survive a sync**, not the Dexie write.
+- **Fire-and-forget.** The `.then()` was never awaited; the handler called `setUploading(false)` and returned while extraction was still running. Navigating back — or iOS suspending/killing the PWA, very likely since "View Affidavit" opens a new tab — killed the promise with nothing persisted.
+- **Offline extraction wrote NULL.** `extractPdfText` returns `null` when the unpkg worker can't load (see Known Issues), and the old code then actively stamped `warrant_text = null`.
+
+Evidence favors a transient race over the "scanned PDF" explanation: GS1115757 is NULL while same-incident siblings GS1115758/GS1115759 both hold ~4,000 chars; same pattern for GS1093939 vs GS1093937/8.
+
+**The fix — applied identically to all three upload paths** (affidavit in `CaseView.jsx`, criminal history and courtroom documents in `ClientFile.jsx`):
+
+```js
+const text = await extractPdfText(file)
+if (text != null) {
+  await db.cases.update(caseData.id, { warrant_text: text })
+  await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, warrant_text: text })
+}
+```
+
+- **Dexie → `addToSyncQueue`, never Supabase directly.** The direct `supabase.from(...).update()` calls are gone from all three handlers; extraction now follows the same offline-first rule as every other write. (`supabase` is still imported in both files for Storage uploads and signed URLs.) The obsolete "PostgrestFilterBuilder is lazy" comments went with them — there is no longer a direct Postgrest call in these paths.
+- **Awaited before the handler returns.** Extraction completes and both writes land before the upload handler exits, so the "Uploading…" / saving state stays up for the duration and navigation can't race it. For courtroom docs this means the form no longer closes until the text is persisted; the document row itself is written *before* extraction, so it survives even if extraction yields nothing.
+- **A `null` extraction skips the write entirely** rather than overwriting. Deliberate: a null result means either a scanned PDF with no text layer *or* an unreachable CDN worker, and the two are indistinguishable at the call site — so writing null risks destroying good text on re-upload for no gain. **Trade-off:** replacing a text-PDF with a scanned one leaves the previous text stale. Accepted; losing real text is the worse failure. A `console.warn` records the skip.
+
+**The 7 pre-existing NULL rows are NOT repaired by this change** — it prevents new losses only. All 7 still have their PDF in Storage, so re-extraction is possible: GS1041481 (Woods-James), GS1093939 (Lee), GS1115757 (Johnson), GS1116065 (McMillan), GS1120368 (Slayden), SCE322490 (Roche), SU26540 (Granberry). Note that **2 of these were confirmed on 2026-06-17 to be scanned/non-OCR'd with no text layer** and are permanently unrecoverable — the doc doesn't record which 2, so ~5 are likely recoverable and the only way to identify them is to run extraction. No recovery script has been written.
+
+#### 2–8. Form and display changes
+
+2. **New Case form gained the STATUS field.** `AddCaseForm` (`ClientFile.jsx`) now matches `CaseView`'s edit form: Bond Amount and Status sit side-by-side in a `.formTwoCol`, same four options writing `cases.release_status`, blank → null. Previously only the edit form could set it.
+3. **Incidents sort oldest-first.** See the Known Issues entry — `compareIncidentsByDate()` replaces `new Date(b.incident_date) - new Date(a.incident_date)`, reusing the existing `dateKey()` parser rather than adding a second one. Missing/unparseable dates sort to the end. Verified: `12/1/2025, 1/15/2026, 2/28/2026, 7/4/2026, null, "", "December 2025"`.
+4. **"No cases yet" empty state removed** from expanded incidents; renders nothing now. Dead `.noCasesMsg` CSS removed with it.
+5. **Dates display without leading zeros.** New `formatDateDisplay()` ("08/05/2026" → "8/5/2026"; non-`M/D/YYYY` values pass through untouched) applied at every display site: the Next Event line in both views, incident headers, and hours rows. Duplicated in `ClientFile.jsx` and `ClientRow.jsx`, matching how `toDateInput`/`fromDateInput` are already duplicated across three files. `prelimDeadline.js` already stripped zeros via `Number()`. **No stored date currently has leading zeros** — all four date columns were checked across every row, zero matches and zero non-standard formats, since `fromDateInput` normalizes on write. This is a guarantee against data arriving by another route, not a fix for anything visible today. **Native `<input type="date">` rendering is browser-controlled and was deliberately left alone** in all 7 date fields (Next Event, Add Incident, incident inline edit, Add/Edit Hours, New/Edit Client booking date) — changing it would require a custom picker component.
+6. **Whole date field opens the picker.** New `pickerHandlers()` returns `onClick` + `onFocus` calling `input.showPicker()`, guarded both for browsers lacking the method and for the throw when the call isn't user-activated — the field degrades to a plain date input. Applied to all 7 date inputs. Duplicated into `NewClient.jsx` / `EditClient.jsx` per the same per-file helper convention.
+7. **Next Event time is a dropdown, not a free `<input type="time">`.** 144 options in chronological order (12 AM → 11:45 PM): 15-minute increments, except the 8, 9 and 10 o'clock hours **in both AM and PM** which step by 5 — the docket-call hours. Emits `"h:MM AM/PM"`, byte-identical to what `next_events.event_time` already holds; **all 5 distinct stored values (9:00 AM, 9:15 AM, 1:00 PM, 10:00 AM, 8:30 AM) are on the list**, so no existing record is blanked or altered. A stored value that *isn't* on the list (legacy/hand-entered) is preserved as an extra option at the top and drops off once a listed value is chosen. The now-unused `toTimeInput`/`fromTimeInput` helpers were deleted.
+8. **Required-field validation removed where the column allows it.** Removed: the Next Event **date** requirement (`next_events.event_date` is nullable), the Add Incident **description** requirement (`incident_description` is nullable — now saves `null` when blank, matching the inline-edit path), and both `required` attributes on the Login form (not DB-backed; an empty submit now gets a server-side error instead of a browser tooltip). Because a blank Next Event date would have rendered a stray `|`, the display was extended to drop the date segment like every other blank segment. **Deliberately NOT removed — these columns are NOT NULL in Postgres, and removing the guard would let the Dexie write succeed while the background Supabase sync failed silently:** `clients.first_name`, `clients.last_name`, `incidents.incident_date`, `cases.case_number`, `cases.charge`, `hours.entry_date`, `hours.hours`, `hours.description`, plus `courtroom_documents.name` and `courtroom_documents.file_url`. These stay until a migration makes the columns nullable.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice); `npx eslint .` still **18 errors**, unchanged.
 
 ### Session Summary — 2026-07-23
 
@@ -279,7 +336,7 @@ Free ($0/month) self-built nightly backup that covers the gap Supabase's own bac
 **One manual setup step only Lucas can do** (the key must never go into chat or any file): copy the Supabase service role key from Project Settings → API Keys, and paste it as a GitHub Actions repo secret named `SUPABASE_SERVICE_ROLE_KEY`. The workflow won't succeed until that secret exists.
 
 **Restore test — COMPLETE (2026-06-22):** the latest snapshot from the `backups` branch was restored into a **throwaway second Supabase project** (never touching production) via `scripts/restore-test.js`. Results:
-- **All row counts matched the manifest exactly** — clients 9, incidents 10, cases 18, hours 12, next_events 6, personal_notes 5, courtroom_documents 0 (9/10/18/12/6/5/0).
+- **All row counts matched the manifest exactly** — clients 9, incidents 10, cases 18, hours 12, next_events 6, personal_notes 5, courtroom_documents 0 (9/10/18/12/6/5/0). *(Those are the counts as of the 2026-06-22 restore test. Live counts as of 2026-07-28 are 20 clients / 22 incidents / 34 cases / 166 hours / 13 next_events / 7 personal_notes / 0 courtroom_documents — the test result is not restated here, only the data volume has grown.)*
 - Rows were inserted with their **explicit ids** in FK-safe order (clients → incidents → cases → the rest), so the **client→incident→case relationships reconnected with zero orphans**.
 - All **33 Storage files** re-uploaded to a fresh private `warrants` bucket, and one PDF (`warrants/11111111.pdf`) passed a **byte-for-byte round-trip check** — downloaded back from the test project, 90,424 bytes in and out, `%PDF` header intact.
 
@@ -469,7 +526,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table
 - **Incidents** section:
   - Collapsible accordion — each incident shows "Description (Date)" header row
-  - Sorted most recent first; case numbers within each incident sorted ascending
+  - **Sorted oldest-first** (earliest `incident_date` at top, latest at bottom) as of 2026-07-28, via `compareIncidentsByDate()`; missing/unparseable dates sort to the end. Case numbers within each incident sorted ascending
+  - No empty-state text when an incident has no cases — renders nothing (2026-07-28)
   - Inline editing: tap "edit incident" → description textarea (3 rows) and date become editable; save on blur or Enter; Escape cancels
   - `+` icon button on section header bar opens inline Add Incident form
   - Each expanded incident shows case rows + "+ add a case" at bottom
@@ -503,6 +561,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Courtroom** — `<select>`: blank + 3A, 3B, 3C, 4B, 4C, 4D, 5C, 5D, 6A, 6B, 6C, 6D (6A–6D added 2026-07-23 at the bottom).
 - **"NEXT EVENT" label** appears on both the blue display block and the top of the edit form (all-caps/bold `#5b9fd4`, shared `.nextEventLabel` class). Font size bumped 10px → **12px** (+20%, 2026-07-23) — one class change covers both sites.
 - **Edit/Close buttons (2026-07-23).** On the display block the top-right button reads **Edit** (opens the form). On the expanded edit form that same top-right slot shows a **Close** button, and the bottom action button (formerly "Cancel") is also renamed **Close**. Both Close buttons call the same `onCancel` (discard, no save) — identical behavior, by design.
+- **Time** — a `<select>` as of 2026-07-28, no longer a free `<input type="time">`. Blank + 144 chronological options (12 AM → 11:45 PM): 15-minute increments except the 8, 9 and 10 o'clock hours in **both** AM and PM, which step by 5. Stores `"h:MM AM/PM"` (unchanged format). An off-increment stored value is preserved as an extra option rather than being blanked on edit.
+- **Date is optional** as of 2026-07-28 (`event_date` is nullable) — the required-field check was removed, and a blank date drops out of the display line along with its separator.
 - Weekday derived from `event_date` via `new Date()` + `toLocaleDateString`
 - Time is optional — omitted from display if blank
 - **Subpoenas field removed** — all UI/code references removed; the `next_events.subpoenas` column has been **dropped from the DB via MCP (2026-06-24)** (no app code reads or writes it)
@@ -595,12 +655,14 @@ src/
   App.css                  # Global reset + body bg
   index.css                # Vite entry-point stylesheet (minimal resets)
   AuthContext.jsx          # Supabase auth session context
+  PWAContext.jsx           # useRegisterSW wrapper — exposes offlineReady, needRefresh, controlled
   RequireAuth.jsx          # Route guard — redirects to /login if no session
   supabaseClient.js        # Supabase client singleton
   SyncContext.jsx          # Provides isOnline, isSyncing, lastSyncedAt, triggerSync via React context
   localDB.js               # Dexie IndexedDB schema — mirrors 7 Supabase tables + sync_queue
   syncManager.js           # fullSync, processSyncQueue, addToSyncQueue, startBackgroundSync
   extractPdfText.js        # PDF text extraction utility — pdfjs-dist v6 + CDN worker
+  prelimDeadline.js        # Prelim-hearing date math — computePrelimCutoff, shortWeekday, formatMD, formatBookingTimeCompact
   seed.js                  # One-time seed script (node src/seed.js)
 
   hooks/
@@ -617,6 +679,7 @@ src/
 
   components/
     ClientRow.jsx / .module.css         # Single row in client list; mobile-responsive
+    OfflineStatus.jsx / .module.css     # Shared offline-readiness status line; rendered on Login and ClientList
     TextViewerDrawer.jsx / .module.css  # Slide-up drawer for viewing extracted PDF text; used in CaseView and ClientFile
 
   data/                    # (deleted — static sample files removed 2026-06-09)
@@ -642,8 +705,9 @@ src/
   - Warrant upload in `CaseView.jsx` → writes to `cases.warrant_text`
   - Criminal history upload in `ClientFile.jsx` → writes to `clients.criminal_history_text`
   - Courtroom document upload in `ClientFile.jsx` → writes to `courtroom_documents.extracted_text`
-- Text extraction fires automatically on every new PDF upload as a fire-and-forget operation after the storage upload and primary URL update succeed — never blocks or errors the upload itself
-- **Key bug fixed:** Supabase JS v2's `PostgrestFilterBuilder` is lazy — the HTTP request only fires when the Promise is `await`ed. All three PATCH calls were inside non-`async` `.then()` callbacks, so the query builders were constructed and garbage-collected without ever sending a request. Fix: make each `.then()` callback `async` and `await` the Supabase call.
+- Text extraction fires automatically on every new PDF upload, after the storage upload and primary URL/record write succeed. **As of 2026-07-28 it is `await`ed before the upload handler returns** — it is no longer fire-and-forget (see below).
+- **Persistence path (2026-07-28):** all three handlers write **Dexie → `addToSyncQueue`, never Supabase directly**, exactly like every other write in the app. A `null` extraction result skips the write rather than overwriting the stored value. See "Affidavit Text Data-Loss Fix" under Completed Features for the full rationale — this replaced a Supabase-first, unqueued, unawaited write that silently lost text on 7 of 29 uploaded PDFs.
+- ~~**Key bug fixed:** Supabase JS v2's `PostgrestFilterBuilder` is lazy — the HTTP request only fires when the Promise is `await`ed. All three PATCH calls were inside non-`async` `.then()` callbacks…~~ **Superseded 2026-07-28** — these paths no longer make a direct Postgrest call at all, so the laziness caveat no longer applies to them. Retained for history; it remains true of Postgrest calls elsewhere in the app.
 
 ---
 
@@ -665,9 +729,10 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
   - **Rule 45 holidays are deliberately not applied** — weekend-only rollover. Known simplification; may under- or over-state the cutoff around court holidays.
   - **A misdemeanor TRIAL countdown cannot be built on this model.** Tennessee has no fixed statutory speedy-trial clock analogous to the federal Speedy Trial Act; misdemeanor trial timing is governed by the constitutional speedy-trial right under the Barker v. Wingo balancing factors plus Rule 48(b) discretionary dismissal. There is no date to count down to. If this is built later, the right shape is an ELAPSED-days-since-booking counter with a color threshold flagging cases drifting into viable speedy-trial territory — a judgment prompt, not a deadline.
   - **Verify against primary authority (tncourts.gov) before relying on any of this in practice.** The countdown is a scheduling convenience, not legal advice, and should not be treated as authoritative.
-- Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings — acceptable while dates are entered via the auto-format field
+- ~~Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings~~ — **RESOLVED 2026-07-28.** Replaced with `compareIncidentsByDate()`, which sorts on the parsed numeric key from the existing `dateKey()` helper (never `new Date()`, never string compare) and pushes missing/unparseable dates to the end instead of producing `NaN` comparisons. Order also flipped to oldest-first. See the 2026-07-28 feature entry.
+- **`extractPdfText.js` loads its pdfjs worker from `unpkg.com`, so text extraction requires network access** — an offline upload stores the PDF and the record but extracts no text. **Accepted, not a bug:** all uploads happen on a stable connection. Do not "fix" by bundling the worker.
 - No pagination — all clients/cases load at once; fine for current scale
-- **`fullSync` uses `select('*')`**, which has a default 1,000-row ceiling in `supabase-js`. Fine at current scale (9 clients); revisit before any large growth.
+- **`fullSync` uses `select('*')`**, which has a default 1,000-row ceiling in `supabase-js`. Fine at current scale (as of 2026-07-28: 20 clients / 22 incidents / 34 cases / **166 hours** — `hours` is the fastest-growing table and the one that will hit the ceiling first); revisit before any large growth.
 - **Successful-but-empty fetch clears the table** — in `fullSync`, a clean response with `error` null and `data` `[]` still clears the corresponding Dexie table by design, to propagate cross-device deletions. Correct for current single-user use; worth knowing.
 - **NULL text columns (as of 2026-06-17):** `cases`: 2 warrant PDFs on file have NULL `warrant_text` — confirmed scanned/non-OCR'd PDFs with no embedded text layer; `pdfjs-dist` cannot extract text from these regardless of re-upload. NULL is the permanent expected state for these two cases. `clients`: 1 client with NULL `criminal_history_text` but no PDF uploaded (no action needed); `courtroom_documents`: 0 documents uploaded (no action needed)
 - ~~Sync status indicator hidden on iPhone PWA~~ — fixed 2026-06-17: `padding-top: env(safe-area-inset-top, 0px)` added to `.screen` in `ClientList.module.css`; falls back to `0px` on desktop/non-notch devices.

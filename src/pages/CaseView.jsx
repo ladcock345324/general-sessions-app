@@ -181,17 +181,21 @@ export default function CaseView() {
     if (uploadErr) { setUploadError(uploadErr.message); setUploading(false); return }
     await db.cases.update(caseData.id, { warrant_url: path })
     await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, warrant_url: path })
-    // Text extraction — rule 7: keep direct Supabase write + update Dexie.
-    // .then() must be async so the await actually executes the Supabase query
-    // (PostgrestFilterBuilder is lazy — unawaited calls are silently discarded).
-    extractPdfText(file).then(async text => {
-      const { error: textErr } = await supabase
-        .from('cases')
-        .update({ warrant_text: text ?? null })
-        .eq('id', caseData.id)
-      if (textErr) console.error('[warrant_text] PATCH failed:', textErr.message)
-      else await db.cases.update(caseData.id, { warrant_text: text ?? null })
-    }).catch(err => console.error('[warrant_text] extraction error:', err))
+    // Text extraction — offline-first and awaited, same as every other write in
+    // the app. This was previously fired unawaited and written straight to
+    // Supabase first, so a navigation, an offline moment, or iOS killing the PWA
+    // lost the extracted text entirely with nothing queued to retry — the cause
+    // of the affidavits on file with a NULL warrant_text. extractPdfText never
+    // throws (null = scanned PDF with no text layer, or the CDN worker was
+    // unreachable); a null result leaves the stored text alone rather than
+    // overwriting good text with null.
+    const text = await extractPdfText(file)
+    if (text != null) {
+      await db.cases.update(caseData.id, { warrant_text: text })
+      await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, warrant_text: text })
+    } else {
+      console.warn('[warrant_text] no text extracted; existing value left unchanged')
+    }
     setUploading(false)
   }
 
