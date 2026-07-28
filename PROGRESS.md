@@ -149,6 +149,23 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Cross-Client Daily Hours Viewer + Shared `dateUtils.js` (2026-07-28)
+
+New read-only feature: a day-by-day view of every hours entry logged across **all** clients, for reviewing a whole day's work at once instead of clicking into each client individually. **No DB or schema changes; strictly read-only** — no edit/delete/reorder controls, nothing here ever writes to Dexie or Supabase.
+
+**Entry point.** A new **"Hours"** button sits on the right side of `ClientList.jsx`'s `.sortToggleRow`, opposite the existing "Sorting by:" toggle — `.sortToggleRow` changed from `justify-content: flex-start` to `space-between` to place them at opposite ends. It reuses the existing `.sortToggle` class rather than a near-duplicate style, so it's visually identical to the sort toggle.
+
+**`src/components/DailyHoursDrawer.jsx` + `.module.css`** — modeled on `TextViewerDrawer.jsx`'s overlay/slide-up-drawer shell (handle, header, `×` close, click-overlay-to-close) but **full viewport height** (`100vh`, `100dvh` override) with its own internal `.body` scroll, since a day's entries across several clients can run long.
+- **Header:** `‹`/`›` buttons step the shown date ±1 day via the new `shiftDate()` helper (see below). The date text itself is a tap target — a `<input type="date">` is absolutely positioned over it at `opacity: 0` (not `display: none`, which would block pointer events), so tapping the visible date opens the native picker directly via `pickerHandlers()`, same convention as every other date field in the app. Both arrows are disabled while the date is still resolving (`selectedDate == null`, the brief window before the default-date effect below resolves).
+- **Default date on open:** the most recent date with any hours entry across the whole `db.hours` table (scanned via `dateKey()`, not `new Date()`), falling back to `todayString()` if the table is empty. Recomputed **fresh each time the drawer transitions closed→open** (tracked via a `wasOpenRef`), not on every Dexie update while it's sitting open — otherwise a background sync mid-session could yank the user back to a different day while they're browsing. Two effects: one resets `selectedDate` to `null` on the open transition, a second (guarded on `selectedDate === null`) computes the actual default once the live data is ready.
+- **Body:** reads `db.hours` and `db.clients` via a single `useLiveQuery` (reactive, offline-first, same as the rest of the app), filters entries to the selected date by comparing `dateKey()` values (not string equality — a date can be written in more than one literal form), groups by `client_id`, and joins each group's client name. Groups are sorted alphabetically by last name (`byLastName` — a local equivalent of `ClientList.jsx`'s comparator, deliberately **not imported** from there to avoid a component→page circular import, since `ClientList` is what renders this drawer). Within a group, entries are ordered by `sort_order` ascending with the same id tiebreak `useClientFile.js` uses, so the order matches that client's own Hours section exactly.
+- **Totals:** a grand total for the day sits in a highlighted band at the **top** of the body (more prominent placement than the per-client subtotals, since it's the headline number for a day-review workflow), plus a per-client subtotal row under each group. Both reuse the exact `total % 1 === 0 ? total : total.toFixed(1)` formatting from `HoursSection` in `ClientFile.jsx`, and the subtotal/value styling is modeled on that section's `.hoursTotal`/`.hoursValue` classes (same colors — green `#5ecf90` bold values, muted uppercase subtotal label) rather than inventing a new visual language, adapted from `HoursSection`'s 6-column drag/checkbox/delete grid to a plain flex row since none of those controls exist here.
+- **Empty state:** "No hours logged for [date]." with no error styling — this is an expected, common case when stepping through days, not a fault condition.
+
+**`src/dateUtils.js` (new)** — extracts `dateKey()`, `todayString()`, `toDateInput()`, `fromDateInput()`, `formatDateDisplay()`, and `pickerHandlers()` out of `ClientFile.jsx`, where they were previously defined inline, so the new drawer isn't a second copy. `ClientFile.jsx` now imports all six from here; behavior is unchanged. **New helper `shiftDate(mdy, deltaDays)`** — shifts an `"M/D/YYYY"` string by a signed day count, built from `new Date(year, month, day)` numeric args (never `new Date(string)`) so `setDate()` handles month/year rollover correctly without a locale-parsing footgun. Only `ClientFile.jsx` was migrated to the shared module — `NewClient.jsx` and `EditClient.jsx` keep their own pre-existing duplicated copies of `toDateInput`/`fromDateInput`/`pickerHandlers`, and `ClientRow.jsx` keeps its own duplicated `formatDateDisplay` (per prior entries), all untouched by this change.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` 19 → 20 errors — the one new error is the same `react-hooks/set-state-in-effect` rule already accepted twice elsewhere ([`CaseView.jsx:146`](src/pages/CaseView.jsx:146), [`EditClient.jsx:62`](src/pages/EditClient.jsx:62)), fired on the drawer's default-date-population effect for the same reason. **Live-UI verification on the production URL was not run this session** — it requires signing into the app, which was skipped rather than have the assistant enter a password (same constraint as the 2026-07-28 `EditClient.jsx` session). Verify before relying on this: button placement/style match, opening lands on the most recent day with entries, `‹`/`›` step correctly across month/year boundaries, tapping the date opens the native picker, a multi-client day groups and subtotals correctly, and an empty day shows the empty state cleanly.
+
 ### `EditClient.jsx` Migrated to Dexie + Johnson/McMillan `warrant_text` Recovered (2026-07-28)
 
 Closes out both remaining items from the prior session's Open Items list.
@@ -731,6 +748,7 @@ src/
   syncManager.js           # fullSync, processSyncQueue, addToSyncQueue, startBackgroundSync
   extractPdfText.js        # PDF text extraction utility — pdfjs-dist v6 + CDN worker
   prelimDeadline.js        # Prelim-hearing date math — computePrelimCutoff, shortWeekday, formatMD, formatBookingTimeCompact
+  dateUtils.js             # Shared "M/D/YYYY" helpers — dateKey, todayString, toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, shiftDate
   seed.js                  # One-time seed script (node src/seed.js)
 
   hooks/
@@ -749,6 +767,7 @@ src/
     ClientRow.jsx / .module.css         # Single row in client list; mobile-responsive
     OfflineStatus.jsx / .module.css     # Shared offline-readiness status line; rendered on Login and ClientList
     TextViewerDrawer.jsx / .module.css  # Slide-up drawer for viewing extracted PDF text; used in CaseView and ClientFile
+    DailyHoursDrawer.jsx / .module.css  # Full-height, read-only cross-client daily hours viewer; opened from ClientList
 
   data/                    # (deleted — static sample files removed 2026-06-09)
 ```
