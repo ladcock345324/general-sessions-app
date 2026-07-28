@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase } from '../supabaseClient'
+import { useLiveQuery } from 'dexie-react-hooks'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import styles from './NewClient.module.css'
@@ -54,32 +54,27 @@ export default function EditClient() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
+  const liveClient = useLiveQuery(() => db.clients.get(id), [id])
+
   useEffect(() => {
-    async function load() {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (error || !data) {
-        setError(error?.message ?? 'Client not found.')
-        return
-      }
-
-      setForm({
-        last_name: data.last_name ?? '',
-        first_name: data.first_name ?? '',
-        gender: data.gender ?? 'M',
-        booking_date: data.booking_date ?? '',
-        booking_hour: parseTime(data.booking_time).hour,
-        booking_period: parseTime(data.booking_time).period,
-        oca: data.oca ?? '',
-        custody_status: data.custody_status ?? 'in_custody',
-      })
+    if (liveClient === undefined) return
+    if (!liveClient) {
+      setError('Client not found.')
+      return
     }
-    load()
-  }, [id])
+    // Only populate once — later live updates (e.g. background sync) must not
+    // stomp on an in-progress edit.
+    setForm(prev => prev ?? {
+      last_name: liveClient.last_name ?? '',
+      first_name: liveClient.first_name ?? '',
+      gender: liveClient.gender ?? 'M',
+      booking_date: liveClient.booking_date ?? '',
+      booking_hour: parseTime(liveClient.booking_time).hour,
+      booking_period: parseTime(liveClient.booking_time).period,
+      oca: liveClient.oca ?? '',
+      custody_status: liveClient.custody_status ?? 'in_custody',
+    })
+  }, [liveClient])
 
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }))
