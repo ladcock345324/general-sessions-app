@@ -614,7 +614,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 
 ### Edit Client (`/client/:id/edit`)
 - Fields (in order): Last Name, First Name, Gender, **Booked/Initial Appearance** (date + Hour + AM/PM dropdowns + Clear button), OCA #, Custody Status — same field set as Add Client except name order is Last then First (unchanged from original; only New Client swapped to First-then-Last)
-- Pre-populated from Supabase (including `booking_date`/`booking_time` parsed back into the dropdowns)
+- **Pre-populated from Dexie via `useLiveQuery`** (as of 2026-07-28, see the "`EditClient.jsx` Migrated to Dexie" entry above), including `booking_date`/`booking_time` parsed back into the dropdowns — works offline. Form state is seeded once from the first live value and does not get overwritten by later background-sync updates to the same client.
 - Save uses `navigate('/client/:id', { replace: true })` — edit page is replaced in history, so Back from client file returns to client list
 
 ### Next Event Block
@@ -801,7 +801,7 @@ Things explicitly identified and **not** done. Rough priority order.
 
 4. **Still NOT NULL, still required by design — do not remove these guards without a migration.** `clients.first_name`, `clients.last_name`, `hours.entry_date`, `hours.hours`, `hours.description`, `courtroom_documents.name`, `courtroom_documents.file_url`. Removing client-side validation on any of these would let the Dexie write succeed and the background Supabase sync **fail silently**, which is worse than the validation message.
 
-6. **Uploads are slower now, by design.** PDF text extraction is `await`ed before the upload handler returns, so "Uploading…" / "Saving…" stays up until the text is persisted. **That delay is the fix** — it is exactly the window that was previously losing data — so do not "optimize" it back into a fire-and-forget call. **Open question:** whether to surface extraction progress (or a distinct "Extracting text…" state) for large PDFs, rather than making the change faster.
+5. **Uploads are slower now, by design.** PDF text extraction is `await`ed before the upload handler returns, so "Uploading…" / "Saving…" stays up until the text is persisted. **That delay is the fix** — it is exactly the window that was previously losing data — so do not "optimize" it back into a fire-and-forget call. **Open question:** whether to surface extraction progress (or a distinct "Extracting text…" state) for large PDFs, rather than making the change faster.
 
 ### Known Issues / Things to Revisit
 - **Preliminary-hearing countdown — verified correct, but incomplete. Revisit.** The 14-day figure was re-verified against Tenn. R. Crim. P. 5 on 2026-07-23 and is CURRENT. Rule 5 was amended in 2018, raising the in-custody period from 10 days to 14; many practitioners and secondary sources still say "the ten-day rule," which is the pre-2018 version. **Do not "correct" 14 back to 10.** Known gaps in the current implementation, in rough priority order:
