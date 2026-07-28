@@ -133,11 +133,15 @@ export default function ClientRow({ client, relieved = false, onClick }) {
               const start = { x: 0, y: 0 }
               const charge = c.charge_abbrev || c.charge || ''
               const pd = e => { e.stopPropagation(); start.x = e.clientX; start.y = e.clientY }
-              const pu = e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number}`) }
+              // case_number is nullable and the tap target is the number span
+              // alone, so an unnumbered case would have a zero-width hit area and
+              // be unreachable from this list. A dash gives it something to tap,
+              // and the id keeps the URL resolvable (CaseView resolves both).
+              const pu = e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number || c.id}`) }
               return (
                 <div key={c.id} className={styles.caseTableRow}>
-                  <span className={styles.caseNum} onPointerDown={pd} onPointerUp={pu}>{c.case_number}</span>
-                  <span className={styles.caseCharge}>| {charge}</span>
+                  <span className={styles.caseNum} onPointerDown={pd} onPointerUp={pu}>{c.case_number || '—'}</span>
+                  {charge && <span className={styles.caseCharge}>| {charge}</span>}
                   {c.classification && <>{' '}<span className={styles.caseClassification}>({c.classification})</span></>}
                 </div>
               )

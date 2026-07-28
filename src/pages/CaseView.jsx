@@ -41,10 +41,8 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
   async function save() {
-    if (!form.case_number.trim() || !form.charge.trim()) {
-      setError('Case number and charge are required.')
-      return
-    }
+    // case_number and charge became nullable 2026-07-28 — neither is required,
+    // and a blank field saves as null rather than ''.
     setSaving(true)
     setError(null)
 
@@ -52,8 +50,8 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
     // "$0 bond". This is the root of the ticket — never coerce blank to 0.
     const bondRaw = form.bond_amount.trim()
     const changes = {
-      case_number:   form.case_number.trim(),
-      charge:         form.charge.trim(),
+      case_number:    form.case_number.trim() || null,
+      charge:         form.charge.trim() || null,
       charge_abbrev:  form.charge_abbrev.trim() || null,
       classification: form.classification || null,
       bond_amount:    bondRaw === '' ? null : Number(bondRaw),
@@ -61,17 +59,19 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
     }
     await db.cases.update(caseData.id, changes)
     await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, ...changes })
-    onSaved(form.case_number.trim())
+    // The URL is keyed on case_number; with none, fall back to the id so the
+    // page we navigate to still resolves.
+    onSaved(changes.case_number || caseData.id)
   }
 
   return (
     <div className={styles.editForm}>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Case Number *</label>
+        <label className={styles.formLabel}>Case Number</label>
         <input className={styles.formInput} value={form.case_number} onChange={e => set('case_number', e.target.value)} />
       </div>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Charge *</label>
+        <label className={styles.formLabel}>Charge</label>
         <input className={styles.formInput} value={form.charge} onChange={e => set('charge', e.target.value)} />
       </div>
       <div className={styles.formRow}>
@@ -126,7 +126,11 @@ export default function CaseView() {
   const [notes, setNotes] = useState('')
 
   const liveData = useLiveQuery(async () => {
-    const caseRecord = await db.cases.where('case_number').equals(caseNumber).first()
+    // Cases are addressed by case_number, but that column is nullable as of
+    // 2026-07-28. A case with no number is linked by its id instead, so fall
+    // back to a primary-key lookup when the number match finds nothing.
+    const caseRecord = (await db.cases.where('case_number').equals(caseNumber).first())
+      ?? (await db.cases.get(caseNumber))
     if (!caseRecord) return null
     const incident = await db.incidents.get(caseRecord.incident_id)
     const client = incident ? await db.clients.get(incident.client_id) : null
@@ -174,7 +178,9 @@ export default function CaseView() {
   async function uploadWarrantFile(file) {
     setUploading(true)
     setUploadError(null)
-    const path = `warrants/${caseData.case_number}.pdf`
+    // Falls back to the id so a case with no number can't write "null.pdf" and
+    // collide with every other unnumbered case.
+    const path = `warrants/${caseData.case_number || caseData.id}.pdf`
     const { error: uploadErr } = await supabase.storage
       .from('warrants')
       .upload(path, file, { contentType: 'application/pdf', upsert: true })
@@ -271,8 +277,10 @@ export default function CaseView() {
             <button className={styles.editBtn} onClick={() => setEditing(true)}>Edit</button>
           )}
         </header>
-        <div className={styles.caseNumberLabel}>{caseData.case_number}</div>
-        <div className={styles.charge}>{caseData.charge}</div>
+        {/* Both nullable — a lone dash keeps the header from collapsing to an
+            empty strip when the case has no number yet. */}
+        <div className={styles.caseNumberLabel}>{caseData.case_number || '—'}</div>
+        {caseData.charge && <div className={styles.charge}>{caseData.charge}</div>}
         <div className={styles.meta}>
           {warrantStatus}
           {bondStatusText(caseData.bond_amount, caseData.release_status) && (

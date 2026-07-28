@@ -222,25 +222,28 @@ const JUDGES = [
   'Other',
 ]
 
-// Event time is a dropdown rather than free entry. 15-minute increments through
-// the day, except the 8, 9 and 10 o'clock hours (both AM and PM) which step by 5
-// — those are the docket-call hours that need the finer granularity.
-// Hours run 12 → 11 within each period so the list reads chronologically.
-const HOUR_ORDER = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+// Event time is a dropdown rather than free entry, covering 8:00 AM → 3:00 PM
+// inclusive — the span the docket actually runs. 15-minute increments, except
+// the 8, 9 and 10 o'clock hours, which step by 5: those are the docket-call
+// hours that need the finer granularity. 53 options, listed chronologically.
+const HOUR_SLOTS = [
+  [8, 'AM'], [9, 'AM'], [10, 'AM'], [11, 'AM'],
+  [12, 'PM'], [1, 'PM'], [2, 'PM'], [3, 'PM'],
+]
 const FINE_HOURS = [8, 9, 10]
 
 // Emits "h:MM AM/PM" — byte-identical to the format next_events.event_time
 // already holds (e.g. "9:05 AM"), so existing records keep displaying correctly.
-const TIME_OPTIONS = ['AM', 'PM'].flatMap(period =>
-  HOUR_ORDER.flatMap(h => {
-    const step = FINE_HOURS.includes(h) ? 5 : 15
-    const slots = []
-    for (let m = 0; m < 60; m += step) {
-      slots.push(`${h}:${String(m).padStart(2, '0')} ${period}`)
-    }
-    return slots
-  })
-)
+const TIME_OPTIONS = HOUR_SLOTS.flatMap(([h, period]) => {
+  // 3 PM closes the window: the :00 slot only, nothing later.
+  if (h === 3 && period === 'PM') return ['3:00 PM']
+  const step = FINE_HOURS.includes(h) ? 5 : 15
+  const slots = []
+  for (let m = 0; m < 60; m += step) {
+    slots.push(`${h}:${String(m).padStart(2, '0')} ${period}`)
+  }
+  return slots
+})
 
 function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
   const existingJudge = existing?.judge ?? ''
@@ -410,13 +413,8 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
   async function save() {
-    // incident_description is nullable, so it is no longer required. incident_date
-    // is NOT NULL in Postgres — dropping this check would let the Dexie write
-    // succeed and the background Supabase sync fail silently, so it stays.
-    if (!form.incident_date.trim()) {
-      setError('Date is required.')
-      return
-    }
+    // Both fields are nullable in Postgres (incident_date became nullable
+    // 2026-07-28), so neither is required — blank saves as null, not ''.
     setSaving(true)
     setError(null)
     const newId = crypto.randomUUID()
@@ -424,7 +422,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
       id: newId,
       client_id: clientId,
       incident_description: form.incident_description.trim() || null,
-      incident_date: form.incident_date.trim(),
+      incident_date: form.incident_date.trim() || null,
     }
     await db.incidents.put(record)
     await addToSyncQueue('incidents', 'INSERT', newId, record)
@@ -438,7 +436,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
         <input className={styles.formInput} value={form.incident_description} onChange={e => set('incident_description', e.target.value)} placeholder="e.g. Watch Theft Incident" />
       </div>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Date *</label>
+        <label className={styles.formLabel}>Date</label>
         <input
           type="date"
           className={styles.formInput}
@@ -471,18 +469,16 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
   async function save() {
-    if (!form.case_number.trim() || !form.charge.trim()) {
-      setError('Case number and charge are required.')
-      return
-    }
+    // case_number and charge became nullable 2026-07-28 — neither is required,
+    // and a blank field saves as null rather than ''.
     setSaving(true)
     setError(null)
     const newId = crypto.randomUUID()
     const record = {
       id: newId,
       incident_id: incidentId,
-      case_number: form.case_number.trim(),
-      charge: form.charge.trim(),
+      case_number: form.case_number.trim() || null,
+      charge: form.charge.trim() || null,
       charge_abbrev: form.charge_abbrev.trim() || null,
       classification: form.classification || null,
       bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
@@ -496,11 +492,11 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
   return (
     <div className={styles.inlineForm}>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Case Number *</label>
+        <label className={styles.formLabel}>Case Number</label>
         <input className={styles.formInput} value={form.case_number} onChange={e => set('case_number', e.target.value)} placeholder="e.g. GS1041482" />
       </div>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Charge *</label>
+        <label className={styles.formLabel}>Charge</label>
         <input className={styles.formInput} value={form.charge} onChange={e => set('charge', e.target.value)} placeholder="e.g. Vandalism" />
       </div>
       <div className={styles.formRow}>
@@ -567,15 +563,17 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
     const newDate = fromDateInput(editDate)
     const unchanged = newDesc === (incident.incident_description ?? '') &&
                       newDate === (incident.incident_date ?? '')
-    if (!newDate || unchanged) {
+    // incident_date is nullable as of 2026-07-28, so a cleared date is a real
+    // edit that saves as null — it no longer short-circuits out of the commit.
+    if (unchanged) {
       setEditing(false)
       committingRef.current = false
       return
     }
-    const changes = { incident_description: newDesc || null, incident_date: newDate }
+    const changes = { incident_description: newDesc || null, incident_date: newDate || null }
     await db.incidents.update(incident.id, changes)
     await addToSyncQueue('incidents', 'UPDATE', incident.id, { id: incident.id, ...changes })
-    setIncident(prev => ({ ...prev, incident_description: newDesc || null, incident_date: newDate }))
+    setIncident(prev => ({ ...prev, ...changes }))
     setEditing(false)
     committingRef.current = false
   }
@@ -656,10 +654,25 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
             </div>
           ) : (
             <div className={styles.incidentNameRow}>
-              <span className={styles.incidentDatePart}>{formatDateDisplay(incident.incident_date)}</span>
-              {incident.incident_description && (
-                <span className={styles.incidentDescPart}>&nbsp;—&nbsp;{incident.incident_description}</span>
-              )}
+              {/* Date and description are both nullable. The em-dash only appears
+                  between them when both are present, so a missing one never
+                  leaves a dangling separator; with neither, a lone dash keeps the
+                  header visible and tappable instead of collapsing to nothing. */}
+              {(() => {
+                const date = formatDateDisplay(incident.incident_date)
+                const desc = incident.incident_description
+                if (!date && !desc) return <span className={styles.incidentDatePart}>—</span>
+                return (
+                  <>
+                    {date && <span className={styles.incidentDatePart}>{date}</span>}
+                    {desc && (
+                      <span className={styles.incidentDescPart}>
+                        {date ? <>&nbsp;—&nbsp;</> : null}{desc}
+                      </span>
+                    )}
+                  </>
+                )
+              })()}
             </div>
           )}
           {open && !editing && (
@@ -676,11 +689,15 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
 
       {open && (
         <div className={styles.incidentBody}>
-          {[...(initialIncident.cases ?? [])].sort((a, b) => a.case_number.localeCompare(b.case_number)).map(c => (
-            <div key={c.id} className={styles.caseRow} {...tapHandlers(() => onCaseTap(c.case_number))} style={{ cursor: 'pointer', userSelect: 'text' }}>
+          {/* case_number is nullable, so the sort must not call localeCompare on
+              null (it would throw and take the whole client file down). */}
+          {[...(initialIncident.cases ?? [])].sort((a, b) => (a.case_number ?? '').localeCompare(b.case_number ?? '')).map(c => (
+            /* Cases are addressed by case_number in the URL; a case without one
+               falls back to its id so it stays reachable (CaseView resolves both). */
+            <div key={c.id} className={styles.caseRow} {...tapHandlers(() => onCaseTap(c.case_number || c.id))} style={{ cursor: 'pointer', userSelect: 'text' }}>
               <div className={styles.caseInfo}>
-                <span className={styles.caseNumber}>{c.case_number}</span>
-                <span className={styles.caseCharge}>{c.charge}{c.classification ? ` (${c.classification})` : ''}</span>
+                {c.case_number && <span className={styles.caseNumber}>{c.case_number}</span>}
+                <span className={styles.caseCharge}>{[c.charge, c.classification ? `(${c.classification})` : ''].filter(Boolean).join(' ')}</span>
                 <span className={styles.caseMeta}>
                   {c.warrant_url ? 'Affidavit on File' : 'No Affidavit'}
                   {bondStatusText(c.bond_amount, c.release_status) && (
