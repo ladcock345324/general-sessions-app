@@ -5,6 +5,7 @@ import { useClients } from '../hooks/useClients'
 import { useSyncStatus } from '../SyncContext'
 import ClientRow from '../components/ClientRow'
 import OfflineStatus from '../components/OfflineStatus'
+import DailyHoursDrawer from '../components/DailyHoursDrawer'
 import styles from './ClientList.module.css'
 
 const SORT_KEY = 'clientListSortMode'
@@ -132,6 +133,7 @@ export default function ClientList() {
   const [sortMode, setSortMode] = useState(() =>
     localStorage.getItem(SORT_KEY) === 'event' ? 'event' : 'name'
   )
+  const [showHours, setShowHours] = useState(false)
 
   function toggleSort() {
     setSortMode(prev => {
@@ -169,6 +171,9 @@ export default function ClientList() {
           <div className={styles.sortToggleRow}>
             <button className={styles.sortToggle} onClick={toggleSort}>
               Sorting by: {sortMode === 'event' ? 'Next Event' : 'Name'}
+            </button>
+            <button className={styles.sortToggle} onClick={() => setShowHours(true)}>
+              Hours
             </button>
           </div>
 
@@ -211,6 +216,8 @@ export default function ClientList() {
           )}
         </>
       )}
+
+      <DailyHoursDrawer isOpen={showHours} onClose={() => setShowHours(false)} />
     </div>
   )
 }

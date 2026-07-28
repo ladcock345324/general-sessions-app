@@ -8,6 +8,7 @@ import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import styles from './ClientFile.module.css'
 import TextViewerDrawer from '../components/TextViewerDrawer'
+import { toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, todayString, dateKey } from '../dateUtils'
 import {
   DndContext,
   closestCenter,
@@ -91,45 +92,6 @@ function bondStatusText(bondAmount, releaseStatus) {
   if (bondAmount != null) segs.push(`$${Number(bondAmount).toLocaleString()} bond`)
   if (releaseStatus && RELEASE_LABELS[releaseStatus]) segs.push(RELEASE_LABELS[releaseStatus])
   return segs.join(' · ')
-}
-
-// Convert "M/D/YYYY" → "YYYY-MM-DD" for <input type="date">
-function toDateInput(mdy) {
-  if (!mdy) return ''
-  const parts = mdy.split('/')
-  if (parts.length !== 3) return ''
-  const [m, d, y] = parts
-  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
-}
-
-// Convert "YYYY-MM-DD" → "M/D/YYYY" for storage and display
-function fromDateInput(iso) {
-  if (!iso) return ''
-  const [y, m, d] = iso.split('-')
-  return `${Number(m)}/${Number(d)}/${y}`
-}
-
-// Display a stored date without leading zeros ("08/05/2026" → "8/5/2026").
-// Write paths already normalize via fromDateInput, so this is the display-side
-// guarantee for any value that arrived by another route. Anything that isn't a
-// plain M/D/YYYY passes through untouched rather than being blanked.
-function formatDateDisplay(mdy) {
-  const m = String(mdy ?? '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-  if (!m) return mdy ?? ''
-  return `${Number(m[1])}/${Number(m[2])}/${m[3]}`
-}
-
-// Makes a whole <input type="date"> open the native picker, not just its little
-// calendar icon. showPicker() is unavailable on older browsers and throws when
-// the call isn't user-activated, so both are guarded — the field degrades to a
-// normal date input rather than breaking.
-function pickerHandlers() {
-  const open = e => {
-    const el = e.currentTarget
-    if (typeof el.showPicker !== 'function') return
-    try { el.showPicker() } catch { /* unsupported or not user-activated */ }
-  }
-  return { onClick: open, onFocus: open }
 }
 
 // ─── Next Event block ────────────────────────────────────────────────────────
@@ -896,20 +858,6 @@ const DESCRIPTION_OPTIONS = [
 // localStorage key holding the last entry_date the user saved, used to default
 // the date field on the next new hours entry.
 const LAST_HOURS_DATE_KEY = 'gsapp:lastHoursDate'
-
-function todayString() {
-  const d = new Date()
-  return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
-}
-
-// Parse "M/D/YYYY" → a numeric key (year*10000 + month*100 + day) for reliable
-// date comparison. NOT new Date() and NOT string compare — both are unreliable
-// for these hand-entered "M/D/YYYY" strings. Unparseable → -Infinity (oldest).
-function dateKey(mdy) {
-  const m = (mdy ?? '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-  if (!m) return -Infinity
-  return Number(m[3]) * 10000 + Number(m[1]) * 100 + Number(m[2])
-}
 
 // Incidents render oldest-first (earliest incident_date at top). incident_date is
 // TEXT, so compare the parsed numeric key — never new Date() or a string compare.

@@ -103,7 +103,7 @@
 /* ── Sort toggle ── */
 .sortToggleRow {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   padding: 12px 16px 0;
 }
 
