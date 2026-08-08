@@ -1,0 +1,200 @@
+[
+  {
+    "id": "1d91588e-e179-493c-949a-041637aaaf71",
+    "client_id": "b05dea7a-c597-4e45-bd1e-feebe9de19f6",
+    "docket_type": "Bond Docket",
+    "event_date": "10/13/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "G. Robinson",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "2730861e-94b0-4831-8eb2-a92a40898ad3",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "docket_type": "Jail Docket",
+    "event_date": "8/6/2026",
+    "event_time": "",
+    "courtroom": "Birch Bldg, Court Room 3C",
+    "judge": "Escobar, Ana L",
+    "reason": "Trial — GS1121752/53/54/55/56 (5 new cases). ASK: reset & consolidate to 8/14 Shelter Court.",
+    "ada_name": ""
+  },
+  {
+    "id": "33c595a1-c71e-42fc-9158-51c728c63499",
+    "client_id": "7eda0ec5-d437-4943-b887-7f3497135af5",
+    "docket_type": "Bond Docket",
+    "event_date": "8/25/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "J. Bell",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "43a8e2d9-536b-4ba6-9f9d-aff7d21f1bfa",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "docket_type": "Jail Docket",
+    "event_date": "8/5/2026",
+    "event_time": "9:15 AM",
+    "courtroom": "3C",
+    "judge": "A. Escobar",
+    "reason": "Review",
+    "ada_name": ""
+  },
+  {
+    "id": "6832b5f5-9b74-4baa-acf3-ec07e44ffa4c",
+    "client_id": "e485ed9e-73d0-4bb3-a87b-f05c55e6d1a5",
+    "docket_type": "Bond Docket",
+    "event_date": "8/26/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "J. Bell",
+    "reason": "Review",
+    "ada_name": ""
+  },
+  {
+    "id": "7b220dc0-8760-485f-b437-040efe60fbfd",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "docket_type": "Jail Docket",
+    "event_date": "8/13/2026",
+    "event_time": "9:15 AM",
+    "courtroom": "3A",
+    "judge": "J. Holt",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "83e5e87e-28c0-48a3-b013-8828b81f0bc4",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "docket_type": "Bond Docket",
+    "event_date": "8/25/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "J. Bell",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "879ddb19-5aff-422a-8602-28963454b9fa",
+    "client_id": "4a4b7785-f832-4d71-b788-12bbf648b64b",
+    "docket_type": "Bond Docket",
+    "event_date": "10/8/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "S. Coleman",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "8b21152e-5e26-4ebd-9360-9ff8ba61602c",
+    "client_id": "ab56f58c-375f-4bac-8f69-144402acbaca",
+    "docket_type": "Bond Docket",
+    "event_date": "8/27/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "J. Bell",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "8bd40afd-9438-4a8b-8ef7-6aa80e8b6196",
+    "client_id": "19d8d350-199b-4248-af78-97948a6cb13a",
+    "docket_type": "Bond Docket",
+    "event_date": "9/21/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "G. Robinson",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "a2041ac3-f588-4288-badd-546206f9d239",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "docket_type": "Settlement Docket",
+    "event_date": "7/31/2026",
+    "event_time": "10:30 AM",
+    "courtroom": "5C",
+    "judge": "Special Judge",
+    "reason": "",
+    "ada_name": ""
+  },
+  {
+    "id": "a37eb360-7898-4ba8-87ce-d07a6ed684e3",
+    "client_id": "72901533-866e-4578-87c8-f31c7456f77f",
+    "docket_type": "Bond Docket",
+    "event_date": "8/26/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "J. Bell",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "bdbbfdbe-1978-4c17-a64c-9a69d64fb0ca",
+    "client_id": "efa25bd0-8c02-44b0-a014-8845d9bef27a",
+    "docket_type": "Bond Docket",
+    "event_date": "10/6/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "S. Coleman",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "cd413aa3-a204-45ad-be27-c5d15ccf2059",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "docket_type": "Criminal Court",
+    "event_date": "8/20/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "6C",
+    "judge": "J. Todd",
+    "reason": "Discussion",
+    "ada_name": ""
+  },
+  {
+    "id": "e5eec91a-3102-44a8-8b0a-03a207030366",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "docket_type": "SHELTER COURT",
+    "event_date": "8/14/2026",
+    "event_time": "1:00 PM",
+    "courtroom": "Strobel Center",
+    "judge": "L. Jones",
+    "reason": "Shelter Court Review (reset from 7/31/2026 — client missed)",
+    "ada_name": ""
+  },
+  {
+    "id": "e9624fc8-54a7-4d38-92c9-49ecda68ba82",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "docket_type": "Jail Docket",
+    "event_date": "8/4/2026",
+    "event_time": "9:15 AM",
+    "courtroom": "3A",
+    "judge": "J. Bell",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "e9c085b7-9484-4fed-8545-a12d1ac89079",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "docket_type": "Settlement Docket",
+    "event_date": "8/28/2026",
+    "event_time": "8:30 AM",
+    "courtroom": "5C",
+    "judge": "J. Bell",
+    "reason": "Settlement",
+    "ada_name": ""
+  },
+  {
+    "id": "ea81a528-0868-405a-8863-cea66ea112da",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "docket_type": "Criminal Court 2026-I-473",
+    "event_date": "8/19/2026",
+    "event_time": "10:00 AM",
+    "courtroom": "6B",
+    "judge": "Dalton",
+    "reason": "Discussion",
+    "ada_name": ""
+  }
+]
