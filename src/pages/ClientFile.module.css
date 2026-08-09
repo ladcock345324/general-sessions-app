@@ -1409,4 +1409,55 @@
     white-space: nowrap;
     overflow: hidden;
   }
+
+  /* Case mini-list on mobile: NOT centered. The desktop 3-column grid puts it in
+     its own centered middle track, which works at 1126px but costs a phone far
+     too much horizontal room — the mini-list, the name and the badge were all
+     competing for ~343px, squeezing the name. Here the row drops to two columns
+     and the mini-list becomes the last item in the LEFT text stack, in ordinary
+     left-aligned block flow directly under "Total Bond", sharing the same left
+     edge as the name / OCA / bond lines above it.
+
+     The badge is deliberately unchanged: it stays in the right-hand column,
+     right-aligned, and spans both rows so align-items: center keeps it centered
+     against the row's full height exactly as it is today — adding a second row
+     below the name block must not shift it.
+
+     row-gap is zeroed (the base `gap: 12px` sets both axes) so the mini-list sits
+     just under the bond line rather than 12px below it; column-gap stays 12px. */
+  .nameRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 0;
+  }
+
+  .nameRowLeft {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .headerCaseList {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    margin-top: 3px;
+  }
+
+  .badgeStack {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  /* Tighter case lines so several cases don't eat the screen: the borrowed
+     ClientRow rules give each row 1px of vertical padding and a 1.5 line-height
+     (~18.5px per case at the 11px mobile case-number size); this trims that to
+     ~14.9px. Targeted structurally (`> div`, `span`) rather than by class name
+     because those classes live in ClientRow.module.css and are hashed separately
+     — and scoped under .headerCaseList so the client list is untouched. */
+  .headerCaseList > div {
+    padding: 0;
+  }
+
+  .headerCaseList span {
+    line-height: 1.35;
+  }
 }
