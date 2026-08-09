@@ -62,11 +62,25 @@
   letter-spacing: 0.01em;
 }
 
-/* Name */
+/* Name row — a 3-column grid so the case mini-list can be genuinely centered in
+   the row rather than centered in the leftover space between the name block and
+   the custody badge (which is all a flex row could give it).
+     col 1  name / OCA / Total Bond
+     col 2  case mini-list
+     col 3  custody badge
+   Both side tracks are 1fr, so they stay equal to each other and column 2 lands
+   on the row's midpoint. The middle track is capped at 50% so a client with a
+   long charge can't squeeze the name column to nothing. .nameRowLeft carries
+   min-width: 0, which lets column 1 shrink; .badgeStack deliberately does NOT,
+   so column 3 never shrinks below the badge and the badge can never be overlapped
+   — that is why a very narrow viewport with a very wide badge trades a few pixels
+   of centering rather than colliding. align-items: center handles the vertical
+   centering, and because everything is in normal flow the row still grows to fit
+   however many cases a client has. */
 .nameRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 50%) 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
 }
@@ -75,7 +89,6 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  flex: 1;
   min-width: 0;
 }
 
@@ -94,19 +107,28 @@
   padding: 3px 0 0;
 }
 
-/* Header case mini-list. The rows themselves are styled by the borrowed
-   ClientRow classes (.caseTableRow / .caseNum / .caseCharge / .caseClassification)
-   so they match the client list exactly; this wrapper only handles placement.
-   Sits in normal flow at the bottom of nameRowLeft, so the header grows with the
-   case count rather than overflowing. overflow:hidden clips an unusually long
-   charge instead of letting the nowrap row widen the block and push the custody
-   badge off — nameRowLeft's min-width:0 does the rest. */
+/* Header case mini-list — column 2 of .nameRow. The rows themselves are styled by
+   the borrowed ClientRow classes (.caseTableRow / .caseNum / .caseCharge /
+   .caseClassification) so they match the client list exactly; this wrapper only
+   handles placement. justify-self: center centers the block inside its (already
+   centered) track, while the rows inside stay left-aligned so the case numbers
+   line up with each other. min-width: 0 + overflow: hidden give it a zero
+   min-content contribution, so a long charge clips here instead of forcing the
+   grid wider and pushing the badge around. */
 .headerCaseList {
   display: flex;
   flex-direction: column;
-  margin-top: 5px;
+  justify-self: center;
   min-width: 0;
   overflow: hidden;
+}
+
+/* Lets the borrowed .caseCharge span actually shrink inside its flex row (a flex
+   item's automatic minimum size would otherwise hold it at full text width, so
+   overflow: hidden above would never get a chance to clip). Scoped to this
+   wrapper, so nothing in the client list is affected. */
+.headerCaseList span {
+  min-width: 0;
 }
 
 .pipe {
@@ -143,11 +165,15 @@
   border: 1px solid rgba(160, 160, 160, 0.25);
 }
 
+/* Pinned to column 3 explicitly rather than left to auto-placement: with no cases
+   the mini-list wrapper is an empty div, and without this the badge could land in
+   column 2 and drift toward the middle of the row. */
 .badgeStack {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
+  grid-column: 3;
 }
 
 .closedBadge {
@@ -551,8 +577,7 @@
   min-width: 0;
 }
 
-/* Stacks the date/description row above the Location line so Location reads as
-   its own independent line rather than being appended to either of them. */
+/* Two stacked lines: "date — location" on top, description below. */
 .incidentTitleBlock {
   display: flex;
   flex-direction: column;
@@ -560,36 +585,29 @@
   min-width: 0;
 }
 
-.incidentNameRow {
-  display: flex;
-  align-items: flex-start;
-  min-width: 0;
-}
-
-.incidentLocationLine {
-  font-size: 12px;
-  font-weight: 500;
-  color: #9faab8;
-  margin-top: 2px;
+/* Line 1 — "{date} — {location}", in the same blue accent the case numbers use.
+   Size and weight are the old .incidentDatePart values, unchanged; only the
+   color is new. Wraps rather than truncating, since a location can be long. */
+.incidentMetaLine {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b9fd4;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.incidentDatePart {
-  flex-shrink: 0;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 600;
-  color: #c8d0dc;
-}
-
+/* Line 2 — its own block directly under line 1, flush left at the same starting
+   x-position. Font size, weight and color are unchanged. The old hanging indent
+   (padding-left: 1.62em / text-indent: -1.62em) is gone: it existed only because
+   the description used to run inline after the date and needed its wrapped lines
+   to clear it. Now that this is a standalone block, that indent would be exactly
+   the left offset relative to line 1 that this layout is meant to remove. */
 .incidentDescPart {
   font-size: 13px;
   font-weight: 600;
   color: #c8d0dc;
   min-width: 0;
-  padding-left: 1.62em;
-  text-indent: -1.62em;
+  margin-top: 2px;
 }
 
 .incidentEditInputs {

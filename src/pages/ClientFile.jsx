@@ -542,6 +542,7 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
   const [editing, setEditing] = useState(false)
   const [editDesc, setEditDesc] = useState('')
   const [editDate, setEditDate] = useState('')
+  const [editLocation, setEditLocation] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const committingRef = useRef(false)
@@ -550,6 +551,7 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
     e.stopPropagation()
     setEditDesc(incident.incident_description ?? '')
     setEditDate(toDateInput(incident.incident_date ?? ''))
+    setEditLocation(incident.location ?? '')
     setEditing(true)
   }
 
@@ -558,16 +560,22 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
     committingRef.current = true
     const newDesc = editDesc.trim()
     const newDate = fromDateInput(editDate)
+    const newLocation = editLocation.trim()
     const unchanged = newDesc === (incident.incident_description ?? '') &&
-                      newDate === (incident.incident_date ?? '')
-    // incident_date is nullable as of 2026-07-28, so a cleared date is a real
-    // edit that saves as null — it no longer short-circuits out of the commit.
+                      newDate === (incident.incident_date ?? '') &&
+                      newLocation === (incident.location ?? '')
+    // All three columns are nullable, so clearing any of them is a real edit that
+    // saves as null — it does not short-circuit out of the commit.
     if (unchanged) {
       setEditing(false)
       committingRef.current = false
       return
     }
-    const changes = { incident_description: newDesc || null, incident_date: newDate || null }
+    const changes = {
+      incident_description: newDesc || null,
+      incident_date: newDate || null,
+      location: newLocation || null,
+    }
     await db.incidents.update(incident.id, changes)
     await addToSyncQueue('incidents', 'UPDATE', incident.id, { id: incident.id, ...changes })
     setIncident(prev => ({ ...prev, ...changes }))
@@ -641,6 +649,16 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
                 onKeyDown={onKeyDown}
               />
               <input
+                className={styles.incidentNameInput}
+                value={editLocation}
+                placeholder="Location"
+                onChange={e => setEditLocation(e.target.value)}
+                onKeyDown={onKeyDown}
+              />
+              {/* The date stays LAST on purpose: it was moved below the description
+                  on 2026-06-10 so the native mobile date picker can't cover the
+                  fields above it. Location was inserted between them, not before. */}
+              <input
                 type="date"
                 className={`${styles.incidentNameInput} ${styles.incidentDateInput}`}
                 value={editDate}
@@ -650,33 +668,30 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
               />
             </div>
           ) : (
-            /* Column so Location can sit on its own line under the date/description
-               row rather than being pulled inline with either of them. */
+            /* Two stacked lines: "date — location" on top, description below it
+               flush left. All three fields are nullable. */
             <div className={styles.incidentTitleBlock}>
-              <div className={styles.incidentNameRow}>
-                {/* Date and description are both nullable. The em-dash only appears
-                    between them when both are present, so a missing one never
-                    leaves a dangling separator; with neither, a lone dash keeps the
-                    header visible and tappable instead of collapsing to nothing. */}
-                {(() => {
-                  const date = formatDateDisplay(incident.incident_date)
-                  const desc = incident.incident_description
-                  if (!date && !desc) return <span className={styles.incidentDatePart}>—</span>
-                  return (
-                    <>
-                      {date && <span className={styles.incidentDatePart}>{date}</span>}
-                      {desc && (
-                        <span className={styles.incidentDescPart}>
-                          {date ? <>&nbsp;—&nbsp;</> : null}{desc}
-                        </span>
-                      )}
-                    </>
-                  )
-                })()}
-              </div>
-              {incident.location && (
-                <div className={styles.incidentLocationLine}>{incident.location}</div>
-              )}
+              {(() => {
+                const date = formatDateDisplay(incident.incident_date)
+                const loc = incident.location
+                const desc = incident.incident_description
+                // With nothing at all, a lone dash keeps the header visible and
+                // tappable instead of collapsing to an empty strip.
+                if (!date && !loc && !desc) return <div className={styles.incidentMetaLine}>—</div>
+                return (
+                  <>
+                    {(date || loc) && (
+                      /* filter-then-join, the same convention the Next Event line
+                         uses: the em dash exists only when both sides do, so a
+                         missing date or location never leaves a dangling separator. */
+                      <div className={styles.incidentMetaLine}>
+                        {[date, loc].filter(Boolean).join(' — ')}
+                      </div>
+                    )}
+                    {desc && <div className={styles.incidentDescPart}>{desc}</div>}
+                  </>
+                )
+              })()}
             </div>
           )}
           {open && !editing && (
@@ -1752,28 +1767,29 @@ export default function ClientFile() {
             {showTotalBond && (
               <div className={styles.bondLine}>Total Bond: ${totalBond.toLocaleString()}</div>
             )}
-            {headerCases.length > 0 && (
-              /* In normal flow inside nameRowLeft, so the header block simply grows
-                 to fit however many cases there are — it can't overlap the sticky
-                 name bar above or the Next Event block below at either breakpoint.
-                 Non-interactive summary (the tappable copy lives in the client
-                 list and in each incident), so the borrowed pointer cursor is
-                 overridden inline — an inline style is the only way to beat a
-                 class from another CSS module without relying on bundle order. */
-              <div className={styles.headerCaseList}>
-                {headerCases.map(c => {
-                  const charge = c.charge_abbrev || c.charge || ''
-                  return (
-                    <div key={c.id} className={rowStyles.caseTableRow}>
-                      <span className={rowStyles.caseNum} style={{ cursor: 'default' }}>{c.case_number || '—'}</span>
-                      {charge && <span className={rowStyles.caseCharge} style={{ cursor: 'default' }}>| {charge}</span>}
-                      {c.classification && <>{' '}<span className={rowStyles.caseClassification}>({c.classification})</span></>}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
           </div>
+
+          {/* Case mini-list — grid column 2, centered in the ROW, not in the space
+              left over between the name block and the badge (the two side tracks
+              are both 1fr, so they stay equal and the middle sits on the row's
+              midpoint). In normal flow, so the row still grows to fit any number
+              of cases. Always rendered, even when empty, so the badge's explicit
+              grid-column: 3 is never the thing holding the layout together alone.
+              Unlike the client list this shows the FULL charge, not charge_abbrev.
+              Non-interactive summary — the tappable copies live in the client list
+              and under each incident — so the borrowed pointer cursor is overridden
+              inline, the only way to beat a class from another CSS module without
+              depending on bundle order. */}
+          <div className={styles.headerCaseList}>
+            {headerCases.map(c => (
+              <div key={c.id} className={rowStyles.caseTableRow}>
+                <span className={rowStyles.caseNum} style={{ cursor: 'default' }}>{c.case_number || '—'}</span>
+                {c.charge && <span className={rowStyles.caseCharge} style={{ cursor: 'default' }}>| {c.charge}</span>}
+                {c.classification && <>{' '}<span className={rowStyles.caseClassification}>({c.classification})</span></>}
+              </div>
+            ))}
+          </div>
+
           <div className={styles.badgeStack}>
             {client.custody_status === 'in_custody' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeRed}`}>In Custody</span>}
             {client.custody_status === 'no_bond_held' && <span className={`${styles.badge} ${isClosed ? styles.badgeGray : styles.badgeRed}`}>No Bond/Held</span>}
