@@ -73,7 +73,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `id` | uuid PK | auto |
 | `client_id` | uuid FK → clients | |
 | `incident_date` | text | e.g. "7/16/2026" — used as display label. **NULLABLE as of 2026-07-28** (migration applied outside the app); the Add Incident form and the inline edit both accept a blank date and write `null`. |
-| `incident_description` | text | e.g. "Watch Theft Incident" — shown as header with date in parens |
+| `incident_description` | text | e.g. "Watch Theft Incident". Rendered as **line 2** of the incident header, flush left beneath the date/location line (2026-08-09; previously it ran inline after the date on a single line) |
 | `location` | text | nullable — free-text incident location (e.g. "TJ Maxx (Madison, TN) parking lot"). Added 2026-08-09 via MCP (applied outside the app). Set on the Add Incident form and editable afterwards via "edit incident". Displayed on line 1 of the incident header, after the date. Not indexed, so no Dexie version bump was needed. |
 
 > Incidents are collapsible on the client file page. Sorted most recent first.
@@ -151,6 +151,21 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Mobile Layout Fix — Single-Client Header Case Mini-List (2026-08-09, commit `25fb88a`)
+
+**The last change of the 2026-08-09 session, and the current shipped state of the header mini-list on phones.** Everything below is inside the existing `@media (max-width: 768px)` block in `ClientFile.module.css`. **No desktop rule was touched, no other file changed, no DB or schema change.** Desktop keeps the centered 3-column grid described in the entry immediately below — this splits the two breakpoints apart rather than replacing that work.
+
+**Why the centered grid doesn't survive a phone.** It reserves a middle track for the mini-list, which is fine at the app's 1126px desktop width but expensive at ~343px of usable width on a 375–390px phone: the mini-list, the name/OCA block and the custody badge all compete for the same row, and the name column is what loses. Showing the **full `charge`** rather than `charge_abbrev` (changed in the entry below) made that materially worse, since a full charge string is several times wider than its abbreviation.
+
+**On mobile the row drops to two columns** (`minmax(0, 1fr) auto`) and the mini-list moves into the **left text stack** — `grid-column: 1; grid-row: 2`, `justify-self: start` — so it renders in ordinary left-aligned block flow as the last item under "Total Bond", sharing the same left edge as the name / OCA / bond lines above it. No centering, no horizontal offset.
+
+- **The custody badge is deliberately unchanged.** It stays right-aligned in its own column, and is given `grid-row: 1 / span 2` so the row's `align-items: center` keeps it centered against the **full** row height exactly as before — adding a second row beneath the name block must not shift it. `span 2` is used rather than `1 / -1`, which would resolve against the explicit grid's single row line and silently span only row 1.
+- **`row-gap: 0`** — the base `gap: 12px` sets both axes, and a 12px row gap would have dropped the mini-list well below the bond line. Column gap stays 12px. A 3px `margin-top` on the wrapper matches the bond line's own `padding: 3px 0 0` rhythm.
+- **Case lines tightened** from ~18.5px to ~14.9px each: row padding `1px 0` → `0`, `line-height` `1.5` → `1.35` (at the 11px mobile case-number size). A deliberately small reduction — enough that a multi-case client doesn't eat the screen, not enough to look cramped.
+- **The tightening is targeted structurally** (`.headerCaseList > div`, `.headerCaseList span`) rather than by class name, because those classes live in `ClientRow.module.css` and are hashed separately by CSS Modules — `ClientFile.module.css` cannot reference them by name. Scoping everything under `.headerCaseList` is what keeps the **client list** rows untouched at both breakpoints. The descendant selectors also out-specify the borrowed single-class rules (0,1,1 vs 0,1,0), so this works regardless of bundle order.
+
+> ⚠️ **NOT verified on a real device.** `npm run build` clean and `npx eslint .` still 20 errors, unchanged — but the intended on-device check (production, narrow mobile width, a multi-case client such as Causey or Wilborn) **was not completed**, so the visual result is reasoned rather than observed. See Open Items.
+
 ### Follow-Up Corrections to the 2026-08-09 Batch (2026-08-09)
 
 Three corrections to the entry immediately below, after seeing it on production. **No DB or schema changes; no Dexie version bump.** The two items not listed here (Personal Notes default-expanded, reversed classification dropdown) were confirmed working and are untouched.
@@ -175,6 +190,8 @@ Three corrections to the entry immediately below, after seeing it on production.
 
 #### 3. Case mini-list truly centered, and shows the full charge
 
+> ⚠️ **Everything in this sub-section is DESKTOP-ONLY as of later the same day.** The centered grid was too expensive at phone widths and mobile now uses a left-aligned layout instead — see the "Mobile Layout Fix" entry above for the shipped mobile behavior. The desktop description below is still current and unchanged.
+
 **The problem:** nesting the mini-list inside `.nameRowLeft` pinned it to the bottom-left corner of the header row, tucked under the name/OCA block, rather than reading as its own centered element.
 
 **`.nameRow` is now a 3-column grid** (`1fr minmax(0, 50%) 1fr`) instead of a flex row: name/OCA/Total Bond, case mini-list, custody badge. **The centering is structural, not approximate** — both side tracks are `1fr`, so they stay equal to each other and the middle column sits on the row's true midpoint, independent of how wide the name block or the badge happen to be. `align-items: center` (already present) handles the vertical axis, and because every item is still in normal flow the row grows to fit any number of cases.
@@ -183,7 +200,7 @@ Three details that make it hold up:
 
 - **`.badgeStack` is pinned to `grid-column: 3`.** The mini-list wrapper renders even when the client has no cases, but relying on auto-placement alone would let the badge drift into column 2 if that ever changed. Its existing `align-items: flex-end` keeps the badge flush right, exactly where it was.
 - **`.nameRowLeft` has `min-width: 0` and `.badgeStack` deliberately does not.** Column 1 can therefore shrink and column 3 cannot fall below the badge's own width — so on a very narrow viewport with a very wide badge the layout gives up a few pixels of centering instead of overlapping the badge. That trade is intentional and in that direction on purpose.
-- **The middle track is capped at 50%** so a long charge can't squeeze the name column to nothing, and `.headerCaseList` keeps `overflow: hidden` plus a scoped `span { min-width: 0 }` — without the latter, a flex item's automatic minimum size holds the charge at full text width and the `overflow: hidden` never gets a chance to clip. **That 50% is the knob** if the middle column ever needs to be narrower on mobile.
+- **The middle track is capped at 50%** so a long charge can't squeeze the name column to nothing, and `.headerCaseList` keeps `overflow: hidden` plus a scoped `span { min-width: 0 }` — without the latter, a flex item's automatic minimum size holds the charge at full text width and the `overflow: hidden` never gets a chance to clip. ~~That 50% is the knob if the middle column ever needs to be narrower on mobile.~~ — **the 50% cap was never the right answer on mobile; the middle track itself is gone there.** It remains the desktop knob only.
 
 **The mini-list now shows the full `charge`, not `charge_abbrev`.** Scoped to the single-client view only — `ClientRow.jsx` and `ClientRow.module.css` were not touched at all in this follow-up, so the client list still uses `charge_abbrev` and its desktop layout is exactly as shipped in the entry below.
 
@@ -237,7 +254,9 @@ Six scoped changes. **One DB change, applied via Supabase MCP outside the app an
 
 #### 6. Case mini-list in the single-client header
 
-The client header block (`.nameRow`) now lists every case across every incident — case number, charge abbrev, and `(CLASSIFICATION)` — under the name / OCA / Total Bond lines.
+The client header block (`.nameRow`) now lists every case across every incident — case number, charge, and `(CLASSIFICATION)`.
+
+> ⚠️ **Both of this sub-section's original choices were superseded the same day** and are struck through in place below: it showed `charge_abbrev` (now the full `charge`) and it sat under the name / OCA / Total Bond lines (now a centered grid column on desktop, and a left-aligned block under Total Bond on mobile). The two entries above carry the shipped behavior; what remains current here is the styling-reuse and ordering rationale.
 
 - **Styling is reused, not reinvented.** `ClientFile.jsx` imports `ClientRow.module.css` as `rowStyles` and applies the existing `.caseTableRow` / `.caseNum` / `.caseCharge` / `.caseClassification` classes, so the mini-list matches the client list exactly — same colors, sizes, and the same `{' '}` + parenthetical pattern — and inherits both breakpoints' sizing (including the desktop tightening from #5) for free. Only a thin `.headerCaseList` wrapper was added to `ClientFile.module.css`, and it handles placement only.
 - **Ordering matches the client list** — numeric on the case number with the letter prefix stripped, the same key `ClientList.jsx`'s `toRowProps` uses, with a `?? ''` guard since `case_number` is nullable. An unnumbered case shows a `—` like it does everywhere else.
@@ -699,7 +718,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Inserts into `clients` table, redirects to client list
 
 ### Client File (`/client/:id`)
-- **Header:** a 3-column grid (2026-08-09) — name / OCA / Total Bond on the left, **case mini-list centered in the row**, custody badge on the right. The mini-list shows every case across every incident as `case number | full charge (CLASSIFICATION)` — the **full `charge`**, not the `charge_abbrev` the client list uses — ordered numerically like the client list and styled with the reused `ClientRow.module.css` classes. Everything is in normal flow, so the header grows with the case count; the mini-list is non-interactive
+- **Header (2026-08-09):** on **desktop** a 3-column grid — name / OCA / Total Bond on the left, **case mini-list centered in the row**, custody badge on the right. On **mobile** two columns, with the mini-list moved into the left text stack (left-aligned, directly under "Total Bond") and tighter case-line spacing; the badge is unchanged at both widths. The mini-list shows every case across every incident as `case number | full charge (CLASSIFICATION)` — the **full `charge`**, not the `charge_abbrev` the client list uses — ordered numerically like the client list and styled with the reused `ClientRow.module.css` classes. Everything is in normal flow, so the header grows with the case count; the mini-list is non-interactive
 - **Back button** navigates directly to `/` (not history-based)
 - **Edit button** navigates to `/client/:id/edit`
 - **Next Event block** (blue `#1E3A5F`): "NEXT EVENT" label + Edit button integrated into blue block
@@ -764,8 +783,9 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 ### Incident Editing
 - Date input constrained to `max-width: 160px`
 - Description uses `<textarea rows={3}>` — fully visible while editing
-- Edit inputs stacked vertically (`flex-direction: column`)
-- Hanging indent on two-line descriptions: `padding-left: 1.62em; text-indent: -1.62em`
+- Edit inputs stacked vertically (`flex-direction: column`), in the order **description → location → date** (2026-08-09). The date stays last so the native mobile date picker can't cover the fields above it — the reason it was moved below the description on 2026-06-10. Do not reorder these to match the Add Incident form, which is Date → Location → Description
+- All three fields (description, location, date) commit together through one Dexie write + sync-queue UPDATE; each saves `null` when blank
+- ~~Hanging indent on two-line descriptions: `padding-left: 1.62em; text-indent: -1.62em`~~ — **REMOVED 2026-08-09.** It existed only because the description used to render inline after the date and its wrapped lines needed to clear it. The description is now its own block on line 2, so the indent would have offset it from line 1 rather than aligning it
 
 ### Custody Status
 - Six options: `out`, `ror` ("ROR'd"), `pretrialed_out`, `bonded_out`, `in_custody`, `no_bond_held` ("No Bond/Held"). **Dropdown display order as of 2026-07-23 (2nd batch): Out, ROR'd, Pretrialed Out, Bonded Out, In Custody, No Bond/Held** — display order only in both New/Edit Client; stored values unchanged. `no_bond_held` added front-end only (existing text column, no schema change).
@@ -818,7 +838,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 | White text | `#f0f2f5` |
 | Muted text | `#9faab8` |
 | Dim text / empty states | `#6b7a99` |
-| Blue links/buttons | `#6b9fd4` |
+| Blue links/buttons | `#6b9fd4` — also the client-list case numbers and, since 2026-08-09, the incident header's `date — location` line |
 | Blue accent (next event label) | `#5b9fd4` |
 | In Custody badge | muted crimson `#b85555` |
 | Bonded Out / Out badge | muted green `#3d9e6a` |
@@ -913,7 +933,9 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 
 2. **The affiant auto-text is add-form only, by design.** Changing an existing incident's date never rewrites its description. Do not "fix" this — retroactively rewriting a description the user has lived with is the more destructive behavior.
 
-3. **The single-client header mini-list is untested on a narrow phone with long charges.** It shows the full `charge` inside a middle grid track capped at 50% of the row, so on a ~375px viewport a long charge plus a wide custody badge leaves the name column noticeably squeezed. The cap in `.nameRow`'s `grid-template-columns` is the single knob — lower it (or add a mobile-only value) if it reads badly in practice. Centering is unaffected by the cap, since both side tracks stay `1fr`.
+3. ~~**The single-client header mini-list squeezes the name column on a narrow phone.** It shows the full `charge` inside a middle grid track capped at 50% of the row… lower the cap if it reads badly.~~ — **RESOLVED 2026-08-09**, same day, and **not** by tuning the cap. The centered middle track is gone on mobile entirely: the row drops to two columns and the mini-list renders left-aligned in the left text stack under "Total Bond", so it no longer competes with the name block for horizontal room. Desktop keeps the centered grid. See the "Mobile Layout Fix" entry under Completed Features.
+
+4. **The mobile mini-list layout has not been seen on a real device.** It builds and lints clean and the CSS reasoning is recorded in full, but the intended check — production, narrow mobile width, a multi-case client such as Causey or Wilborn — **was not completed before the session ended**. Specifically worth eyeballing: that the mini-list really does sit flush left under "Total Bond" (not indented or centered), that the custody badge has not moved vertically now that it spans two grid rows, and that the tightened line spacing reads as intentional rather than cramped. **This is the first thing to look at next session.**
 
 ### Open Items — carried forward from 2026-07-28
 
