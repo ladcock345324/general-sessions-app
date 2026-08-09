@@ -74,9 +74,11 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `client_id` | uuid FK → clients | |
 | `incident_date` | text | e.g. "7/16/2026" — used as display label. **NULLABLE as of 2026-07-28** (migration applied outside the app); the Add Incident form and the inline edit both accept a blank date and write `null`. |
 | `incident_description` | text | e.g. "Watch Theft Incident" — shown as header with date in parens |
+| `location` | text | nullable — free-text incident location (e.g. "2100 blk Charlotte Ave"). Added 2026-08-09 via MCP (applied outside the app). Set on the Add Incident form only; displayed on its own line under the incident header. Not indexed, so no Dexie version bump was needed. |
 
 > Incidents are collapsible on the client file page. Sorted most recent first.
 > Description is inline-editable (click "edit incident" to type directly into the header).
+> `location` is **not** part of the inline edit — it is set at creation time only (see the 2026-08-09 entry).
 
 ### `cases`
 | Column | Type | Notes |
@@ -86,7 +88,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `case_number` | text | e.g. "GS1041482". **NULLABLE as of 2026-07-28.** ⚠️ This column is also the URL key (`/case/:caseNumber`), so a case without one is addressed by its `id` instead — see the 2026-07-28 entry. |
 | `charge` | text | **NULLABLE as of 2026-07-28** (was required). |
 | `charge_abbrev` | text | optional short label shown in client list and case rows |
-| `classification` | text | optional charge classification — one of "MIS", "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (all uppercase; least→most serious); null = unset. Added 2026-06-24 via MCP; generic "MIS" option added 2026-06-25 (front-end only — same existing text column). Shown in parens after the charge abbrev (client list) / charge (single view). |
+| `classification` | text | optional charge classification — one of "MIS", "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (all uppercase); null = unset. Added 2026-06-24 via MCP; generic "MIS" option added 2026-06-25 (front-end only — same existing text column). **Dropdown order reversed to most→least serious 2026-08-09** (CAPITAL first, MIS last, blank still on top) — display order only, no value strings changed. Shown in parens after the charge abbrev (client list) / charge (single view). |
 | `warrant_url` | text | Supabase Storage path for affidavit PDF (e.g. `warrants/GS1041482.pdf`) — signed URL generated on demand |
 | `bond_amount` | int4 | **integer**, not numeric — cents are not storable. Nullable: `null` = unset (no bond figure); an explicit `0` is a real value and displays "$0 bond". The edit form saves `null` on a blank field, never `0` (see 2026-07-23 feature entry). |
 | `release_status` | text | nullable release condition for **this specific case**: `"held_without_bond"` \| `"pretrial_released"` \| `"ror"`; `null` = unset. Added 2026-07-23 via MCP (no in-repo migration). Displays "Held without bond" / "Pretrial Released" / "ROR'd". **Independent of the client-level `clients.custody_status`** — this is the condition on the case; custody_status is where the client physically is, net of all cases. |
@@ -148,6 +150,63 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### Incident Location + Affiant Auto-Text, Header Case List, Desktop Row Overflow Fix (2026-08-09)
+
+Six scoped changes. **One DB change, applied via Supabase MCP outside the app and already in place before this work started:** `incidents.location` (text, nullable). Everything else is front-end. **No Dexie version bump** — see the note under #1.
+
+#### 1. Add Incident form — reorder, Location field, affiant auto-text
+
+- **Field order is now Date → Location → Description** (was Description → Date). The date moving to the top is what makes the auto-text below feel natural rather than retroactive.
+- **New "Location" field** — a plain free-text input (placeholder "Optional") writing `incidents.location`. Offline-first like every other field: `db.incidents.put(record)` then `addToSyncQueue('incidents', 'INSERT', …)`, with `location` in **both** payloads via the same `.trim() || null` pattern the other two fields use.
+- **No Dexie schema change was needed and none was made.** `localDB.js` declares `incidents: 'id, client_id'` — that string lists *indexed* keys only, and Dexie stores the whole object regardless, so a non-indexed field passes through untouched. `fullSync`'s `select('*')` carries it back down. This is the same reasoning that let `cases.release_status` skip a bump on 2026-07-23.
+- **Location is set at creation time only.** The inline "edit incident" form (description + date) was deliberately left alone — adding a third control to a form that commits on blur/Enter is a separate change. `commitEdit()` spreads over the previous record (`setIncident(prev => ({ ...prev, ...changes }))`), so editing an incident never drops an existing location. **Known limitation, not an oversight** — see Open Items.
+- **Description auto-text.** Picking a date fills Description with ``The affiant believes that on {M/D/YYYY},`` built by a new pure `affiantTemplate(mdy)` helper (it runs the date through the shared `formatDateDisplay()`, so no leading zeros).
+  - **The guard against clobbering typing is an exact string comparison, not a heuristic.** The fill only happens when Description is empty **or** still exactly equals `affiantTemplate(previousDate)` — i.e. the user hasn't typed past the inserted prefix. Because the template is a pure function of the date, "is this still untouched auto-text?" is decidable with `===`; the moment the user adds a single character the equality fails and every later date change leaves their text alone, permanently.
+  - Both the date and the description are updated inside **one** `setForm` updater, so the comparison always reads the pre-change date rather than racing a second state update.
+  - **Clearing the date back out** blanks a Description that was purely template, and leaves anything else alone — symmetric with the fill, and it can only ever discard text the app itself wrote.
+  - **Add-form only.** Editing an existing incident's date does not trigger it, per the spec.
+- **Display:** Location renders on its own line directly under the incident header row, in muted `#9faab8` at 12px — an independent line, not appended to the date and not run into the description. Required a small structural change: `.incidentHeaderLeft` is a flex **row** (header text + the "edit incident" button), so the header text and location are now wrapped in a new `.incidentTitleBlock` column. `.incidentNameRow` lost its `flex: 1` (meaningless, and actively wrong, inside a column parent).
+
+#### 2. Personal Notes default to expanded when populated
+
+`PersonalNotesSection`'s `open` state initializes to `!!initialNote?.note?.trim()` instead of `false` — a client with a note gets it visible on load, an empty/absent note keeps the collapsed default. **Initial state only; the click-to-toggle behavior is untouched.** Safe as a lazy `useState` initializer because `ClientFile` holds this render behind its own `loading` guard, so `initialNote` is already resolved when the component first mounts.
+
+#### 3. Classification dropdown reversed to most→least serious
+
+`CLASSIFICATIONS` is now `['', 'CAPITAL', 'A FEL', 'B FEL', 'C FEL', 'D FEL', 'E FEL', 'A MIS', 'B MIS', 'C MIS', 'MIS']` in **both** `CaseView.jsx` and `ClientFile.jsx` (each file still holds its own copy — no shared constant exists; they are byte-identical and a comment in each now says so). Blank stays first: it is the unset placeholder, not a severity level. **Pure reorder** — no value strings changed, no schema change, no migration, and every stored `classification` still matches an option because the set is identical.
+
+#### 4. Case number font size +75% on Case View
+
+`CaseView.module.css` `.caseNumberLabel`: **11px → 19px** (11 × 1.75 = 19.25, rounded to a whole pixel). **Checked at both breakpoints and there is no wrapping or overflow risk:** this class has no breakpoint override anywhere in the file (the only media query is the ≤480px `.formTwoCol` stack), and the element is a full-width block *below* the header row rather than a flex sibling of the Back/Edit buttons, so it cannot squeeze them. A 9-character case number at 19px with `letter-spacing: 0.06em` is ~115px, comfortably inside the narrowest realistic viewport (320px − 32px horizontal padding = 288px).
+
+#### 5. Desktop client-list rows overflowed with 5+ cases — FIXED
+
+**Symptom:** on desktop only, a client with 5 or more cases had its case-number/charge/classification lines spill out of its own row and bleed into the rows above and below.
+
+**Root cause:** `.caseTable` was `position: absolute` (`right: 78px`, vertically centered via `top: 50%` + `translateY(-50%)`). An absolutely positioned element is **out of flow and contributes nothing to its parent's height**, so a `.row`'s height was driven entirely by `.info` (name + next-event line) — a fixed ~65px no matter how many cases the client had. Mobile never had the bug because its `@media (max-width: 768px)` block already makes `.caseTable` a `position: static` flex child (`flex: 1`) of `.caseLine`, which is exactly what lets the row grow.
+
+**The fix — the desktop equivalent of what mobile already does**, in a new `@media (min-width: 769px)` block:
+
+- `.caseTable` is now an in-flow flex item of `.row` (reached through `.caseLine`'s `display: contents`) at `flex: 0 0 280px`, so the row grows to fit its own case list.
+- **The absolute positioning was removed from the base rule rather than overridden**, so the mobile block's now-redundant `position: static` / `transform: none` become no-ops that render identically.
+- **Geometry is deliberately pixel-identical to the absolute version.** `.row` gets `padding-right: 78px`, which puts the content-box right edge exactly where the old `right: 78px` put the table's right edge; the 280px width keeps the left edge — where the case numbers actually sit — unchanged; and `.row`'s existing `align-items: center` reproduces the old `translateY(-50%)` centering. **The custody badge does not move**: `.right` is absolutely positioned at `right: 16px`, which is measured from the padding box and is therefore unaffected by the parent's padding.
+- `.info`'s `padding-right: 400px` was removed (it was dead at both breakpoints — mobile already set it to `0`) and replaced with a desktop `padding-right: 60px`. **This is load-bearing, not cosmetic:** the old 400px was implicitly keeping the nowrap next-event line clear of the badge column, and without a replacement a client with *no* cases would have had that line run under the custody badge. 60px clips it ~60px before the case table (was ~42px) and keeps it clear of the widest badge ("Pretrialed Out") when no case table is present.
+
+**Vertical spacing tightened on desktop** so fitting more lines doesn't inflate the row: `.caseTableRow` padding `1px 0` → `0`, and `line-height` `1.5` → `1.25` on `.caseNum` / `.caseCharge` / `.caseClassification`. Roughly 17px → 12.5px per case, so a 5-case row lands at ~82px instead of the ~65px fixed height rather than the ~85px it would otherwise have needed.
+
+> **Every change here is inside `@media (min-width: 769px)`, the exact complement of the existing mobile block, so nothing in it can reach the mobile layout.** The only base-rule edits (dropping `.caseTable`'s absolute positioning and `.info`'s 400px padding) were both already overridden by the mobile block, so **mobile renders pixel-for-pixel identically** — verified rule by rule against the `@media (max-width: 768px)` block.
+
+#### 6. Case mini-list in the single-client header
+
+The client header block (`.nameRow`) now lists every case across every incident — case number, charge abbrev, and `(CLASSIFICATION)` — under the name / OCA / Total Bond lines.
+
+- **Styling is reused, not reinvented.** `ClientFile.jsx` imports `ClientRow.module.css` as `rowStyles` and applies the existing `.caseTableRow` / `.caseNum` / `.caseCharge` / `.caseClassification` classes, so the mini-list matches the client list exactly — same colors, sizes, and the same `{' '}` + parenthetical pattern — and inherits both breakpoints' sizing (including the desktop tightening from #5) for free. Only a thin `.headerCaseList` wrapper was added to `ClientFile.module.css`, and it handles placement only.
+- **Ordering matches the client list** — numeric on the case number with the letter prefix stripped, the same key `ClientList.jsx`'s `toRowProps` uses, with a `?? ''` guard since `case_number` is nullable. An unnumbered case shows a `—` like it does everywhere else.
+- **Self-contained at both breakpoints, by construction.** It sits in normal flow at the bottom of `.nameRowLeft`, so the header simply grows and cannot overlap the sticky name bar above or the Next Event block below. `overflow: hidden` on the wrapper clips an unusually long charge instead of letting a nowrap row widen the block and push the custody badge off — `.nameRowLeft`'s existing `min-width: 0` does the rest.
+- **The list is a summary, not a navigation control** — the tappable copies already exist in the client list and under each incident. The borrowed classes carry `cursor: pointer`, so it is overridden with an inline `style={{ cursor: 'default' }}`; an inline style is the only way to reliably beat a class from a *different* CSS module without depending on bundle order.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged — no new lint errors, and none of the four edited files appears in the output.
 
 ### Cross-Client Daily Hours Viewer + Shared `dateUtils.js` (2026-07-28)
 
@@ -591,7 +650,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — always sorted by `closed_at` DESC, null-`closed_at` clients at the bottom. (See the 2026-06-21 "Client List + Next Event Batch" entry.)
 - Each section header shows a count badge (e.g. "Active 12")
 - Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge
-- **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), `position: absolute` right-anchored so all case number left edges are flush; `charge_abbrev` shown if set, falls back to `charge`; if `classification` is set, it follows in parens (e.g. `Sex Offender Registration Viol (A MIS)`), styled to match the next-event info line (`#6b9fd4`, normal weight, 13px desktop / 11px mobile)
+- **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), right-anchored so all case number left edges are flush. **As of 2026-08-09 it is an in-flow flex item on desktop, not `position: absolute`** — the absolute version was out of flow, so a row never grew and a client with 5+ cases bled into the neighbouring rows (see the 2026-08-09 entry; mobile was always in-flow and is unchanged). `charge_abbrev` shown if set, falls back to `charge`; if `classification` is set, it follows in parens (e.g. `Sex Offender Registration Viol (A MIS)`), styled to match the next-event info line (`#6b9fd4`, normal weight, 13px desktop / 11px mobile)
 - Badge colors: **In Custody** → muted crimson (`#b85555`); **Bonded Out** / **Out** → muted green (`#3d9e6a`); **CLOSED** / relieved clients → gray
 - Clients in the Closed section (`relieved_closed = true`) show all custody badges in gray
 - `+` button top-right → Add Client form
@@ -602,15 +661,16 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Inserts into `clients` table, redirects to client list
 
 ### Client File (`/client/:id`)
-- **Header:** full name, custody badge, Total Bond (summed from all associated cases)
+- **Header:** full name, custody badge, Total Bond (summed from all associated cases), and a **case mini-list** (2026-08-09) — every case across every incident as `case number | charge abbrev (CLASSIFICATION)`, ordered numerically like the client list and styled with the reused `ClientRow.module.css` classes. In normal flow, so the header grows with the case count; non-interactive
 - **Back button** navigates directly to `/` (not history-based)
 - **Edit button** navigates to `/client/:id/edit`
 - **Next Event block** (blue `#1E3A5F`): "NEXT EVENT" label + Edit button integrated into blue block
   - Docket type, reason (if set), date/time, courtroom (prefixed "Courtroom"), judge, and ADA (shown as "ADA: [name]" only when `ada_name` is set — single-client view only, never in the client list)
   - **Clear button** in the edit form — deletes the `next_events` row for this client, returns block to empty state
-- **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table
+- **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table. **Renders already expanded on load when the note is non-empty** (2026-08-09); an empty/absent note still starts collapsed. Click-to-toggle itself is unchanged
 - **Incidents** section:
-  - Collapsible accordion — each incident shows "Description (Date)" header row
+  - Collapsible accordion — each incident shows "Description (Date)" header row, with **Location on its own line beneath it** when set (2026-08-09, muted 12px)
+  - Add Incident form fields, in order: **Date, Location, Description** — picking the date auto-fills Description with "The affiant believes that on M/D/YYYY," unless the user has already typed past it (2026-08-09)
   - **Sorted oldest-first** (earliest `incident_date` at top, latest at bottom) as of 2026-07-28, via `compareIncidentsByDate()`; missing/unparseable dates sort to the end. Case numbers within each incident sorted ascending
   - No empty-state text when an incident has no cases — renders nothing (2026-07-28)
   - Inline editing: tap "edit incident" → description textarea (3 rows) and date become editable; save on blur or Enter; Escape cancels
@@ -807,6 +867,12 @@ src/
 #### Offline PDF availability (deferred)
 
 Affidavit / criminal-history / courtroom-document PDFs are not cached locally, so the scanned files aren't viewable offline — only their extracted text (`warrant_text`, etc.) is, via the text drawer reading from Dexie. A future option is to cache PDF bytes as Blobs in a new Dexie table (cache-on-upload + cache-on-view as the light version, eager full-download as the heavy version) and render via `pdfjs-dist` canvas in a drawer. Deliberately deferred — extracted text covers the practical need.
+
+### Open Items — from 2026-08-09
+
+1. **`incidents.location` can only be set when the incident is created.** The inline "edit incident" form still edits description + date only, so an incident saved without a location cannot be given one from the UI, and an existing location can't be corrected. Editing an incident does **not** lose the value (`commitEdit()` spreads over the previous record), so this is a gap, not a data risk. Deliberate scope call — the inline form commits on blur/Enter and adding a third control to it is its own change. Add it to that form when it comes up.
+
+2. **The affiant auto-text is add-form only, by design.** Changing an existing incident's date never rewrites its description. Do not "fix" this — retroactively rewriting a description the user has lived with is the more destructive behavior.
 
 ### Open Items — carried forward from 2026-07-28
 

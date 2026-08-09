@@ -7,6 +7,10 @@ import { extractPdfText } from '../extractPdfText'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import styles from './ClientFile.module.css'
+// Borrowed for the header case mini-list so it matches the client list exactly
+// (same colors, sizes, and "(CLASSIFICATION)" parenthetical) instead of a
+// near-duplicate set of rules that would drift out of sync.
+import rowStyles from '../components/ClientRow.module.css'
 import TextViewerDrawer from '../components/TextViewerDrawer'
 import { toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, todayString, dateKey } from '../dateUtils'
 import {
@@ -367,16 +371,40 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
 
 // ─── Add Incident form ────────────────────────────────────────────────────────
 
+// Opening clause auto-inserted into the Add Incident description when a date is
+// picked. Kept as a pure function of the date so the "has the user typed past
+// the template?" check below is an exact string comparison, not a heuristic.
+function affiantTemplate(mdy) {
+  return `The affiant believes that on ${formatDateDisplay(mdy)},`
+}
+
 function AddIncidentForm({ clientId, onSaved, onCancel }) {
-  const [form, setForm] = useState({ incident_description: '', incident_date: '' })
+  const [form, setForm] = useState({ incident_date: '', location: '', incident_description: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
+  // Picking a date seeds the description with the affiant clause, but must never
+  // clobber real typing. It only writes when the description is empty or still
+  // exactly equals the template built from the PREVIOUS date — i.e. the user has
+  // not typed past the auto-inserted prefix yet. The moment they add anything of
+  // their own, the equality fails and later date changes leave the text alone.
+  // Add-form only; editing an existing incident's date never triggers this.
+  function setIncidentDate(mdy) {
+    setForm(f => {
+      const wasTemplate = f.incident_date !== '' && f.incident_description === affiantTemplate(f.incident_date)
+      const canFill = f.incident_description === '' || wasTemplate
+      if (!canFill) return { ...f, incident_date: mdy }
+      // Clearing the date back out removes a description that was purely template.
+      return { ...f, incident_date: mdy, incident_description: mdy ? affiantTemplate(mdy) : '' }
+    })
+  }
+
   async function save() {
-    // Both fields are nullable in Postgres (incident_date became nullable
-    // 2026-07-28), so neither is required — blank saves as null, not ''.
+    // All three fields are nullable in Postgres (incident_date became nullable
+    // 2026-07-28, location was added nullable), so none is required — a blank
+    // saves as null, not ''.
     setSaving(true)
     setError(null)
     const newId = crypto.randomUUID()
@@ -385,6 +413,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
       client_id: clientId,
       incident_description: form.incident_description.trim() || null,
       incident_date: form.incident_date.trim() || null,
+      location: form.location.trim() || null,
     }
     await db.incidents.put(record)
     await addToSyncQueue('incidents', 'INSERT', newId, record)
@@ -394,18 +423,22 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
   return (
     <div className={styles.inlineForm}>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Description</label>
-        <input className={styles.formInput} value={form.incident_description} onChange={e => set('incident_description', e.target.value)} placeholder="e.g. Watch Theft Incident" />
-      </div>
-      <div className={styles.formRow}>
         <label className={styles.formLabel}>Date</label>
         <input
           type="date"
           className={styles.formInput}
           value={toDateInput(form.incident_date)}
-          onChange={e => set('incident_date', fromDateInput(e.target.value))}
+          onChange={e => setIncidentDate(fromDateInput(e.target.value))}
           {...pickerHandlers()}
         />
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Location</label>
+        <input className={styles.formInput} value={form.location} onChange={e => set('location', e.target.value)} placeholder="Optional" />
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Description</label>
+        <input className={styles.formInput} value={form.incident_description} onChange={e => set('incident_description', e.target.value)} placeholder="e.g. Watch Theft Incident" />
       </div>
       {error && <div className={styles.formError}>{error}</div>}
       <div className={styles.formActions}>
@@ -418,8 +451,10 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
 
 // ─── Add Case form (under a specific incident) ────────────────────────────────
 
-// Charge classification, least-serious → most-serious. Blank = unset (stored null).
-const CLASSIFICATIONS = ['', 'MIS', 'C MIS', 'B MIS', 'A MIS', 'E FEL', 'D FEL', 'C FEL', 'B FEL', 'A FEL', 'CAPITAL']
+// Charge classification, most-serious → least-serious. Blank = unset (stored
+// null) and stays first — it's the placeholder, not a severity level.
+// Kept byte-identical to the copy in CaseView.jsx.
+const CLASSIFICATIONS = ['', 'CAPITAL', 'A FEL', 'B FEL', 'C FEL', 'D FEL', 'E FEL', 'A MIS', 'B MIS', 'C MIS', 'MIS']
 
 const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '', release_status: '' }
 
@@ -615,26 +650,33 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
               />
             </div>
           ) : (
-            <div className={styles.incidentNameRow}>
-              {/* Date and description are both nullable. The em-dash only appears
-                  between them when both are present, so a missing one never
-                  leaves a dangling separator; with neither, a lone dash keeps the
-                  header visible and tappable instead of collapsing to nothing. */}
-              {(() => {
-                const date = formatDateDisplay(incident.incident_date)
-                const desc = incident.incident_description
-                if (!date && !desc) return <span className={styles.incidentDatePart}>—</span>
-                return (
-                  <>
-                    {date && <span className={styles.incidentDatePart}>{date}</span>}
-                    {desc && (
-                      <span className={styles.incidentDescPart}>
-                        {date ? <>&nbsp;—&nbsp;</> : null}{desc}
-                      </span>
-                    )}
-                  </>
-                )
-              })()}
+            /* Column so Location can sit on its own line under the date/description
+               row rather than being pulled inline with either of them. */
+            <div className={styles.incidentTitleBlock}>
+              <div className={styles.incidentNameRow}>
+                {/* Date and description are both nullable. The em-dash only appears
+                    between them when both are present, so a missing one never
+                    leaves a dangling separator; with neither, a lone dash keeps the
+                    header visible and tappable instead of collapsing to nothing. */}
+                {(() => {
+                  const date = formatDateDisplay(incident.incident_date)
+                  const desc = incident.incident_description
+                  if (!date && !desc) return <span className={styles.incidentDatePart}>—</span>
+                  return (
+                    <>
+                      {date && <span className={styles.incidentDatePart}>{date}</span>}
+                      {desc && (
+                        <span className={styles.incidentDescPart}>
+                          {date ? <>&nbsp;—&nbsp;</> : null}{desc}
+                        </span>
+                      )}
+                    </>
+                  )
+                })()}
+              </div>
+              {incident.location && (
+                <div className={styles.incidentLocationLine}>{incident.location}</div>
+              )}
             </div>
           )}
           {open && !editing && (
@@ -691,7 +733,11 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
 
 function PersonalNotesSection({ clientId, initialNote }) {
   const [note, setNote] = useState(initialNote ?? null)
-  const [open, setOpen] = useState(false)
+  // A client who already has a note gets the section expanded on load — the note
+  // is worth reading without a tap. An empty/absent note keeps the collapsed
+  // default. Click-to-toggle behavior itself is unchanged. The parent holds this
+  // render behind its own loading guard, so initialNote is already resolved here.
+  const [open, setOpen] = useState(() => !!initialNote?.note?.trim())
   const [mode, setMode] = useState('idle') // 'idle' | 'add' | 'edit' | 'confirmDelete'
   const [draftText, setDraftText] = useState('')
   const [saving, setSaving] = useState(false)
@@ -1672,6 +1718,16 @@ export default function ClientFile() {
   const totalBond = bondCases.reduce((sum, c) => sum + Number(c.bond_amount), 0)
   const sortedIncidents = [...incidents].sort(compareIncidentsByDate)
 
+  // Header case mini-list: every case across every incident, ordered the same way
+  // the client list orders them (numeric, ignoring the letter prefix) so the two
+  // views read identically. case_number is nullable, hence the ?? '' guard.
+  const headerCases = incidents
+    .flatMap(inc => inc.cases ?? [])
+    .sort((a, b) =>
+      (parseInt((a.case_number ?? '').replace(/^\D+/, ''), 10) || 0) -
+      (parseInt((b.case_number ?? '').replace(/^\D+/, ''), 10) || 0)
+    )
+
   return (
     <div className={styles.screen}>
 
@@ -1695,6 +1751,27 @@ export default function ClientFile() {
             )}
             {showTotalBond && (
               <div className={styles.bondLine}>Total Bond: ${totalBond.toLocaleString()}</div>
+            )}
+            {headerCases.length > 0 && (
+              /* In normal flow inside nameRowLeft, so the header block simply grows
+                 to fit however many cases there are — it can't overlap the sticky
+                 name bar above or the Next Event block below at either breakpoint.
+                 Non-interactive summary (the tappable copy lives in the client
+                 list and in each incident), so the borrowed pointer cursor is
+                 overridden inline — an inline style is the only way to beat a
+                 class from another CSS module without relying on bundle order. */
+              <div className={styles.headerCaseList}>
+                {headerCases.map(c => {
+                  const charge = c.charge_abbrev || c.charge || ''
+                  return (
+                    <div key={c.id} className={rowStyles.caseTableRow}>
+                      <span className={rowStyles.caseNum} style={{ cursor: 'default' }}>{c.case_number || '—'}</span>
+                      {charge && <span className={rowStyles.caseCharge} style={{ cursor: 'default' }}>| {charge}</span>}
+                      {c.classification && <>{' '}<span className={rowStyles.caseClassification}>({c.classification})</span></>}
+                    </div>
+                  )
+                })}
+              </div>
             )}
           </div>
           <div className={styles.badgeStack}>

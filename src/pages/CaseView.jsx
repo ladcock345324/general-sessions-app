@@ -8,8 +8,10 @@ import { addToSyncQueue } from '../syncManager'
 import styles from './CaseView.module.css'
 import TextViewerDrawer from '../components/TextViewerDrawer'
 
-// Charge classification, least-serious → most-serious. Blank = unset (stored null).
-const CLASSIFICATIONS = ['', 'MIS', 'C MIS', 'B MIS', 'A MIS', 'E FEL', 'D FEL', 'C FEL', 'B FEL', 'A FEL', 'CAPITAL']
+// Charge classification, most-serious → least-serious. Blank = unset (stored
+// null) and stays first — it's the placeholder, not a severity level.
+// Kept byte-identical to the copy in ClientFile.jsx.
+const CLASSIFICATIONS = ['', 'CAPITAL', 'A FEL', 'B FEL', 'C FEL', 'D FEL', 'E FEL', 'A MIS', 'B MIS', 'C MIS', 'MIS']
 
 // Case-level release condition. release_status is independent of the client-level
 // custody_status (a case's condition vs. where the client physically is).

@@ -94,6 +94,21 @@
   padding: 3px 0 0;
 }
 
+/* Header case mini-list. The rows themselves are styled by the borrowed
+   ClientRow classes (.caseTableRow / .caseNum / .caseCharge / .caseClassification)
+   so they match the client list exactly; this wrapper only handles placement.
+   Sits in normal flow at the bottom of nameRowLeft, so the header grows with the
+   case count rather than overflowing. overflow:hidden clips an unusually long
+   charge instead of letting the nowrap row widen the block and push the custody
+   badge off — nameRowLeft's min-width:0 does the rest. */
+.headerCaseList {
+  display: flex;
+  flex-direction: column;
+  margin-top: 5px;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .pipe {
   font-size: 1.08em;
   margin: 0 0.35em;
@@ -536,11 +551,28 @@
   min-width: 0;
 }
 
+/* Stacks the date/description row above the Location line so Location reads as
+   its own independent line rather than being appended to either of them. */
+.incidentTitleBlock {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
 .incidentNameRow {
   display: flex;
   align-items: flex-start;
-  flex: 1;
   min-width: 0;
+}
+
+.incidentLocationLine {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9faab8;
+  margin-top: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .incidentDatePart {

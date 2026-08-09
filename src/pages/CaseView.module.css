@@ -59,8 +59,13 @@
   pointer-events: none;
 }
 
+/* 11px → 19px (+75%). It is a full-width block below the header row, not a flex
+   sibling of the back/edit buttons, so the larger size can't squeeze them; a
+   9-character case number at 19px is ~115px, well inside the narrowest
+   (320px − 32px padding) viewport, so it neither wraps nor overflows. Single
+   rule — there is no breakpoint override for this class. */
 .caseNumberLabel {
-  font-size: 11px;
+  font-size: 19px;
   font-weight: 600;
   color: #5b9fd4;
   letter-spacing: 0.06em;

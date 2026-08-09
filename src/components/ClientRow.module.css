@@ -22,7 +22,6 @@
   gap: 4px;
   min-width: 0;
   padding-left: 0;
-  padding-right: 400px;
 }
 
 .nameLine {
@@ -77,10 +76,6 @@
   display: flex;
   flex-direction: column;
   width: 280px;
-  position: absolute;
-  right: 78px;
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 .caseTableRow {
@@ -330,6 +325,56 @@
     font-size: 6.3px;
     padding: 0.7px 4.9px;
     border-radius: 14px;
+  }
+}
+
+/* ── Desktop-only case-list layout ────────────────────────────────────────────
+   Scoped to min-width:769px on purpose: it is the exact complement of the mobile
+   block above, so nothing here can reach the mobile layout.
+
+   The bug it fixes: .caseTable used to be position:absolute (right:78px, vertically
+   centered), which took it out of flow — the row's height was driven by .info alone,
+   so a client with 5+ cases overflowed its own row and bled into the rows above and
+   below. Mobile never had this because its block makes .caseTable a static flex
+   child of .caseLine, which is what makes the row grow. Desktop now does the
+   equivalent: .caseTable is an in-flow flex item of .row (reached through
+   .caseLine's display:contents), so the row grows to fit its own case list.
+
+   Geometry is deliberately unchanged from the absolute version:
+     - .row padding-right:78px puts the content-box right edge exactly where the
+       old `right: 78px` put the table's right edge. .right is absolutely positioned
+       (right:16px, measured from the padding box), so the badge does NOT move.
+     - flex:0 0 280px keeps the same box width, so the left edge — where the case
+       numbers actually sit — lands where it does today.
+     - .row's align-items:center reproduces the old translateY(-50%) centering.
+     - .info's 60px right padding replaces the old 400px reservation: with a case
+       table present it clips the next-event line ~60px before it (was ~42px), and
+       with no cases it keeps that line clear of the widest custody badge, which the
+       old 400px did implicitly. */
+@media (min-width: 769px) {
+  .row {
+    padding-right: 78px;
+  }
+
+  .info {
+    flex: 1 1 auto;
+    padding-right: 60px;
+  }
+
+  .caseTable {
+    flex: 0 0 280px;
+  }
+
+  /* Tighter stacking so fitting more cases doesn't inflate the row height:
+     ~17px per case (15px line + 2px padding) → ~12.5px. */
+  .caseTableRow {
+    padding: 0;
+  }
+
+  .caseNum,
+  .caseCharge,
+  .caseClassification {
+    line-height: 1.25;
   }
 }
 
