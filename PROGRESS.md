@@ -151,6 +151,54 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Affidavit Text Harmonized, Release Status Restored, Same-Incident Bracket (2026-08-10, commit `8d51a54`)
+
+Seven changes. **No DB or schema change; the `@media (max-width: 768px)` block was not touched; no collapse/expand reintroduced.** Files: `CaseView.jsx` + `.module.css` (item 1 only), `ClientFile.jsx` + `.module.css`, `ClientRow.jsx` + `.module.css`.
+
+#### 1. CaseView affidavit text harmonized — the one sanctioned CaseView edit
+
+The meta line now renders a green **"Affidavit"** when one is on file and **nothing at all** when there isn't, matching the incidents case line. **`"Affidavit on File"` and `"No Affidavit"` are now gone from the app entirely**, closing the conflict recorded as Open Item 0 the same day.
+
+- **The separator is conditional on both sides** (`hasAffidavit && bondText`), not just on the bond. Since the affidavit segment can now be absent, a separator conditioned only on the bond would leave the line opening with a stray `|`.
+- **Segment order was deliberately NOT changed** — affidavit first, bond second, exactly as before. Reordering would have been a second change to a file cleared for one.
+- New `.affidavitTag` in `CaseView.module.css` (`#5ecf90`, weight 400). Nothing else in CaseView was touched.
+
+#### 2. `release_status` restored to the incidents case line
+
+Reverses the loss recorded in the previous entry. New `bondReleaseText()` in `ClientFile.jsx` composes bond and release exactly the way the old `bondStatusText()` did (`·` between them), and the affidavit is appended with ` | `:
+
+| bond | release | affidavit | Renders |
+|---|---|---|---|
+| `0` | held | yes | `$0 Bond · Held without bond \| Affidavit` |
+| `0` | held | no | `$0 Bond · Held without bond` |
+| `1500` | — | yes | `$1,500 Bond \| Affidavit` |
+| — | ror | yes | `ROR'd \| Affidavit` |
+| — | — | no | *nothing — no line at all* |
+
+> **The third row is the normal case, not an edge case.** `release_status` is unset on most cases because the client-level `custody_status` already carries that information. Segments are joined only when present, so there is no dangling `·`, no trailing space and no empty segment — verified across all five shapes above. `RELEASE_LABELS` came back with it.
+
+The line **wraps** in the narrow column rather than truncating, and the column width was not changed.
+
+#### 3–6. Case line and description
+
+3. **"Affidavit" dropped to normal weight** (`font-weight: 400`) in both views. Colour `#5ecf90` and size unchanged.
+4. **The whole bond/affidavit line navigates to the same case as the number above it**, via the same `tapHandlers` (so drag and long-press still suppress it). **Styling is deliberately unchanged** — only `cursor: pointer` signals it; the text is not restyled to look like a link. The case number's own enlarged hit area overlaps the top of this line, which is harmless since both go to the same case.
+5. **"edit incident" now flows inline** after the last word of the description instead of starting its own line. **Its `font-size` had to become an absolute `11px`:** it was `0.7em`, which resolved against the 16px cell to ~11.2px, but nesting it inside the 13px description would have shrunk it to 9.1px. Colour, weight and family are unchanged.
+6. **Description `line-height: 1.4`** (was inheriting, and reading as roughly double-spaced).
+
+#### 7. Same-incident bracket
+
+A light `[` — left, top and bottom borders with **no right border**, which is the bracket shape — in muted `#4a5a70`, for groups of **2+** cases from one incident. A lone case gets none. **Drawn in existing empty gutter space** (`left: -8px` / `-9px`) in both views, so **not one case number moves** and the client-list case table's carefully preserved geometry is untouched. **No sort order was changed anywhere.**
+
+- **Single-client view — the Incidents left column.** Every case in an incident's cell belongs to that incident by construction, so the bracket is unconditional on `cases.length > 1`. The group wrapper carries the first item's 9px top margin itself (`.incidentCaseGroup { margin-top: 9px }` + `:first-child { margin-top: 0 }`) because a flex item establishes its own formatting context and would otherwise trap that margin inside, starting the bracket 9px above the first case number.
+- **Client list — bracketed conditionally, after verifying contiguity.** ⚠️ **The finding: same-incident cases are NOT guaranteed to be adjacent there.** `toRowProps` in [`ClientList.jsx`](src/pages/ClientList.jsx:75) flattens every incident's cases and sorts purely on the numeric part of the case number — **incident is not part of the sort at all**. Interleaving is structurally possible: incident A holding GS1000 and GS3000 with incident B holding GS2000 sorts to A, B, A.
+  - `bracketBlocks()` in [`ClientRow.jsx`](src/components/ClientRow.jsx) therefore draws a bracket **only when every case of an incident occupies consecutive positions**. A split group gets **no bracket at all** rather than one that would appear to capture the neighbouring incident's case.
+  - In practice court-assigned numbers are usually sequential per incident, so groups will normally bracket; the guard is there for when they aren't.
+
+> **The header case mini-list was deliberately left unbracketed.** It is also flat, but `.headerCaseList` has `overflow: hidden`, which would clip a bracket drawn in the gutter; the alternative — padding the list to make interior room — would shift it right and break the flush-left mobile alignment that this pass was told not to touch. The user's own framing ("in the client list view, the case list is flat rather than grouped by incident") also points at the Incidents column as the single-client target.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged — the one error reported in `CaseView.jsx` is the pre-existing `react-hooks/set-state-in-effect`, which moved from line 146 to 148 as the comment above it grew. ⚠️ **Not yet verified on production.**
+
 ### Incidents First Column Refinements (2026-08-10, commit `cc66ba3`)
 
 Seven scoped changes to the **left cell** of the two-column Incidents grid, plus the affidavit-upload target picker. **No DB or schema change; `CaseView.jsx` untouched; no collapse/expand reintroduced.**
@@ -826,6 +874,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — always sorted by `closed_at` DESC, null-`closed_at` clients at the bottom. (See the 2026-06-21 "Client List + Next Event Batch" entry.)
 - Each section header shows a count badge (e.g. "Active 12")
 - Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge
+- **Same-incident bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a light `[` (`#4a5a70`) drawn in the gutter to the left of the case table. ⚠️ The list is sorted purely on the numeric part of the case number with **no incident component**, so same-incident cases can interleave; a non-contiguous group is deliberately left unbracketed rather than drawn across a foreign case. See the 2026-08-10 entry and Open Items.
 - **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), right-anchored so all case number left edges are flush. **As of 2026-08-09 it is an in-flow flex item on desktop, not `position: absolute`** — the absolute version was out of flow, so a row never grew and a client with 5+ cases bled into the neighbouring rows (see the 2026-08-09 entry; mobile was always in-flow and is unchanged). `charge_abbrev` shown if set, falls back to `charge`; if `classification` is set, it follows in parens (e.g. `Sex Offender Registration Viol (A MIS)`), styled to match the next-event info line (`#6b9fd4`, normal weight, 13px desktop / 11px mobile)
 - Badge colors: **In Custody** → muted crimson (`#b85555`); **Bonded Out** / **Out** → muted green (`#3d9e6a`); **CLOSED** / relieved clients → gray
 - Clients in the Closed section (`relieved_closed = true`) show all custody badges in gray
@@ -846,8 +895,9 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table. **Renders already expanded on load when the note is non-empty** (2026-08-09); an empty/absent note still starts collapsed. Click-to-toggle itself is unchanged
 - **Incidents** section — **two-column grid, one row per incident, nothing collapsible** (2026-08-10; replaced the click-to-expand accordion):
   - Section header carries two controls (2026-08-10): an **"upload affidavit"** text control (affidavit-first creation — see the 2026-08-10 entry) and the existing `+` button, in that order. The `+` still creates a bare incident with no affidavit — needed for things like probation violations that have no incident date
-  - **Left cell** (~1/6 of the section, `minmax(180px, 1fr)` of a 1fr/5fr split): incident date and location (both `#c8d0dc`, sizes 13px/12px, tight against each other), then each case as a case number with **one** line beneath it reading `$1,500 Bond | Affidavit` — either half dropping out on its own, the line omitted entirely when there is neither — then that incident's own "+ add a case". "Affidavit" is green `#5ecf90`. The case number is the only tap target, has an enlarged hit area (padding cancelled by negative margins, so its visual size is unchanged), and links to `/case/:caseNumber` (falling back to the case `id` when unnumbered)
-  - **Right cell** (~5/6): the incident description, with the delete `×` at its top-right and "edit incident" beneath it
+  - **Left cell** (~1/6 of the section, `minmax(180px, 1fr)` of a 1fr/5fr split): incident date and location (both `#c8d0dc`, sizes 13px/12px, tight against each other), then each case as a case number with **one** line beneath it reading `$0 Bond · Held without bond | Affidavit` — every segment dropping out independently, the line omitted entirely when nothing is set — then that incident's own "+ add a case". "Affidavit" is green `#5ecf90` at normal weight. **Both the case number and the bond line navigate to that case**; the number has an enlarged hit area (padding cancelled by negative margins, so its visual size is unchanged). Unnumbered cases fall back to the case `id` in the URL
+  - **Same-incident bracket:** an incident with 2+ cases gets a light `[` (`#4a5a70`) down the left of its case group, drawn in the cell's padding so no case number moves
+  - **Right cell** (~5/6): the incident description at `line-height: 1.4`, with the delete `×` at its top-right and **"edit incident" flowing inline after the last word** of the description
   - **Gridlines:** 2px `#2C3A4F` row dividers, 1px `#2C3A4F` column split
   - **Mobile (≤768px):** stacks to one column — left block on top, description beneath, split by a 1px rule; the 2px row divider separates incidents
   - An incident with **date, location and description all null** shows **"Awaiting details"** in the description cell; a case with **no case number** shows **"Case # pending"** (both 2026-08-10) — these are the states an affidavit-first record is created in
@@ -898,7 +948,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **View Affidavit** button when affidavit is on file
 - **Notes** textarea with Save/Saved confirmation
 - **Disposition**, **Edit** (inline form includes `charge_abbrev`, `classification`, and a half-width **Bond Amount + Status** row — Status is a `<select>` writing `cases.release_status`), **Delete Case**
-- **Bond/status meta line** (header, under the charge) shows the affidavit status and then the per-case bond/status independently: `$X bond` when a bond is set, the release-status label when `release_status` is set, both joined by ` · ` when both are set, and nothing when both are null. Same independent logic drives the ClientFile case rows.
+- **Bond/status meta line** (header, under the charge): a green **"Affidavit"** when one is on file and **nothing at all** when there isn't (2026-08-10 — the old "Affidavit on File" / "No Affidavit" strings are gone from the app), then the per-case bond/status independently: `$X bond` when a bond is set, the release-status label when `release_status` is set, both joined by ` · ` when both are set, and nothing when both are null. **The `|` separator is conditional on both sides**, so an absent affidavit can't leave the line opening with a stray separator. Segment order is unchanged (affidavit first).
 
 ### Incident Editing
 - Date input constrained to `max-width: 160px`
@@ -1050,7 +1100,7 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 
 ### Open Items — from 2026-08-10
 
-0. **`"Affidavit on File"` / `"No Affidavit"` still exist at [`CaseView.jsx:258`](src/pages/CaseView.jsx:258).** The 2026-08-10 refinement pass required those strings gone from the app, and also forbade touching `CaseView.jsx` — the two instructions conflict, and the do-not-touch constraint won because it has been restated every session. **Nothing was changed in `CaseView.jsx`.** If the strings should go there too, that is a one-line edit to `warrantStatus` plus a decision about what the case header shows instead (the incidents column now shows a green "Affidavit" and nothing at all when there is none, which would leave the CaseView meta line starting with a bare `|` if copied naively).
+0. ~~**`"Affidavit on File"` / `"No Affidavit"` still exist at `CaseView.jsx:258`.**~~ — **RESOLVED 2026-08-10**, commit `8d51a54`, with explicit clearance to edit `CaseView.jsx` for that one change. Both strings are now gone from the app; the meta line shows a green "Affidavit" or nothing, and its separator is conditional on both sides so it cannot open with a stray `|`. Nothing else in CaseView was touched.
 
 1. **The affidavit-first flow has not been exercised on production.** It builds and lints clean, but nothing has been uploaded through it on the live site yet. Worth checking, in order: the "upload affidavit" control renders beside `+` in the Incidents header; picking a PDF opens the dialog with "New incident" preselected; confirming creates an incident showing **"Awaiting details"** with one case row showing **"Case # pending"** and "Affidavit on File"; the same flow against an **existing** incident adds the case there instead of creating a second incident; and the extracted text is readable via **View Text** after tapping into the new case. **`warrant_text` landing in Supabase is the one to confirm over MCP** — it is the write this whole path is built around.
 
@@ -1063,7 +1113,11 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 
 3. **The phone pass on the Incidents column is still outstanding.** The 2026-08-10 refinements (spacing, colours, one-line bond/affidavit, enlarged hit area) were specified as desktop work but were made as **base rules**, so they reach mobile too; the `@media (max-width: 768px)` block itself was not touched. Whether any of them need a mobile-specific override — the 14px right padding on the case number and the tightened line-heights are the likely candidates — is the open question.
 
-4. **`cases.release_status` is no longer shown anywhere in `ClientFile`** as of `cc66ba3` — the bond line is bond + affidavit only, per the spec for that pass. It is still set and edited normally and still displays in CaseView. Add it back to the incidents bond line if its absence turns out to matter in practice.
+4. ~~**`cases.release_status` is no longer shown anywhere in `ClientFile`** as of `cc66ba3`.~~ — **RESOLVED 2026-08-10**, commit `8d51a54`. Restored to the incidents case line via `bondReleaseText()`, composed the way `bondStatusText()` did it, with the affidavit appended.
+
+5. **Same-incident bracket: the client-list case list can interleave.** `toRowProps` sorts the flat case list purely on the numeric part of the case number with no incident component, so two cases from one incident are not guaranteed to be adjacent. Brackets there are drawn only for groups that land contiguously; a split group is silently skipped. **If a bracket you expect to see is missing in the client list, this is why** — it is not a rendering bug. The fix, if it ever matters, is a secondary sort key on `incident_id`, which would change the case display order and so was not done unilaterally.
+
+6. **The header case mini-list has no bracket.** It is flat like the client list, but `.headerCaseList` has `overflow: hidden` (which would clip a gutter-drawn bracket) and padding it instead would break the flush-left mobile alignment. Left for the phone pass, when that block is in scope anyway.
 
 3. **A numberless case is addressed by its `id`, so the new case's URL is a UUID.** Existing, documented behavior (2026-07-28) rather than anything new here, but it is now the *common* case rather than an edge case — every affidavit-first case starts numberless. Tapping the "Case # pending" row resolves through `CaseView`'s primary-key fallback.
 
