@@ -745,7 +745,9 @@
   border: none;
   color: #5b9fd4;
   font-size: 12px;
-  font-weight: 600;
+  /* Normal weight at both breakpoints (2026-08-10). Size, colour and family
+     unchanged — this is a secondary action and the bold read as a heading. */
+  font-weight: 400;
   padding: 0;
   margin-top: 11px;
   text-align: left;
@@ -1670,16 +1672,45 @@
   }
 
   /* Two columns don't fit a phone: stack to one, left-cell block on top and the
-     description beneath it. The column split becomes a horizontal rule between
-     the two stacked blocks, kept at 1px so it stays clearly subordinate to the
-     2px divider separating one incident from the next — which is what has to do
-     the work of separating incidents once everything is in a single column. */
+     description beneath it.
+
+     There is deliberately NO rule between those two blocks (the 1px one that
+     stood in for the desktop column split was removed 2026-08-10). They are the
+     same incident's own case info and its own description — splitting them made
+     one incident read as two things. With it gone, an incident is a single
+     uninterrupted block and the only horizontal rule on the screen is a real
+     incident boundary, which is most of what makes those boundaries scannable.
+
+     The boundary rule itself is then strengthened on three axes at once, because
+     no single one of them does the job without going too far:
+       • thickness 2px → 3px — present, still not a slab;
+       • colour #2C3A4F → #4a5a70 (already in the palette, used by the "edit
+         incident" control) — this is the biggest win. Against the #16212F row
+         the old colour sits at roughly 1.5:1 contrast, which is why it vanished
+         at a glance; the new one is roughly 2.4:1;
+       • breathing room — 14px above an incident's first line and 16px below its
+         last, so each incident occupies its own padded band. Whitespace is what
+         keeps the rule from having to shout.
+     Knobs, in the order worth turning: the colour, then the padding, then the
+     thickness. DESKTOP IS UNTOUCHED — its 2px #2C3A4F row divider and 1px
+     column split both stay exactly as they are. */
   .incidentRow {
     grid-template-columns: 1fr;
+    border-bottom: 3px solid #4a5a70;
   }
 
   .incidentLeftCell {
     border-right: none;
-    border-bottom: 1px solid #2C3A4F;
+    padding-top: 14px;
+  }
+
+  .incidentDescCell {
+    padding-bottom: 16px;
+  }
+
+  /* The delete-confirmation state replaces the whole row, so its divider has to
+     match or the boundary would visibly weaken while a confirm is open. */
+  .incidentGroup {
+    border-bottom: 3px solid #4a5a70;
   }
 }
