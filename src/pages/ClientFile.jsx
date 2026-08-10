@@ -84,10 +84,23 @@ function tapHandlers(handler) {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-// Bond figure for the incidents case line: "$1,500". An explicit 0 is a real
-// value ("$0"), so callers must test `!= null` rather than truthiness.
-function bondText(bondAmount) {
-  return `$${Number(bondAmount).toLocaleString()}`
+// Case-level release condition labels. release_status is independent of the
+// client-level custody_status (a case's condition vs. where the client is).
+const RELEASE_LABELS = { held_without_bond: 'Held without bond', pretrial_released: 'Pretrial Released', ror: "ROR'd" }
+
+// Bond + release condition for the incidents case line: "$1,500 Bond", "ROR'd",
+// or "$0 Bond · Held without bond". An explicit 0 bond is a real value, so the
+// test is `!= null`, not truthiness.
+//
+// release_status is unset on MOST cases — the client-level custody_status
+// already carries that information — so "bond, no release status" is the normal
+// case, not an edge case. Joining only the segments that exist is what keeps it
+// rendering as a clean "$1,500 Bond" with no dangling "·" and no empty segment.
+function bondReleaseText(bondAmount, releaseStatus) {
+  const segs = []
+  if (bondAmount != null) segs.push(`$${Number(bondAmount).toLocaleString()} Bond`)
+  if (releaseStatus && RELEASE_LABELS[releaseStatus]) segs.push(RELEASE_LABELS[releaseStatus])
+  return segs.join(' · ')
 }
 
 // ─── Next Event block ────────────────────────────────────────────────────────
@@ -866,36 +879,46 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
             {date && <div className={styles.incidentDateLine}>{date}</div>}
             {loc && <div className={styles.incidentLocLine}>{loc}</div>}
 
-            {cases.map(c => {
-              // One line under the case number: "$1,500 Bond | Affidavit".
-              // A 0 bond is a real value, hence != null rather than truthiness.
-              // Each half drops out independently — bond alone, "Affidavit"
-              // alone, or the whole line omitted when there is neither, so the
-              // separator can never be left stranded and no empty row renders.
-              const bond = c.bond_amount != null ? `${bondText(c.bond_amount)} Bond` : null
-              const affidavit = !!c.warrant_url
-              return (
-                <div key={c.id} className={styles.incidentCaseItem}>
-                  {/* Only the case number is the tap target, matching the client
-                      list. Cases are addressed by case_number in the URL; one
-                      without a number falls back to its id so it stays reachable
-                      (CaseView resolves both). */}
-                  <span
-                    className={`${styles.incidentCaseNum} ${c.case_number ? '' : styles.caseNumberPending}`}
-                    {...tapHandlers(() => onCaseTap(c.case_number || c.id))}
-                  >
-                    {c.case_number || 'Case # pending'}
-                  </span>
-                  {(bond || affidavit) && (
-                    <div className={styles.incidentCaseMeta}>
-                      {bond}
-                      {bond && affidavit && ' | '}
-                      {affidavit && <span className={styles.affidavitTag}>Affidavit</span>}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+            {/* Two or more cases from this incident get a light "[" bracket down
+                their left side. Every case in this cell belongs to this incident
+                by construction, so unlike the flat client-list version there is
+                no contiguity question here. */}
+            <div className={cases.length > 1 ? styles.incidentCaseGroup : undefined}>
+              {cases.map(c => {
+                // One line under the case number, e.g.
+                // "$0 Bond · Held without bond | Affidavit". Every segment drops
+                // out independently, so the line is a clean "$1,500 Bond |
+                // Affidavit" in the common no-release-status case, and is not
+                // rendered at all when nothing is set.
+                const bond = bondReleaseText(c.bond_amount, c.release_status)
+                const affidavit = !!c.warrant_url
+                // Both the number and the line below it go to the same case.
+                const open = () => onCaseTap(c.case_number || c.id)
+                return (
+                  <div key={c.id} className={styles.incidentCaseItem}>
+                    {/* Cases are addressed by case_number in the URL; one without
+                        a number falls back to its id so it stays reachable
+                        (CaseView resolves both). */}
+                    <span
+                      className={`${styles.incidentCaseNum} ${c.case_number ? '' : styles.caseNumberPending}`}
+                      {...tapHandlers(open)}
+                    >
+                      {c.case_number || 'Case # pending'}
+                    </span>
+                    {(bond || affidavit) && (
+                      /* Also navigates — a second, much larger target for the
+                         same case. Styling is deliberately unchanged: it should
+                         not read as a link, only behave as one. */
+                      <div className={styles.incidentCaseMeta} {...tapHandlers(open)}>
+                        {bond}
+                        {bond && affidavit && ' | '}
+                        {affidavit && <span className={styles.affidavitTag}>Affidavit</span>}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
 
             {!showAddCase && (
               <button className={styles.incidentAddCaseBtn} onClick={() => setShowAddCase(true)}>
@@ -909,12 +932,16 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
               className={styles.incidentDeleteBtn}
               onClick={() => setShowDeleteConfirm(true)}
             >×</button>
-            {desc
-              ? <div className={styles.incidentDescText}>{desc}</div>
-              : undescribed && <div className={styles.incidentAwaiting}>{AWAITING_DETAILS}</div>}
-            <button className={styles.incidentEditBtn} onClick={startEdit}>
-              edit incident
-            </button>
+            {/* "edit incident" flows inline after the last word of the
+                description rather than starting its own line beneath it. */}
+            <div className={styles.incidentDescText}>
+              {desc}
+              {!desc && undescribed && <span className={styles.incidentAwaiting}>{AWAITING_DETAILS}</span>}
+              {' '}
+              <button className={styles.incidentEditBtn} onClick={startEdit}>
+                edit incident
+              </button>
+            </div>
           </div>
         </>
       )}

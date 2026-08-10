@@ -255,7 +255,13 @@ export default function CaseView() {
     )
   }
 
-  const warrantStatus = caseData.warrant_url ? 'Affidavit on File' : 'No Affidavit'
+  // Matches the incidents case line in ClientFile: the word "Affidavit" in green
+  // when one is on file, and nothing at all when there isn't. The two older
+  // on-file/absent status strings this replaced are gone from the app entirely.
+  // Because this segment can now be absent, the bond segment's separator has to
+  // be conditional on BOTH sides, or the line would open with a stray "|".
+  const hasAffidavit = !!caseData.warrant_url
+  const bondText = bondStatusText(caseData.bond_amount, caseData.release_status)
 
   function handleSaved(newCaseNumber) {
     setEditing(false)
@@ -284,10 +290,9 @@ export default function CaseView() {
         <div className={styles.caseNumberLabel}>{caseData.case_number || '—'}</div>
         {caseData.charge && <div className={styles.charge}>{caseData.charge}</div>}
         <div className={styles.meta}>
-          {warrantStatus}
-          {bondStatusText(caseData.bond_amount, caseData.release_status) && (
-            <><span className={styles.pipe}>|</span>{bondStatusText(caseData.bond_amount, caseData.release_status)}</>
-          )}
+          {hasAffidavit && <span className={styles.affidavitTag}>Affidavit</span>}
+          {hasAffidavit && bondText && <span className={styles.pipe}>|</span>}
+          {bondText}
         </div>
       </div>
 

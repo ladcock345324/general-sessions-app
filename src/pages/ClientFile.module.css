@@ -654,21 +654,52 @@
   color: #6b7a99;
 }
 
+/* Navigates to the same case as the number above it — a second, much larger
+   target. Only the cursor signals that; the text is deliberately left muted
+   rather than restyled to look like a link. */
 .incidentCaseMeta {
   font-size: 11px;
   color: #6b7a99;
   line-height: 1.3;
   margin-top: 1px;
   overflow-wrap: anywhere;
+  cursor: pointer;
 }
 
 /* "Affidavit" in the app's existing light green — the same #5ecf90 the hours
    values and the Saved confirmation use, so no new colour enters the palette.
    It sits against the muted bond text on the same line, which is what makes
-   "affidavit on file" readable at a glance without spelling it out. */
+   "affidavit on file" readable at a glance without spelling it out. Weight is
+   explicitly normal: the colour alone carries it. */
 .affidavitTag {
   color: #5ecf90;
-  font-weight: 600;
+  font-weight: 400;
+}
+
+/* Same-incident bracket — a light "[" down the left of a group of 2+ cases.
+   Drawn with left/top/bottom borders and no right border, which is the bracket
+   shape, and positioned in the cell's own 16px left padding so not one case
+   number moves. The group carries the first item's top margin itself, so the
+   bracket hugs the first case number instead of starting 9px above it. */
+.incidentCaseGroup {
+  position: relative;
+  margin-top: 9px;
+}
+
+.incidentCaseGroup .incidentCaseItem:first-child {
+  margin-top: 0;
+}
+
+.incidentCaseGroup::before {
+  content: '';
+  position: absolute;
+  left: -9px;
+  top: 2px;
+  bottom: 2px;
+  width: 5px;
+  border: 1px solid #4a5a70;
+  border-right: none;
+  pointer-events: none;
 }
 
 .incidentAddCaseBtn {
@@ -705,6 +736,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #c8d0dc;
+  line-height: 1.4;
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -835,12 +867,18 @@
   color: #9faab8;
 }
 
+/* Now flows inline after the last word of the description rather than being a
+   block of its own. font-size is absolute (11px) rather than the old 0.7em:
+   nested inside the 13px description it would otherwise have shrunk to 9.1px,
+   where before it resolved against the 16px cell to ~11.2px. This keeps it
+   visually the size it already was. Colour, weight and family are unchanged. */
 .incidentEditBtn {
   background: none;
   border: none;
   color: #4a5a70;
-  font-size: 0.7em;
+  font-size: 11px;
   font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
   padding: 0;
   letter-spacing: 0.01em;

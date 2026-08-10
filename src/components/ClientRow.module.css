@@ -84,6 +84,27 @@
   padding: 1px 0;
 }
 
+/* Same-incident bracket — a light "[" down the left of a group of 2+ cases that
+   all came from one incident. Left/top/bottom borders and no right border is the
+   bracket shape. It is drawn in the empty gutter to the LEFT of the case table
+   (.info reserves 60px of right padding there), so no case number moves and the
+   table's carefully preserved geometry is untouched. */
+.caseGroup {
+  position: relative;
+}
+
+.caseGroup::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 2px;
+  bottom: 2px;
+  width: 4px;
+  border: 1px solid #4a5a70;
+  border-right: none;
+  pointer-events: none;
+}
+
 .caseNum {
   font-size: 10px;
   font-weight: 700;

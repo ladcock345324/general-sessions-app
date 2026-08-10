@@ -88,6 +88,14 @@
   padding: 0 16px;
 }
 
+/* "Affidavit" in the app's existing light green, matching the incidents case
+   line in ClientFile. Weight is explicitly normal so it reads as information
+   rather than emphasis. */
+.affidavitTag {
+  color: #5ecf90;
+  font-weight: 400;
+}
+
 /* Warrant buttons */
 .warrantRow {
   padding: 14px 16px 2px;
