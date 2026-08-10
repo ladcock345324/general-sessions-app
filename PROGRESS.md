@@ -73,7 +73,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `id` | uuid PK | auto |
 | `client_id` | uuid FK → clients | |
 | `incident_date` | text | e.g. "7/16/2026" — used as display label. **NULLABLE as of 2026-07-28** (migration applied outside the app); the Add Incident form and the inline edit both accept a blank date and write `null`. |
-| `incident_description` | text | e.g. "Watch Theft Incident". Rendered as **line 2** of the incident header, flush left beneath the date/location line (2026-08-09; previously it ran inline after the date on a single line) |
+| `incident_description` | text | e.g. "Watch Theft Incident". Rendered in the **right cell** of the two-column Incidents grid (2026-08-10). **Descriptions written from affidavit text must follow the house style in "Incident Description Writing Standard"** — affiant opening clause, short sentences, 3–6 key facts, 400-character hard limit |
 | `location` | text | nullable — free-text incident location (e.g. "TJ Maxx (Madison, TN) parking lot"). Added 2026-08-09 via MCP (applied outside the app). Set on the Add Incident form and editable afterwards via "edit incident". Displayed on line 1 of the incident header, after the date. Not indexed, so no Dexie version bump was needed. |
 
 > Incidents are collapsible on the client file page. Sorted most recent first.
@@ -149,6 +149,42 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ---
 
+## ✍️ Incident Description Writing Standard
+
+**House style for every `incidents.incident_description` written from affidavit text.** This is a **standing standard, not a note about one record** — it governs all future affidavit parsing, whether done by hand, over MCP from `warrant_text`, or by any tooling built later. Established 2026-08-10.
+
+| Rule | |
+|---|---|
+| **Opening** | Always begins **`The affiant believes that on [M/D/YYYY],`** — the exact string the Add Incident form's `affiantTemplate()` generates from the incident date. No leading zeros (it runs through `formatDateDisplay()`). |
+| **Sentences** | Short. |
+| **Content** | The **3–6 most important facts only.** Not a summary of the affidavit — a selection from it. |
+| **Register** | **Clarity over elegance.** Plain statement beats good prose. |
+| **Length** | **400 characters, hard limit.** |
+
+Why it matters beyond tidiness: the description is the widest cell in the Incidents row and the only free text on the client file, so an unbounded one is what makes that row unreadable. The 400-character ceiling is what keeps the two-column layout scannable at a glance, which is the entire point of that redesign.
+
+> **Related, and deliberately separate:** the Add Incident form's affiant auto-text (2026-08-09) writes the opening clause automatically and then gets out of the way — it never rewrites what the user has typed, and it is **add-form only**, so editing an existing incident's date never touches its description. That guard exists precisely so this standard is applied by a person reading the affidavit, not by a heuristic.
+
+---
+
+## ✅ Settled Decisions — do not re-open
+
+Decisions that were raised, considered, and closed. Recorded so they are not re-litigated from either side.
+
+### SD1. Inline "edit incident" field order stays description → location → date (2026-08-10) — **REJECTED, not deferred**
+
+A reorder to **date → location → description** was requested and then **withdrawn after review**. The current order stands, and the divergence from the Add Incident form (which *is* Date → Location → Description) is **intentional**.
+
+Three reasons, in order of weight:
+
+1. **The iOS date picker opens as a bottom sheet.** It covers the lower part of the viewport regardless of where the input sits in the DOM, so it obscures whatever is *below* the date field. With the date last there is nothing below it. Putting it first puts the picker on top of Location and Description — which is precisely the bug fixed on **2026-06-10** and recorded then as the "Incident edit calendar overlap fix". This is an observed on-device fix, not a layout preference.
+2. **`autoFocus` sits on the description textarea**, moved there as part of that same June 2026 fix. Reordering would leave it focusing the *last* field, or force it onto the date input — which on mobile means the form opens with the picker already covering the other two.
+3. **The commit-on-blur handler could close the form before any edit is made.** `onEditContainerBlur` fires `commitEdit()` when focus leaves the container with a `relatedTarget` outside it. If opening the native picker does that, the form commits and closes. *(Unverified on-device.)* Today that costs nothing, because the user reaches the date last, after making their other edits. With the date first it would fire before they had touched anything.
+
+> **The only acceptable version of this change would also drop `autoFocus` entirely**, so the form opens with nothing focused and neither the picker nor the keyboard covering a field. That is a behaviour change beyond field order and would need to be asked for explicitly.
+
+---
+
 ## Completed Features
 
 ### Custody Badge Top-Aligned + Prelim-Hearing Countdown REMOVED (2026-08-10, commit `9c03ca1`)
@@ -165,6 +201,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 2. inside that line box sits the font's own leading above the cap height (ascent − cap height).
 
 `margin-top: 9px` is the sum of the two. **It lands within a pixel at both breakpoints** — the mobile name is smaller (15px vs 17px) but sits in the same 28px circle row, so the larger centring offset almost exactly cancels the smaller leading. **That 9px is the knob:** raise it to push the badge down, lower it to pull it up.
+
+> ⚠️ **The single value works by coincidence, not by design — it depends on those two offsets cancelling.** The cancellation rests on exactly two numbers: the **mobile name font-size (15px)** and the **28px indigent-circle container** that both breakpoints share. **Change either one and 9px stops being correct at one breakpoint**, and the fix is to split it into two values — a base `margin-top` plus a `@media (max-width: 768px)` override — rather than hunting for a new single number that happens to fit both. Worth knowing before touching `.name`'s mobile size or the circle's dimensions.
 
 - **Mobile specifically:** the badge spans grid rows 1–2 there, and the row's `align-items: center` was centring it against *name block + mini-list*, which is what put it low on multi-case clients. `align-self: start` fixes exactly that.
 - **`.nameRowLeft` also gained `align-self: start`.** In the usual case it is the tallest item and already filled the row, so this is a no-op. It matters only on desktop for a client whose **case mini-list is taller than the name block** (roughly 5+ cases): without it the name would drift down while the badge stayed pinned to the top, and the two would no longer share a top edge — defeating the whole point.
@@ -194,7 +232,9 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 1. **"+ add a case" is normal weight** (`600` → `400`) at **both** breakpoints. Size, colour and family unchanged. It's a secondary action and the bold read as a heading.
 
-2. **The rule between an incident's two stacked mobile blocks is gone.** `.incidentLeftCell`'s `border-bottom` (the 1px stand-in for the desktop column split) is removed. Those blocks are the same incident's own case info and its own description — splitting them made one incident read as two things. **A useful second-order effect: with it gone, every horizontal rule left on the mobile screen is a real incident boundary**, which is most of what makes those boundaries scannable.
+2. **The rule between an incident's two stacked mobile blocks is gone.** `.incidentLeftCell`'s `border-bottom` (the 1px stand-in for the desktop column split) is removed. Those blocks are the same incident's own case info and its own description — splitting them made one incident read as two things.
+
+   > **Halving the number of rules mattered more than the weight of any one of them.** Before this, the mobile list alternated strong rule / weak rule / strong rule / weak rule, so the eye had no reliable signal telling it which lines were structural — the boundaries weren't only faint, they were *ambiguous*. Removing the internal rule means **every horizontal line left on the screen is a real incident boundary**. That is the larger half of the fix; the thickness, colour and padding changes in #3 are the smaller half, applied to a signal that is now unambiguous. **If the separators ever need re-tuning, do not reintroduce a rule inside an incident to "balance" them** — that is the thing that broke scannability in the first place.
 
 3. **The incident boundary rule strengthened on three axes at once**, because no single one does the job without overshooting:
 
@@ -444,7 +484,9 @@ Both are new, and both exist because an affidavit-first record is legitimately e
 
 > The `—` fallbacks in the **header mini-list** and in **CaseView**'s case-number label were deliberately left alone: neither is blank today, and the mini-list's case-number column is too narrow for a phrase.
 
-**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged — no new lint errors, and neither edited file appears in the output. ⚠️ **Not yet verified on production** — see Open Items.
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged — no new lint errors, and neither edited file appears in the output.
+
+> ✅ **CONFIRMED WORKING END TO END ON PRODUCTION (2026-08-10).** A real affidavit uploaded through this flow created the incident and its case and landed **4,444 characters of `warrant_text` in Supabase**, on a case whose `case_number` is `null`. That single result exercises the entire chain: the always-ask dialog, the storage upload, the incident and case INSERTs, the FK-safe enqueue order, and — the part this whole path exists for — the awaited extraction reaching the server through Dexie and the sync queue rather than a direct write. The null `case_number` also confirms the id-based storage path and the id-based addressing hold in practice, not just in principle.
 
 ### Mobile Layout Fix — Single-Client Header Case Mini-List (2026-08-09, commit `25fb88a`)
 
@@ -1086,7 +1128,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 ### Incident Editing
 - Date input constrained to `max-width: 160px`
 - Description uses `<textarea rows={3}>` — fully visible while editing
-- Edit inputs stacked vertically (`flex-direction: column`), in the order **description → location → date** (2026-08-09). The date stays last so the native mobile date picker can't cover the fields above it — the reason it was moved below the description on 2026-06-10. Do not reorder these to match the Add Incident form, which is Date → Location → Description
+- Edit inputs stacked vertically (`flex-direction: column`), in the order **description → location → date** (2026-08-09). The date stays last so the native mobile date picker can't cover the fields above it — the reason it was moved below the description on 2026-06-10. Do not reorder these to match the Add Incident form, which is Date → Location → Description. **A reorder was formally proposed and rejected on 2026-08-10 — see SD1 under Settled Decisions for the full reasoning before raising it again**
 - **The edit form spans the full grid row** as of 2026-08-10 (`grid-column: 1 / -1`), rather than sitting in one cell of the two-column layout: date/location live in the left cell and the description in the right, so editing one field while another still displayed its old value would read as two competing sources of truth
 - All three fields (description, location, date) commit together through one Dexie write + sync-queue UPDATE; each saves `null` when blank
 - ~~Hanging indent on two-line descriptions: `padding-left: 1.62em; text-indent: -1.62em`~~ — **REMOVED 2026-08-09.** It existed only because the description used to render inline after the date and its wrapped lines needed to clear it. The description is now its own block on line 2, so the indent would have offset it from line 1 rather than aligning it
@@ -1257,7 +1299,7 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 
 0. ~~**`"Affidavit on File"` / `"No Affidavit"` still exist at `CaseView.jsx:258`.**~~ — **RESOLVED 2026-08-10**, commit `8d51a54`, with explicit clearance to edit `CaseView.jsx` for that one change. Both strings are now gone from the app; the meta line shows a green "Affidavit" or nothing, and its separator is conditional on both sides so it cannot open with a stray `|`. Nothing else in CaseView was touched.
 
-1. **The affidavit-first flow has not been exercised on production.** It builds and lints clean, but nothing has been uploaded through it on the live site yet. Worth checking, in order: the "upload affidavit" control renders beside `+` in the Incidents header; picking a PDF opens the dialog with "New incident" preselected; confirming creates an incident showing **"Awaiting details"** with one case row showing **"Case # pending"** and "Affidavit on File"; the same flow against an **existing** incident adds the case there instead of creating a second incident; and the extracted text is readable via **View Text** after tapping into the new case. **`warrant_text` landing in Supabase is the one to confirm over MCP** — it is the write this whole path is built around.
+1. ~~**The affidavit-first flow has not been exercised on production.**~~ — ✅ **VERIFIED 2026-08-10.** A real upload created the incident and case and produced **4,444 characters of `warrant_text` in Supabase** on a `null`-`case_number` case. See the confirmation note on the affidavit-first entry under Completed Features.
 
 2. ~~**Incidents two-column layout redesign — deliberately deferred to its own pass.**~~ — **DONE 2026-08-10**, same day, commit `9e5b33c`. See the "Incidents Two-Column Layout" entry under Completed Features. **Also unverified on production**, and worth checking together with item 1 in the same pass:
    - **Desktop proportions.** ~~The left cell is one sixth (~188px at 1126px).~~ **Widened 2026-08-10 to 22.2% (`minmax(246px, 2fr)` / `minmax(0, 7fr)`, ~250px at 1126px)** to fit the charge abbrev. If it reads wrong, the two knobs are the `7fr` ratio and the `246px` floor in `.incidentRow` — both in [`ClientFile.module.css`](src/pages/ClientFile.module.css); move them together so the floor keeps binding only below the app's normal width.
@@ -1266,7 +1308,22 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
    - **A client with many incidents is now a much longer page** — nothing collapses anymore. Worth a look on a phone with a multi-incident client.
    - **The permanent "edit incident" button** appears on every row now rather than only on an expanded one. Check it doesn't read as clutter at a glance.
 
-3. **The phone pass on the Incidents column is still outstanding.** The 2026-08-10 refinements (spacing, colours, one-line bond/affidavit, enlarged hit area) were specified as desktop work but were made as **base rules**, so they reach mobile too; the `@media (max-width: 768px)` block itself was not touched. Whether any of them need a mobile-specific override — the 14px right padding on the case number and the tightened line-heights are the likely candidates — is the open question.
+3. **The phone pass on the Incidents column is still outstanding.** Several 2026-08-10 changes were **specified as desktop work but implemented as base rules**, so they reach mobile as a side effect. The `@media (max-width: 768px)` block itself was edited only twice all session, both times deliberately and both recorded in their own entries (the `.headerCaseList > div` → `descendant` selector fix, and the separator rework). **The full list of desktop-intent changes that landed at both breakpoints:**
+
+   | Change | Rule | Mobile impact to check |
+   |---|---|---|
+   | Date + location recoloured `#c8d0dc`, `line-height: 1.25` | `.incidentDateLine`, `.incidentLocLine` | Cosmetic; almost certainly fine |
+   | Bond/affidavit on one line, release status restored | JSX + `.incidentCaseMeta` | Longer string in a narrower column — most likely to wrap awkwardly |
+   | `.affidavitTag` green, normal weight | `.affidavitTag` | Cosmetic |
+   | Enlarged case-number hit area | `.incidentCaseNum` `padding: 7px 14px 7px 0` + `margin: -7px 0` | **Likeliest to need an override** — 14px of right padding is a bigger share of a narrow column |
+   | Bond line made clickable | `.incidentCaseMeta` `cursor: pointer` + tap handlers | Behaviour improves on touch; no layout effect |
+   | `charge_abbrev` on the case line | `.incidentCaseAbbrev` | Adds width to a line that is already the widest; wrap risk |
+   | "edit incident" inline, `font-size: 11px` | `.incidentEditBtn` | Was `0.7em`; the absolute value now applies at both breakpoints |
+   | Description `line-height: 1.4` | `.incidentDescText` | Cosmetic |
+   | "+ add a case" unbolded | `.incidentAddCaseBtn` | Explicitly requested at both breakpoints — not a side effect |
+   | Custody badge `align-self: start` + `margin-top: 9px` | `.badgeStack` | Explicitly requested at both breakpoints — not a side effect |
+
+   The **column widening is NOT on this list**: `grid-template-columns` is overridden to a single column inside the mobile block, so that base change cannot reach it.
 
 4. ~~**`cases.release_status` is no longer shown anywhere in `ClientFile`** as of `cc66ba3`.~~ — **RESOLVED 2026-08-10**, commit `8d51a54`. Restored to the incidents case line via `bondReleaseText()`, composed the way `bondStatusText()` did it, with the affidavit appended.
 
