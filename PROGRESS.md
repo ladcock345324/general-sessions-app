@@ -151,6 +151,44 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Affidavit-First Incident/Case Creation (2026-08-10, commit `179a8a9`)
+
+**Inverts the Incidents flow.** Previously an incident had to exist before a case, and a case before an affidavit. The affidavit is the source document, so it now comes first: uploading a PDF **creates** the incident and its case, with every descriptive field left `null` to be populated separately by reading the extracted `warrant_text` over MCP.
+
+**No DB or schema change, and none was needed** — `incidents.incident_date`, `incidents.location`, `incidents.incident_description` and `cases.case_number` were all already nullable (2026-07-28 and 2026-08-09). **No Dexie version bump**: nothing new is stored, and the one indexed column involved (`cases.case_number`) is written `null`, which IndexedDB simply omits from the index rather than rejecting — the numberless case is addressed by `id`, exactly as the 2026-07-28 entry already established. **`CaseView.jsx` was not touched at all**; its per-case "Replace Affidavit" flow is byte-for-byte unchanged.
+
+Two files changed: [`ClientFile.jsx`](src/pages/ClientFile.jsx) and [`ClientFile.module.css`](src/pages/ClientFile.module.css).
+
+#### The flow
+
+A **"upload affidavit"** text control sits beside the Incidents section's `+` button — the same two-control header pattern the Hours section already uses ("clear checks" + `+`), so `+` stays the primary affordance rather than competing with a second square icon. It is a `<label>` wrapping a hidden `<input type="file" accept="application/pdf">`, the convention all three existing upload paths use.
+
+Picking a file opens a **modal dialog that always asks which incident the affidavit belongs to** — "New incident" (the default, re-selected on every pick) or any existing incident of this client. **Nothing is ever inferred from the file.** Existing incidents are labeled `date — location` through the same filter-then-join convention the incident header uses, falling back to the description (truncated at 60 chars), then to the same `Awaiting details` marker — so an incident created by a *previous* affidavit upload is still selectable and reads consistently.
+
+> **The dialog is a centered modal rather than an inline panel for a structural reason:** the trigger lives inside the section-header flex row, so a panel rendered from the same component would become a child of that row. `z-index: 200` matches the app's other overlays (TextViewerDrawer / DailyHoursDrawer) and clears the sticky name bar at `z-index: 10`.
+
+#### Write order, and why it is in that order
+
+1. **Storage upload first, bailing on failure before any row is written.** A failed upload must not leave a blank incident and an affidavit-less case behind — precisely the confusing state this flow exists to prevent. Same `warrants` bucket and `warrants/` prefix as `CaseView`, reused rather than reinvented.
+   - **The path is `warrants/{case id}.pdf`.** That is the *identical* fallback `CaseView`'s own upload applies to a numberless case (`case_number || id`), so a later "Replace Affidavit" from the case view overwrites this same object instead of orphaning it.
+2. **Incident row** (only when "New incident"): `incident_date`, `location`, `incident_description` all `null`. Dexie → `addToSyncQueue`.
+3. **Case row**: `case_number`, `charge`, `charge_abbrev`, `classification`, `bond_amount`, `release_status` all `null`; `warrant_url` set to the uploaded path. Dexie → `addToSyncQueue`.
+   - **The incident is enqueued BEFORE the case, deliberately.** `processSyncQueue` drains oldest-first, so this is what stops a `cases` row being pushed to Supabase ahead of the `incidents` row its `incident_id` FK points at. (`created_at` is millisecond-precision, so a same-millisecond tie is broken by the stable sort falling back to the `++id` retrieval order — the same guarantee the existing multi-row delete path already relies on.)
+4. **Text extraction — the 2026-07-28 rule verbatim.** `extractPdfText` → **Dexie then `addToSyncQueue`, never a direct Supabase call**, `await`ed before the handler returns, and a `null` result **skips** the write rather than overwriting. The case row is written at step 3 *before* extraction runs, so the case survives even when nothing extracts (a scanned affidavit, or the unpkg worker unreachable) — the same ordering the courtroom-documents path uses.
+
+> **This path requires network, by design.** The Storage upload is direct (as all three existing upload paths are), so an offline attempt fails at step 1 and creates nothing at all — no half-made incident. Only the *record* writes are offline-first.
+
+#### Blank-record markers
+
+Both are new, and both exist because an affidavit-first record is legitimately empty until it's described:
+
+- **An incident with date, location and description all `null`** renders an explicit italic muted **"Awaiting details"** (`.incidentAwaiting`) instead of the bare `—` it previously showed.
+- **A case with no `case_number`** renders an italic muted **"Case # pending"** (`.caseNumberPending`) in the incident's case rows. Previously the number `<span>` was conditional, so a numberless case rendered **nothing at all** there — no identifying line on the row.
+
+> The `—` fallbacks in the **header mini-list** and in **CaseView**'s case-number label were deliberately left alone: neither is blank today, and the mini-list's case-number column is too narrow for a phrase.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged — no new lint errors, and neither edited file appears in the output. ⚠️ **Not yet verified on production** — see Open Items.
+
 ### Mobile Layout Fix — Single-Client Header Case Mini-List (2026-08-09, commit `25fb88a`)
 
 **The last change of the 2026-08-09 session, and the current shipped state of the header mini-list on phones.** Everything below is inside the existing `@media (max-width: 768px)` block in `ClientFile.module.css`. **No desktop rule was touched, no other file changed, no DB or schema change.** Desktop keeps the centered 3-column grid described in the entry immediately below — this splits the two breakpoints apart rather than replacing that work.
@@ -726,7 +764,9 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - **Clear button** in the edit form — deletes the `next_events` row for this client, returns block to empty state
 - **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table. **Renders already expanded on load when the note is non-empty** (2026-08-09); an empty/absent note still starts collapsed. Click-to-toggle itself is unchanged
 - **Incidents** section:
+  - Section header carries two controls (2026-08-10): an **"upload affidavit"** text control (affidavit-first creation — see the 2026-08-10 entry) and the existing `+` button, in that order
   - Collapsible accordion — each incident header is **two lines** (2026-08-09): line 1 is `{incident_date} — {location}` in blue `#6b9fd4` (the em dash and either half drop out cleanly when blank), line 2 is the description as its own block, flush left under line 1
+  - An incident with **date, location and description all null** shows **"Awaiting details"**; a case with **no case number** shows **"Case # pending"** in its case row (both 2026-08-10) — these are the states an affidavit-first record is created in
   - Add Incident form fields, in order: **Date, Location, Description** — picking the date auto-fills Description with "The affiant believes that on M/D/YYYY," unless the user has already typed past it (2026-08-09)
   - Inline "edit incident" edits **all three** fields; the date input stays last in that form so the mobile date picker can't cover the others
   - **Sorted oldest-first** (earliest `incident_date` at top, latest at bottom) as of 2026-07-28, via `compareIncidentsByDate()`; missing/unparseable dates sort to the end. Case numbers within each incident sorted ascending
@@ -927,6 +967,16 @@ src/
 
 Affidavit / criminal-history / courtroom-document PDFs are not cached locally, so the scanned files aren't viewable offline — only their extracted text (`warrant_text`, etc.) is, via the text drawer reading from Dexie. A future option is to cache PDF bytes as Blobs in a new Dexie table (cache-on-upload + cache-on-view as the light version, eager full-download as the heavy version) and render via `pdfjs-dist` canvas in a drawer. Deliberately deferred — extracted text covers the practical need.
 
+### Open Items — from 2026-08-10
+
+1. **The affidavit-first flow has not been exercised on production.** It builds and lints clean, but nothing has been uploaded through it on the live site yet. Worth checking, in order: the "upload affidavit" control renders beside `+` in the Incidents header; picking a PDF opens the dialog with "New incident" preselected; confirming creates an incident showing **"Awaiting details"** with one case row showing **"Case # pending"** and "Affidavit on File"; the same flow against an **existing** incident adds the case there instead of creating a second incident; and the extracted text is readable via **View Text** after tapping into the new case. **`warrant_text` landing in Supabase is the one to confirm over MCP** — it is the write this whole path is built around.
+
+2. **Incidents two-column layout redesign — deliberately deferred to its own pass.** Explicitly out of scope for the 2026-08-10 work, to be done once the affidavit-first flow is verified.
+
+3. **A numberless case is addressed by its `id`, so the new case's URL is a UUID.** Existing, documented behavior (2026-07-28) rather than anything new here, but it is now the *common* case rather than an edge case — every affidavit-first case starts numberless. Tapping the "Case # pending" row resolves through `CaseView`'s primary-key fallback.
+
+4. **Re-uploading an affidavit to a case that has since been given a number leaves the old object orphaned in Storage.** Pre-existing app-wide behavior (the path is derived from `case_number || id` at upload time and never rewritten), not introduced by this flow, and not worth fixing at current volume — noted so it isn't rediscovered as a bug.
+
 ### Open Items — from 2026-08-09
 
 1. ~~**`incidents.location` can only be set when the incident is created.**~~ — **RESOLVED 2026-08-09**, same day. Location is now a third field in the inline "edit incident" flow, written through the same Dexie + sync-queue UPDATE as the description and date, and settable whether or not it was filled in at creation.
@@ -935,7 +985,11 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 
 3. ~~**The single-client header mini-list squeezes the name column on a narrow phone.** It shows the full `charge` inside a middle grid track capped at 50% of the row… lower the cap if it reads badly.~~ — **RESOLVED 2026-08-09**, same day, and **not** by tuning the cap. The centered middle track is gone on mobile entirely: the row drops to two columns and the mini-list renders left-aligned in the left text stack under "Total Bond", so it no longer competes with the name block for horizontal room. Desktop keeps the centered grid. See the "Mobile Layout Fix" entry under Completed Features.
 
-4. **The mobile mini-list layout has not been seen on a real device.** It builds and lints clean and the CSS reasoning is recorded in full, but the intended check — production, narrow mobile width, a multi-case client such as Causey or Wilborn — **was not completed before the session ended**. Specifically worth eyeballing: that the mini-list really does sit flush left under "Total Bond" (not indented or centered), that the custody badge has not moved vertically now that it spans two grid rows, and that the tightened line spacing reads as intentional rather than cramped. **This is the first thing to look at next session.**
+4. **The mobile mini-list layout has not been seen on a real device.** It builds and lints clean and the CSS reasoning is recorded in full, but the intended check — production, narrow mobile width, a multi-case client such as Causey or Wilborn — **was not completed before the session ended**. Specifically worth eyeballing: that the mini-list really does sit flush left under "Total Bond" (not indented or centered), that the custody badge has not moved vertically now that it spans two grid rows, and that the tightened line spacing reads as intentional rather than cramped.
+
+   > **Code audit 2026-08-10 (still not an on-device check).** The rules were re-read against each other and the flush-left half holds up structurally: the mobile `.headerCaseList` overrides the base `justify-self: center` with `justify-self: start` in `grid-column: 1`, the same column `.nameRowLeft` stretches across, and the borrowed `.caseNum` is `text-align: left` with `width: max-content` on mobile (not the desktop fixed 56px), so the case-number *text* starts on the same x as the name/OCA/bond lines rather than inside a padded box. Specificity holds independent of bundle order (`.headerCaseList > div` at 0,1,1 beats `.caseTableRow` at 0,1,0).
+   >
+   > **One prediction to check rather than assume: the badge will sit lower than it used to.** `grid-row: 1 / span 2` plus the row's `align-items: center` centers it against name-block **+** mini-list, where before the mini-list shared row 1. Relative to the row that is unchanged and correct; relative to the **name** the badge drops by roughly half the mini-list's height on any multi-case client (a client with no cases is pixel-identical to before). That is the designed consequence of the two-row layout, not a regression — but it is a judgment call about whether it looks right, and only the device can settle it.
 
 ### Open Items — carried forward from 2026-07-28
 
