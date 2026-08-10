@@ -151,6 +151,35 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Charge Abbrev on the Incidents Case Line + Wider First Column (2026-08-10, commit `976dbaa`)
+
+**No DB or schema change; `CaseView.jsx`, the header mini-list and its brackets, and the `@media (max-width: 768px)` block are all untouched; no collapse/expand.** Two files: `ClientFile.jsx` + `.module.css`.
+
+#### 1. `charge_abbrev` after the case number
+
+Renders immediately after the case number, one space between, e.g. `GS1121243 THEFT`. **`charge_abbrev` only — never the full `charge`.**
+
+- **Styling matches the bond line beneath it** (11px, `#6b7a99`, inherited family) while the number keeps its own blue link styling.
+- **It sits INSIDE the case-number `<span>`**, which is what makes it part of the same click target and the same enlarged hit area — clicking either half navigates to that case.
+- **The nested class resets `font-weight`, `letter-spacing` and `font-style`.** Those resets are load-bearing, not tidiness: without them the abbrev inherits the number's `700` weight and `0.02em` tracking, and on an unnumbered case it would also inherit the `.caseNumberPending` italic.
+- **`charge_abbrev` is frequently null** — every affidavit-first case starts without one. **The separating space lives inside the conditional**, so a null abbrev renders the case number alone with **no trailing space and no placeholder text**.
+
+#### 2. First column widened (desktop only)
+
+| | Before | After |
+|---|---|---|
+| `grid-template-columns` | `minmax(180px, 1fr) minmax(0, 5fr)` | **`minmax(246px, 2fr) minmax(0, 7fr)`** |
+| Split | 16.7% / 83.3% | **22.2% / 77.8%** |
+| At 1126px | ~188px / ~938px | **~250px / ~876px** |
+
+**The +62px is roughly one rendered case number** — "GS1121243" is ~66px at 12px/700 with 0.02em tracking — which is the room the abbreviation needed.
+
+**The floor moved with it, 180px → 246px**, so it still can't squeeze the cell under its own content: `GS1121243 THEFT` is ~109px at these sizes, plus the number span's 14px hit-area padding and 32px of cell padding, ≈155px. **The floor only starts binding below about a 1107px viewport**, so the fr ratio is what governs at the app's normal desktop width — the same relationship the previous pair had.
+
+> **Mobile cannot be reached by this change**: the ≤768px block already overrides `grid-template-columns` to a single column, so the base rule has no effect there. No mobile rule was edited.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged. ⚠️ **Not yet verified on production.**
+
 ### Same-Incident Bracket Retargeted to the Header Mini-List + Restyled (2026-08-10, commit `bb1ef7b`)
 
 Corrects the target of the bracket shipped in `8d51a54` and restyles it. **No DB or schema change; `CaseView.jsx` untouched; no collapse/expand.** New file `src/caseGrouping.js`; changes to `ClientFile.jsx` + `.module.css` and `ClientRow.jsx` + `.module.css`.
@@ -936,7 +965,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table. **Renders already expanded on load when the note is non-empty** (2026-08-09); an empty/absent note still starts collapsed. Click-to-toggle itself is unchanged
 - **Incidents** section — **two-column grid, one row per incident, nothing collapsible** (2026-08-10; replaced the click-to-expand accordion):
   - Section header carries two controls (2026-08-10): an **"upload affidavit"** text control (affidavit-first creation — see the 2026-08-10 entry) and the existing `+` button, in that order. The `+` still creates a bare incident with no affidavit — needed for things like probation violations that have no incident date
-  - **Left cell** (~1/6 of the section, `minmax(180px, 1fr)` of a 1fr/5fr split): incident date and location (both `#c8d0dc`, sizes 13px/12px, tight against each other), then each case as a case number with **one** line beneath it reading `$0 Bond · Held without bond | Affidavit` — every segment dropping out independently, the line omitted entirely when nothing is set — then that incident's own "+ add a case". "Affidavit" is green `#5ecf90` at normal weight. **Both the case number and the bond line navigate to that case**; the number has an enlarged hit area (padding cancelled by negative margins, so its visual size is unchanged). Unnumbered cases fall back to the case `id` in the URL
+  - **Left cell** (**22.2%** of the section, `minmax(246px, 2fr)` of a 2fr/7fr split — widened 2026-08-10 from 16.7% to fit the charge abbrev): incident date and location (both `#c8d0dc`, sizes 13px/12px, tight against each other), then each case as `{case number} {charge_abbrev}` — the abbrev in the muted bond styling, omitted entirely with no trailing space when null, and inside the number's span so it shares the click target — with **one** line beneath it reading `$0 Bond · Held without bond | Affidavit` — every segment dropping out independently, the line omitted entirely when nothing is set — then that incident's own "+ add a case". "Affidavit" is green `#5ecf90` at normal weight. **Both the case number and the bond line navigate to that case**; the number has an enlarged hit area (padding cancelled by negative margins, so its visual size is unchanged). Unnumbered cases fall back to the case `id` in the URL
   - **No same-incident bracket here** — added 2026-08-10 and removed the same day: these case numbers are already grouped by incident by construction, so it added nothing. The bracket lives on the two *flat* lists (client list and header mini-list)
   - **Right cell** (~5/6): the incident description at `line-height: 1.4`, with the delete `×` at its top-right and **"edit incident" flowing inline after the last word** of the description
   - **Gridlines:** 2px `#2C3A4F` row dividers, 1px `#2C3A4F` column split
@@ -1147,7 +1176,7 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 1. **The affidavit-first flow has not been exercised on production.** It builds and lints clean, but nothing has been uploaded through it on the live site yet. Worth checking, in order: the "upload affidavit" control renders beside `+` in the Incidents header; picking a PDF opens the dialog with "New incident" preselected; confirming creates an incident showing **"Awaiting details"** with one case row showing **"Case # pending"** and "Affidavit on File"; the same flow against an **existing** incident adds the case there instead of creating a second incident; and the extracted text is readable via **View Text** after tapping into the new case. **`warrant_text` landing in Supabase is the one to confirm over MCP** — it is the write this whole path is built around.
 
 2. ~~**Incidents two-column layout redesign — deliberately deferred to its own pass.**~~ — **DONE 2026-08-10**, same day, commit `9e5b33c`. See the "Incidents Two-Column Layout" entry under Completed Features. **Also unverified on production**, and worth checking together with item 1 in the same pass:
-   - **Desktop proportions.** The left cell is one sixth (~188px at 1126px). If it reads wrong, the two knobs are the `5fr` ratio and the `180px` floor in `.incidentRow` — both in [`ClientFile.module.css`](src/pages/ClientFile.module.css).
+   - **Desktop proportions.** ~~The left cell is one sixth (~188px at 1126px).~~ **Widened 2026-08-10 to 22.2% (`minmax(246px, 2fr)` / `minmax(0, 7fr)`, ~250px at 1126px)** to fit the charge abbrev. If it reads wrong, the two knobs are the `7fr` ratio and the `246px` floor in `.incidentRow` — both in [`ClientFile.module.css`](src/pages/ClientFile.module.css); move them together so the floor keeps binding only below the app's normal width.
    - **Gridline weight.** 2px rows / 1px column split, both `#2C3A4F`. The brief was "actually delineate the rows at a glance"; if they now read as too heavy, drop the row divider to 1px before changing the colour.
    - **Mobile stacking** at ≤768px, and whether the 2px divider is enough to separate incidents once the columns are stacked.
    - **A client with many incidents is now a much longer page** — nothing collapses anymore. Worth a look on a phone with a multi-incident client.
