@@ -84,18 +84,10 @@ function tapHandlers(handler) {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-// Case-level release condition labels. release_status is independent of the
-// client-level custody_status (a case's condition vs. where the client is).
-const RELEASE_LABELS = { held_without_bond: 'Held without bond', pretrial_released: 'Pretrial Released', ror: "ROR'd" }
-
-// Per-case bond/status line — each case decides independently, no dependence on
-// siblings. bond set (incl. 0) → "$X bond"; release_status set → its label; both
-// → "$X bond · Label"; both null → "" (caller renders nothing).
-function bondStatusText(bondAmount, releaseStatus) {
-  const segs = []
-  if (bondAmount != null) segs.push(`$${Number(bondAmount).toLocaleString()} bond`)
-  if (releaseStatus && RELEASE_LABELS[releaseStatus]) segs.push(RELEASE_LABELS[releaseStatus])
-  return segs.join(' · ')
+// Bond figure for the incidents case line: "$1,500". An explicit 0 is a real
+// value ("$0"), so callers must test `!= null` rather than truthiness.
+function bondText(bondAmount) {
+  return `$${Number(bondAmount).toLocaleString()}`
 }
 
 // ─── Next Event block ────────────────────────────────────────────────────────
@@ -544,16 +536,35 @@ const AWAITING_DETAILS = 'Awaiting details'
 
 const NEW_INCIDENT = '__new__'
 
-// Label for an existing incident in the target picker: "date — location" via the
-// same filter-then-join the incident header itself uses, falling back to the
-// description, then to the same Awaiting-details marker — so an incident created
-// by a previous affidavit upload is still selectable and reads consistently.
+const BLANK_INCIDENT = '[blank incident]'
+
+// Target-picker label, in strict priority order: location, else the incident
+// date, else a blank marker. Location leads because it is what actually
+// distinguishes one incident from another when reading an affidavit.
 function incidentPickerLabel(incident) {
-  const meta = [formatDateDisplay(incident.incident_date), incident.location].filter(Boolean).join(' — ')
-  if (meta) return meta
-  const desc = incident.incident_description?.trim()
-  if (desc) return desc.length > 60 ? `${desc.slice(0, 60)}…` : desc
-  return AWAITING_DETAILS
+  const loc = incident.location?.trim()
+  if (loc) return loc.length > 60 ? `${loc.slice(0, 60)}…` : loc
+  const date = formatDateDisplay(incident.incident_date)
+  if (date) return date
+  return BLANK_INCIDENT
+}
+
+// Several incidents can legitimately land on the same label — most obviously a
+// client with more than one location-less, date-less incident, which would give
+// a list of identical "[blank incident]" entries. Every option is keyed and
+// valued by id so all of them stay selectable regardless, but identical text
+// makes them impossible to tell apart, so any repeated label gets a 1-based
+// counter. A label that occurs once is left exactly as-is.
+function disambiguateLabels(labels) {
+  const totals = new Map()
+  for (const l of labels) totals.set(l, (totals.get(l) ?? 0) + 1)
+  const seen = new Map()
+  return labels.map(l => {
+    if (totals.get(l) === 1) return l
+    const n = (seen.get(l) ?? 0) + 1
+    seen.set(l, n)
+    return `${l} (${n})`
+  })
 }
 
 // The affidavit is the source document, so this path runs in the opposite order
@@ -682,8 +693,8 @@ function AffidavitFirstUpload({ clientId, incidents }) {
                 disabled={uploading}
               >
                 <option value={NEW_INCIDENT}>New incident</option>
-                {incidents.map(inc => (
-                  <option key={inc.id} value={inc.id}>{incidentPickerLabel(inc)}</option>
+                {disambiguateLabels(incidents.map(incidentPickerLabel)).map((label, i) => (
+                  <option key={incidents[i].id} value={incidents[i].id}>{label}</option>
                 ))}
               </select>
             </div>
@@ -855,26 +866,36 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
             {date && <div className={styles.incidentDateLine}>{date}</div>}
             {loc && <div className={styles.incidentLocLine}>{loc}</div>}
 
-            {cases.map(c => (
-              <div key={c.id} className={styles.incidentCaseItem}>
-                {/* Only the case number is the tap target, matching the client
-                    list. Cases are addressed by case_number in the URL; one
-                    without a number falls back to its id so it stays reachable
-                    (CaseView resolves both). */}
-                <span
-                  className={`${styles.incidentCaseNum} ${c.case_number ? '' : styles.caseNumberPending}`}
-                  {...tapHandlers(() => onCaseTap(c.case_number || c.id))}
-                >
-                  {c.case_number || 'Case # pending'}
-                </span>
-                {bondStatusText(c.bond_amount, c.release_status) && (
-                  <div className={styles.incidentCaseMeta}>{bondStatusText(c.bond_amount, c.release_status)}</div>
-                )}
-                <div className={styles.incidentCaseMeta}>
-                  {c.warrant_url ? 'Affidavit on File' : 'No Affidavit'}
+            {cases.map(c => {
+              // One line under the case number: "$1,500 Bond | Affidavit".
+              // A 0 bond is a real value, hence != null rather than truthiness.
+              // Each half drops out independently — bond alone, "Affidavit"
+              // alone, or the whole line omitted when there is neither, so the
+              // separator can never be left stranded and no empty row renders.
+              const bond = c.bond_amount != null ? `${bondText(c.bond_amount)} Bond` : null
+              const affidavit = !!c.warrant_url
+              return (
+                <div key={c.id} className={styles.incidentCaseItem}>
+                  {/* Only the case number is the tap target, matching the client
+                      list. Cases are addressed by case_number in the URL; one
+                      without a number falls back to its id so it stays reachable
+                      (CaseView resolves both). */}
+                  <span
+                    className={`${styles.incidentCaseNum} ${c.case_number ? '' : styles.caseNumberPending}`}
+                    {...tapHandlers(() => onCaseTap(c.case_number || c.id))}
+                  >
+                    {c.case_number || 'Case # pending'}
+                  </span>
+                  {(bond || affidavit) && (
+                    <div className={styles.incidentCaseMeta}>
+                      {bond}
+                      {bond && affidavit && ' | '}
+                      {affidavit && <span className={styles.affidavitTag}>Affidavit</span>}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
             {!showAddCase && (
               <button className={styles.incidentAddCaseBtn} onClick={() => setShowAddCase(true)}>

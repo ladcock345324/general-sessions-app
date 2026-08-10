@@ -562,10 +562,10 @@
    at all now: every incident's cases are always visible.
 
    Left cell is 1fr of a 1fr/5fr split — one sixth of the section — with a 180px
-   floor so it can't be squeezed below its own content ("Affidavit on File" is
-   ~92px at 12px, plus 32px of cell padding). At the app's 1126px desktop width
-   the split lands at roughly 188px / 938px; the floor only starts binding below
-   about a 1080px viewport.
+   floor so it can't be squeezed below its own content (the widest line it holds
+   is now "$1,500 Bond | Affidavit", ~110px at 11px, plus 32px of cell padding).
+   At the app's 1126px desktop width the split lands at roughly 188px / 938px;
+   the floor only starts binding below about a 1080px viewport.
 
    Dividers are deliberately heavier than the 1px rgba(255,255,255,0.05) hairline
    this replaced, which did not read as a grid: rows get 2px and the column split
@@ -587,43 +587,60 @@
   min-width: 0;
 }
 
-/* Date keeps the blue accent the combined "date — location" line used; location
-   drops to the app's muted text now that it is on its own line. */
+/* Date and location both take the description's text colour (#c8d0dc) as of
+   2026-08-10 — the blue accent the date carried from the old combined
+   "date — location" line is gone. Font sizes are unchanged (13px / 12px).
+   line-height 1.25 on both, and no margin between them, pulls the two lines
+   close together; they read as one two-line block rather than two entries. */
 .incidentDateLine {
   font-size: 13px;
   font-weight: 600;
-  color: #6b9fd4;
+  color: #c8d0dc;
+  line-height: 1.25;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
 .incidentLocLine {
   font-size: 12px;
-  color: #9faab8;
+  color: #c8d0dc;
+  line-height: 1.25;
   min-width: 0;
   overflow-wrap: anywhere;
-  margin-top: 1px;
 }
 
-/* One block per case: the number, then bond and affidavit status on their own
-   lines. Stacked rather than inline because ~156px of usable cell width cannot
-   hold "$2,500 bond | Affidavit on File" without truncating one of them. */
+/* One block per case: the number, then a single line reading
+   "$1,500 Bond | Affidavit" (either half drops out on its own). */
 .incidentCaseItem {
   margin-top: 9px;
   min-width: 0;
+  /* Also holds the inline-block case number's line box down to its own height,
+     so the strut can't reintroduce the gap the negative margins remove. The 9px
+     above is what the enlarged hit area grows up into, so it never reaches the
+     location text. */
+  line-height: 1.25;
 }
 
 /* The only tap target in the cell, matching the client list's deliberately
-   tightened case-number hit area. */
+   tightened case-number hit area.
+
+   The padding exists purely to grow the click target — the box extends 7px up,
+   7px down and 14px to the right of the text, and the negative vertical margin
+   cancels that extra height so the text sits exactly where it did and the meta
+   line below stays tight against it. There is deliberately NO negative left
+   margin: it would outdent the number from the date and location above it. */
 .incidentCaseNum {
   display: inline-block;
   font-size: 12px;
   font-weight: 700;
   color: #5b9fd4;
   letter-spacing: 0.02em;
+  line-height: 1.25;
   cursor: pointer;
   user-select: text;
   overflow-wrap: anywhere;
+  padding: 7px 14px 7px 0;
+  margin: -7px 0;
 }
 
 .incidentCaseNum:active {
@@ -640,8 +657,18 @@
 .incidentCaseMeta {
   font-size: 11px;
   color: #6b7a99;
-  line-height: 1.45;
+  line-height: 1.3;
+  margin-top: 1px;
   overflow-wrap: anywhere;
+}
+
+/* "Affidavit" in the app's existing light green — the same #5ecf90 the hours
+   values and the Saved confirmation use, so no new colour enters the palette.
+   It sits against the muted bond text on the same line, which is what makes
+   "affidavit on file" readable at a glance without spelling it out. */
+.affidavitTag {
+  color: #5ecf90;
+  font-weight: 600;
 }
 
 .incidentAddCaseBtn {
