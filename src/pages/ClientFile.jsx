@@ -11,6 +11,7 @@ import styles from './ClientFile.module.css'
 // (same colors, sizes, and "(CLASSIFICATION)" parenthetical) instead of a
 // near-duplicate set of rules that would drift out of sync.
 import rowStyles from '../components/ClientRow.module.css'
+import { bracketBlocks } from '../caseGrouping'
 import TextViewerDrawer from '../components/TextViewerDrawer'
 import { toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, todayString, dateKey } from '../dateUtils'
 import {
@@ -879,46 +880,45 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
             {date && <div className={styles.incidentDateLine}>{date}</div>}
             {loc && <div className={styles.incidentLocLine}>{loc}</div>}
 
-            {/* Two or more cases from this incident get a light "[" bracket down
-                their left side. Every case in this cell belongs to this incident
-                by construction, so unlike the flat client-list version there is
-                no contiguity question here. */}
-            <div className={cases.length > 1 ? styles.incidentCaseGroup : undefined}>
-              {cases.map(c => {
-                // One line under the case number, e.g.
-                // "$0 Bond · Held without bond | Affidavit". Every segment drops
-                // out independently, so the line is a clean "$1,500 Bond |
-                // Affidavit" in the common no-release-status case, and is not
-                // rendered at all when nothing is set.
-                const bond = bondReleaseText(c.bond_amount, c.release_status)
-                const affidavit = !!c.warrant_url
-                // Both the number and the line below it go to the same case.
-                const open = () => onCaseTap(c.case_number || c.id)
-                return (
-                  <div key={c.id} className={styles.incidentCaseItem}>
-                    {/* Cases are addressed by case_number in the URL; one without
-                        a number falls back to its id so it stays reachable
-                        (CaseView resolves both). */}
-                    <span
-                      className={`${styles.incidentCaseNum} ${c.case_number ? '' : styles.caseNumberPending}`}
-                      {...tapHandlers(open)}
-                    >
-                      {c.case_number || 'Case # pending'}
-                    </span>
-                    {(bond || affidavit) && (
-                      /* Also navigates — a second, much larger target for the
-                         same case. Styling is deliberately unchanged: it should
-                         not read as a link, only behave as one. */
-                      <div className={styles.incidentCaseMeta} {...tapHandlers(open)}>
-                        {bond}
-                        {bond && affidavit && ' | '}
-                        {affidavit && <span className={styles.affidavitTag}>Affidavit</span>}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+            {/* No same-incident bracket here, deliberately: every case in this
+                cell belongs to this incident by construction, so the grouping is
+                already unambiguous and a bracket would add nothing. The bracket
+                belongs to the two FLAT lists — the client list and the header
+                mini-list — where grouping is otherwise invisible. */}
+            {cases.map(c => {
+              // One line under the case number, e.g.
+              // "$0 Bond · Held without bond | Affidavit". Every segment drops
+              // out independently, so the line is a clean "$1,500 Bond |
+              // Affidavit" in the common no-release-status case, and is not
+              // rendered at all when nothing is set.
+              const bond = bondReleaseText(c.bond_amount, c.release_status)
+              const affidavit = !!c.warrant_url
+              // Both the number and the line below it go to the same case.
+              const open = () => onCaseTap(c.case_number || c.id)
+              return (
+                <div key={c.id} className={styles.incidentCaseItem}>
+                  {/* Cases are addressed by case_number in the URL; one without
+                      a number falls back to its id so it stays reachable
+                      (CaseView resolves both). */}
+                  <span
+                    className={`${styles.incidentCaseNum} ${c.case_number ? '' : styles.caseNumberPending}`}
+                    {...tapHandlers(open)}
+                  >
+                    {c.case_number || 'Case # pending'}
+                  </span>
+                  {(bond || affidavit) && (
+                    /* Also navigates — a second, much larger target for the
+                       same case. Styling is deliberately unchanged: it should
+                       not read as a link, only behave as one. */
+                    <div className={styles.incidentCaseMeta} {...tapHandlers(open)}>
+                      {bond}
+                      {bond && affidavit && ' | '}
+                      {affidavit && <span className={styles.affidavitTag}>Affidavit</span>}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
 
             {!showAddCase && (
               <button className={styles.incidentAddCaseBtn} onClick={() => setShowAddCase(true)}>
@@ -1998,13 +1998,22 @@ export default function ClientFile() {
               inline, the only way to beat a class from another CSS module without
               depending on bundle order. */}
           <div className={styles.headerCaseList}>
-            {headerCases.map(c => (
-              <div key={c.id} className={rowStyles.caseTableRow}>
-                <span className={rowStyles.caseNum} style={{ cursor: 'default' }}>{c.case_number || '—'}</span>
-                {c.charge && <span className={rowStyles.caseCharge} style={{ cursor: 'default' }}>| {c.charge}</span>}
-                {c.classification && <>{' '}<span className={rowStyles.caseClassification}>({c.classification})</span></>}
-              </div>
-            ))}
+            {/* Same-incident bracket, identical rules to the client list and
+                sharing its contiguity guard via bracketBlocks(): 2+ cases only,
+                and only when all of an incident's cases land consecutively in
+                this flat, number-sorted list. Sort order is untouched. */}
+            {bracketBlocks(headerCases).map(block => {
+              const rows = block.items.map(c => (
+                <div key={c.id} className={rowStyles.caseTableRow}>
+                  <span className={rowStyles.caseNum} style={{ cursor: 'default' }}>{c.case_number || '—'}</span>
+                  {c.charge && <span className={rowStyles.caseCharge} style={{ cursor: 'default' }}>| {c.charge}</span>}
+                  {c.classification && <>{' '}<span className={rowStyles.caseClassification}>({c.classification})</span></>}
+                </div>
+              ))
+              return block.bracket
+                ? <div key={block.items[0].id} className={styles.headerCaseGroup}>{rows}</div>
+                : rows
+            })}
           </div>
 
           <div className={styles.badgeStack}>

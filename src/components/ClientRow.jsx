@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import { computePrelimCutoff, shortWeekday, formatMD, formatBookingTimeCompact } from '../prelimDeadline'
+import { bracketBlocks } from '../caseGrouping'
 import styles from './ClientRow.module.css'
 
 // Returns pointer event props that fire `handler` on tap but not on:
@@ -31,48 +32,6 @@ function formatDateDisplay(mdy) {
   const m = String(mdy ?? '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (!m) return mdy ?? ''
   return `${Number(m[1])}/${Number(m[2])}/${m[3]}`
-}
-
-// Splits the flat case list into consecutive blocks, marking those that should
-// carry a same-incident "[" bracket.
-//
-// ⚠️ This list is FLAT and sorted purely on the numeric part of the case number
-// (see ClientList.jsx's toRowProps) — incident is not part of the sort at all,
-// so two cases from one incident are NOT guaranteed to land next to each other.
-// Interleaving is structurally possible: incident A holding GS1000 and GS3000
-// while incident B holds GS2000 sorts to A, B, A.
-//
-// A bracket is therefore drawn only when EVERY case of an incident occupies
-// consecutive positions. A split group gets no bracket at all rather than one
-// that would appear to capture the neighbouring incident's case. Sort order is
-// never modified to force grouping.
-function bracketBlocks(cases) {
-  const positions = new Map()
-  cases.forEach((c, i) => {
-    const list = positions.get(c.incident_id) ?? []
-    list.push(i)
-    positions.set(c.incident_id, list)
-  })
-
-  const runStarts = new Map()
-  for (const idxs of positions.values()) {
-    if (idxs.length < 2) continue
-    if (!idxs.every((v, k) => k === 0 || v === idxs[k - 1] + 1)) continue
-    runStarts.set(idxs[0], idxs.length)
-  }
-
-  const blocks = []
-  for (let i = 0; i < cases.length;) {
-    const len = runStarts.get(i)
-    if (len) {
-      blocks.push({ bracket: true, items: cases.slice(i, i + len) })
-      i += len
-    } else {
-      blocks.push({ bracket: false, items: [cases[i]] })
-      i += 1
-    }
-  }
-  return blocks
 }
 
 const INDIGENT_CYCLE = { red: 'yellow', yellow: 'green', green: 'gold', gold: 'red' }

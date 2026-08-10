@@ -88,7 +88,14 @@
    all came from one incident. Left/top/bottom borders and no right border is the
    bracket shape. It is drawn in the empty gutter to the LEFT of the case table
    (.info reserves 60px of right padding there), so no case number moves and the
-   table's carefully preserved geometry is untouched. */
+   table's carefully preserved geometry is untouched.
+
+   Colour matches the case numbers it captures (.caseNum's #6b9fd4) rather than a
+   separate muted grey.
+
+   Arm length is bounded by the 8px between the spine and the text: at 6px the
+   arms stop 2px short of the case numbers, which is as far right as they can
+   reach while keeping a clear gap and leaving the spine where it is. */
 .caseGroup {
   position: relative;
 }
@@ -99,8 +106,8 @@
   left: -8px;
   top: 2px;
   bottom: 2px;
-  width: 4px;
-  border: 1px solid #4a5a70;
+  width: 6px;
+  border: 1px solid #6b9fd4;
   border-right: none;
   pointer-events: none;
 }
