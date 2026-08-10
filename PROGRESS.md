@@ -151,6 +151,46 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Same-Incident Bracket Retargeted to the Header Mini-List + Restyled (2026-08-10, commit `bb1ef7b`)
+
+Corrects the target of the bracket shipped in `8d51a54` and restyles it. **No DB or schema change; `CaseView.jsx` untouched; no collapse/expand.** New file `src/caseGrouping.js`; changes to `ClientFile.jsx` + `.module.css` and `ClientRow.jsx` + `.module.css`.
+
+#### 1. Removed from the Incidents first column
+
+The bracket added there in `8d51a54` is gone. Those case numbers are **already grouped by incident by construction** — each incident's cell contains only its own cases — so the bracket added nothing. `.incidentCaseGroup` and its wrapper div are removed; **everything else in that column is unchanged**.
+
+#### 2. Added to the header case mini-list
+
+The correct second target: the flat case list in the single-client header row, alongside the name, OCA and gender. It uses the **identical rules and the identical guard** as the client list — 2+ cases, bracketed only when all of an incident's cases occupy consecutive positions, no bracket for a split group, **no change to sort order**.
+
+**The guard now lives in [`src/caseGrouping.js`](src/caseGrouping.js) and is imported by both views** instead of being duplicated. This app duplicates most small helpers by convention, but this one is deliberately shared: it is what stands between a correct bracket and one that silently misstates which cases share an incident, and two copies would be free to drift apart.
+
+**Solving the `overflow: hidden` clip — without removing it.** That declaration is load-bearing (it is what stops a long charge forcing the grid wider and shoving the custody badge around), so it stays. The fix rests on a CSS detail: **`overflow` clips at the *padding* box, not the content box**, so anything drawn inside `padding-left` survives the clip.
+
+```css
+.headerCaseList { padding-left: 9px; margin-left: -9px; }   /* bracket lives in the 9px */
+.headerCaseGroup::before { left: -8px; width: 6px; }        /* 1px inside the clip edge */
+```
+
+**The equal and opposite `-9px` margin makes the change invisible at both breakpoints**, which is why **no rule inside the `@media (max-width: 768px)` block was needed for alignment**:
+
+- **Desktop (`justify-self: center`)** — the margin box is content-width again (`-9 + 9 + content`), so it centres exactly where it did and the content starts at the same x.
+- **Mobile (`justify-self: start`)** — the margin box's start edge sits at the column start, so `content_left = column_start + (−9) + 9 = column_start`. The 2026-08-09 flush-left alignment under "Total Bond" is preserved **to the pixel**.
+
+In both cases the bracket hangs 8px left of the case numbers — into the grid column gap on desktop, into `.nameRow`'s own 16px padding on mobile. Neither clips.
+
+> ⚠️ **One mobile-block edit WAS required, for a different reason.** The tightening rule `.headerCaseList > div { padding: 0 }` became **`.headerCaseList div`** (child combinator → descendant). A bracketed group wraps its rows in an extra div, so those rows are no longer direct children of `.headerCaseList`; under the old selector they would have kept the borrowed `.caseTableRow` 1px padding and rendered **taller than unbracketed rows** on mobile. Matching the wrapper as well is harmless — it has no padding of its own. **That is the only change inside the ≤768px block**; the sibling `.headerCaseList span { line-height: 1.35 }` rule is a descendant selector already and needed nothing.
+
+#### 3. Bracket colour
+
+Both brackets recoloured from muted `#4a5a70` to **`#6b9fd4`** — the colour of the case numbers they capture. Both views resolve to the same value: the client list uses `.caseNum` (`#6b9fd4`) and the header mini-list *borrows that same class*, so one colour covers both correctly. **Line width unchanged at 1px.**
+
+#### 4. Arm length
+
+Top and bottom arms extended **4px → 6px**, reaching further right toward the numbers. **That is the maximum available with the spine left where it is:** the spine sits 8px left of the text, so 6px arms stop **2px short** of the case numbers — decisively enclosing, with a clear gap and no overlap. The spine did not move and **no case number moved**.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged. ⚠️ **Not yet verified on production.**
+
 ### Affidavit Text Harmonized, Release Status Restored, Same-Incident Bracket (2026-08-10, commit `8d51a54`)
 
 Seven changes. **No DB or schema change; the `@media (max-width: 768px)` block was not touched; no collapse/expand reintroduced.** Files: `CaseView.jsx` + `.module.css` (item 1 only), `ClientFile.jsx` + `.module.css`, `ClientRow.jsx` + `.module.css`.
@@ -874,7 +914,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — always sorted by `closed_at` DESC, null-`closed_at` clients at the bottom. (See the 2026-06-21 "Client List + Next Event Batch" entry.)
 - Each section header shows a count badge (e.g. "Active 12")
 - Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge
-- **Same-incident bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a light `[` (`#4a5a70`) drawn in the gutter to the left of the case table. ⚠️ The list is sorted purely on the numeric part of the case number with **no incident component**, so same-incident cases can interleave; a non-contiguous group is deliberately left unbracketed rather than drawn across a foreign case. See the 2026-08-10 entry and Open Items.
+- **Same-incident bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a `[` in `#6b9fd4` (the case-number colour) drawn in the gutter to the left of the case table. ⚠️ The list is sorted purely on the numeric part of the case number with **no incident component**, so same-incident cases can interleave; a non-contiguous group is deliberately left unbracketed rather than drawn across a foreign case. See the 2026-08-10 entry and Open Items.
 - **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), right-anchored so all case number left edges are flush. **As of 2026-08-09 it is an in-flow flex item on desktop, not `position: absolute`** — the absolute version was out of flow, so a row never grew and a client with 5+ cases bled into the neighbouring rows (see the 2026-08-09 entry; mobile was always in-flow and is unchanged). `charge_abbrev` shown if set, falls back to `charge`; if `classification` is set, it follows in parens (e.g. `Sex Offender Registration Viol (A MIS)`), styled to match the next-event info line (`#6b9fd4`, normal weight, 13px desktop / 11px mobile)
 - Badge colors: **In Custody** → muted crimson (`#b85555`); **Bonded Out** / **Out** → muted green (`#3d9e6a`); **CLOSED** / relieved clients → gray
 - Clients in the Closed section (`relieved_closed = true`) show all custody badges in gray
@@ -886,6 +926,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Inserts into `clients` table, redirects to client list
 
 ### Client File (`/client/:id`)
+- **Header case mini-list bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a `[` in `#6b9fd4`, drawn inside the list's 9px `padding-left` (which an equal negative margin cancels, so nothing moved at either breakpoint). Same contiguity guard as the client list, shared via `caseGrouping.js`
 - **Header (2026-08-09):** on **desktop** a 3-column grid — name / OCA / Total Bond on the left, **case mini-list centered in the row**, custody badge on the right. On **mobile** two columns, with the mini-list moved into the left text stack (left-aligned, directly under "Total Bond") and tighter case-line spacing; the badge is unchanged at both widths. The mini-list shows every case across every incident as `case number | full charge (CLASSIFICATION)` — the **full `charge`**, not the `charge_abbrev` the client list uses — ordered numerically like the client list and styled with the reused `ClientRow.module.css` classes. Everything is in normal flow, so the header grows with the case count; the mini-list is non-interactive
 - **Back button** navigates directly to `/` (not history-based)
 - **Edit button** navigates to `/client/:id/edit`
@@ -896,7 +937,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Incidents** section — **two-column grid, one row per incident, nothing collapsible** (2026-08-10; replaced the click-to-expand accordion):
   - Section header carries two controls (2026-08-10): an **"upload affidavit"** text control (affidavit-first creation — see the 2026-08-10 entry) and the existing `+` button, in that order. The `+` still creates a bare incident with no affidavit — needed for things like probation violations that have no incident date
   - **Left cell** (~1/6 of the section, `minmax(180px, 1fr)` of a 1fr/5fr split): incident date and location (both `#c8d0dc`, sizes 13px/12px, tight against each other), then each case as a case number with **one** line beneath it reading `$0 Bond · Held without bond | Affidavit` — every segment dropping out independently, the line omitted entirely when nothing is set — then that incident's own "+ add a case". "Affidavit" is green `#5ecf90` at normal weight. **Both the case number and the bond line navigate to that case**; the number has an enlarged hit area (padding cancelled by negative margins, so its visual size is unchanged). Unnumbered cases fall back to the case `id` in the URL
-  - **Same-incident bracket:** an incident with 2+ cases gets a light `[` (`#4a5a70`) down the left of its case group, drawn in the cell's padding so no case number moves
+  - **No same-incident bracket here** — added 2026-08-10 and removed the same day: these case numbers are already grouped by incident by construction, so it added nothing. The bracket lives on the two *flat* lists (client list and header mini-list)
   - **Right cell** (~5/6): the incident description at `line-height: 1.4`, with the delete `×` at its top-right and **"edit incident" flowing inline after the last word** of the description
   - **Gridlines:** 2px `#2C3A4F` row dividers, 1px `#2C3A4F` column split
   - **Mobile (≤768px):** stacks to one column — left block on top, description beneath, split by a 1px rule; the 2px row divider separates incidents
@@ -1038,6 +1079,7 @@ src/
   syncManager.js           # fullSync, processSyncQueue, addToSyncQueue, startBackgroundSync
   extractPdfText.js        # PDF text extraction utility — pdfjs-dist v6 + CDN worker
   prelimDeadline.js        # Prelim-hearing date math — computePrelimCutoff, shortWeekday, formatMD, formatBookingTimeCompact
+  caseGrouping.js          # bracketBlocks() — same-incident "[" grouping + contiguity guard, shared by ClientRow and ClientFile
   dateUtils.js             # Shared "M/D/YYYY" helpers — dateKey, todayString, toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, shiftDate
   seed.js                  # One-time seed script (node src/seed.js)
 
@@ -1117,7 +1159,7 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 
 5. **Same-incident bracket: the client-list case list can interleave.** `toRowProps` sorts the flat case list purely on the numeric part of the case number with no incident component, so two cases from one incident are not guaranteed to be adjacent. Brackets there are drawn only for groups that land contiguously; a split group is silently skipped. **If a bracket you expect to see is missing in the client list, this is why** — it is not a rendering bug. The fix, if it ever matters, is a secondary sort key on `incident_id`, which would change the case display order and so was not done unilaterally.
 
-6. **The header case mini-list has no bracket.** It is flat like the client list, but `.headerCaseList` has `overflow: hidden` (which would clip a gutter-drawn bracket) and padding it instead would break the flush-left mobile alignment. Left for the phone pass, when that block is in scope anyway.
+6. ~~**The header case mini-list has no bracket.**~~ — **RESOLVED 2026-08-10**, commit `bb1ef7b`. `overflow: hidden` was kept (it is load-bearing); the bracket is drawn inside a new 9px `padding-left`, which survives the clip because `overflow` clips at the padding box, and an equal `-9px` `margin-left` keeps the content position pixel-identical at both breakpoints. The Incidents-column bracket was removed in the same commit — that had been the wrong target.
 
 3. **A numberless case is addressed by its `id`, so the new case's URL is a UUID.** Existing, documented behavior (2026-07-28) rather than anything new here, but it is now the *common* case rather than an edge case — every affidavit-first case starts numberless. Tapping the "Case # pending" row resolves through `CaseView`'s primary-key fallback.
 
