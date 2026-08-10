@@ -151,6 +151,28 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Mobile Incident Separators Reworked + "+ add a case" Unbolded (2026-08-10, commit `d677276`)
+
+**No DB or schema change. `CaseView.jsx`, the header mini-list and its brackets, and the desktop grid — proportions, 2px row divider and 1px column split — are all untouched.** One file: `ClientFile.module.css`.
+
+1. **"+ add a case" is normal weight** (`600` → `400`) at **both** breakpoints. Size, colour and family unchanged. It's a secondary action and the bold read as a heading.
+
+2. **The rule between an incident's two stacked mobile blocks is gone.** `.incidentLeftCell`'s `border-bottom` (the 1px stand-in for the desktop column split) is removed. Those blocks are the same incident's own case info and its own description — splitting them made one incident read as two things. **A useful second-order effect: with it gone, every horizontal rule left on the mobile screen is a real incident boundary**, which is most of what makes those boundaries scannable.
+
+3. **The incident boundary rule strengthened on three axes at once**, because no single one does the job without overshooting:
+
+   | Axis | Before | After | Why |
+   |---|---|---|---|
+   | Thickness | 2px | **3px** | Present without being a slab |
+   | Colour | `#2C3A4F` | **`#4a5a70`** | **The biggest win.** Against the `#16212F` row the old colour sits at roughly **1.5:1** contrast — which is why it vanished at a glance; the new one is roughly **2.4:1**. Already in the palette (the "edit incident" control) |
+   | Breathing room | — | **14px** above an incident's first line, **16px** below its last | Each incident occupies its own padded band. The whitespace is what keeps the rule from having to shout |
+
+   The delete-confirmation wrapper (`.incidentGroup`) matches, so the boundary doesn't visibly weaken while a confirm is open.
+
+   > **Knobs, in the order worth turning if this reads wrong: the colour, then the padding, then the thickness.** All three live in the `@media (max-width: 768px)` block.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged. ⚠️ **Not yet verified on production.**
+
 ### Charge Abbrev on the Incidents Case Line + Wider First Column (2026-08-10, commit `976dbaa`)
 
 **No DB or schema change; `CaseView.jsx`, the header mini-list and its brackets, and the `@media (max-width: 768px)` block are all untouched; no collapse/expand.** Two files: `ClientFile.jsx` + `.module.css`.
@@ -968,8 +990,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - **Left cell** (**22.2%** of the section, `minmax(246px, 2fr)` of a 2fr/7fr split — widened 2026-08-10 from 16.7% to fit the charge abbrev): incident date and location (both `#c8d0dc`, sizes 13px/12px, tight against each other), then each case as `{case number} {charge_abbrev}` — the abbrev in the muted bond styling, omitted entirely with no trailing space when null, and inside the number's span so it shares the click target — with **one** line beneath it reading `$0 Bond · Held without bond | Affidavit` — every segment dropping out independently, the line omitted entirely when nothing is set — then that incident's own "+ add a case". "Affidavit" is green `#5ecf90` at normal weight. **Both the case number and the bond line navigate to that case**; the number has an enlarged hit area (padding cancelled by negative margins, so its visual size is unchanged). Unnumbered cases fall back to the case `id` in the URL
   - **No same-incident bracket here** — added 2026-08-10 and removed the same day: these case numbers are already grouped by incident by construction, so it added nothing. The bracket lives on the two *flat* lists (client list and header mini-list)
   - **Right cell** (~5/6): the incident description at `line-height: 1.4`, with the delete `×` at its top-right and **"edit incident" flowing inline after the last word** of the description
-  - **Gridlines:** 2px `#2C3A4F` row dividers, 1px `#2C3A4F` column split
-  - **Mobile (≤768px):** stacks to one column — left block on top, description beneath, split by a 1px rule; the 2px row divider separates incidents
+  - **Gridlines (desktop):** 2px `#2C3A4F` row dividers, 1px `#2C3A4F` column split
+  - **Mobile (≤768px):** stacks to one column — left block on top, description beneath, **with no rule between them** (they are one incident). Incidents are separated by a **3px `#4a5a70`** rule with 14px/16px of padding around it (2026-08-10)
   - An incident with **date, location and description all null** shows **"Awaiting details"** in the description cell; a case with **no case number** shows **"Case # pending"** (both 2026-08-10) — these are the states an affidavit-first record is created in
   - Add Incident form fields, in order: **Date, Location, Description** — picking the date auto-fills Description with "The affiant believes that on M/D/YYYY," unless the user has already typed past it (2026-08-09)
   - Inline "edit incident" edits **all three** fields and **spans the full row**; the date input stays last in that form so the mobile date picker can't cover the others. Save on blur or Enter; Escape cancels
@@ -1177,8 +1199,8 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 
 2. ~~**Incidents two-column layout redesign — deliberately deferred to its own pass.**~~ — **DONE 2026-08-10**, same day, commit `9e5b33c`. See the "Incidents Two-Column Layout" entry under Completed Features. **Also unverified on production**, and worth checking together with item 1 in the same pass:
    - **Desktop proportions.** ~~The left cell is one sixth (~188px at 1126px).~~ **Widened 2026-08-10 to 22.2% (`minmax(246px, 2fr)` / `minmax(0, 7fr)`, ~250px at 1126px)** to fit the charge abbrev. If it reads wrong, the two knobs are the `7fr` ratio and the `246px` floor in `.incidentRow` — both in [`ClientFile.module.css`](src/pages/ClientFile.module.css); move them together so the floor keeps binding only below the app's normal width.
-   - **Gridline weight.** 2px rows / 1px column split, both `#2C3A4F`. The brief was "actually delineate the rows at a glance"; if they now read as too heavy, drop the row divider to 1px before changing the colour.
-   - **Mobile stacking** at ≤768px, and whether the 2px divider is enough to separate incidents once the columns are stacked.
+   - **Gridline weight (desktop).** 2px rows / 1px column split, both `#2C3A4F`. The brief was "actually delineate the rows at a glance"; if they now read as too heavy, drop the row divider to 1px before changing the colour.
+   - ~~**Mobile stacking** at ≤768px, and whether the 2px divider is enough to separate incidents once the columns are stacked.~~ — **it was not**, confirmed on-device and addressed 2026-08-10 (`d677276`): the internal rule was removed and the boundary rule went to 3px `#4a5a70` with padding around it. Still worth re-checking that the new weight reads as obvious without being noisy.
    - **A client with many incidents is now a much longer page** — nothing collapses anymore. Worth a look on a phone with a multi-incident client.
    - **The permanent "edit incident" button** appears on every row now rather than only on an expanded one. Check it doesn't read as clutter at a glance.
 
