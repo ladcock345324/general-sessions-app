@@ -151,6 +151,51 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
+### Incidents Two-Column Layout — Accordion Removed (2026-08-10, commit `9e5b33c`)
+
+**Replaces the click-to-expand behavior entirely.** The Incidents section is now a two-column grid, **one grid row per incident**, with every incident's cases always visible. There is no open/collapsed state anywhere in the section — `IncidentGroup`'s `open` state, its toggle, and the `.incidentBody` wrapper are all gone.
+
+**No DB or schema change; `CaseView.jsx` untouched; the affidavit-first upload flow from earlier the same day untouched.** Two files changed: [`ClientFile.jsx`](src/pages/ClientFile.jsx) and [`ClientFile.module.css`](src/pages/ClientFile.module.css).
+
+#### Proportions
+
+`grid-template-columns: minmax(180px, 1fr) minmax(0, 5fr)` — the left cell is **one sixth** of the section. At the app's 1126px desktop width that lands at roughly **188px / 938px (16.7% / 83.3%)**. The **180px floor** exists so the cell can't be squeezed below its own content: "Affidavit on File" is ~92px at 12px plus 32px of cell padding. The floor only starts binding below about a 1080px viewport, so it never affects the normal desktop width. **These two numbers — the `5fr` ratio and the `180px` floor — are the knobs if the split reads wrong on-device.**
+
+#### Cell contents
+
+- **Left cell:** incident date (blue `#6b9fd4`, the accent the old combined "date — location" line used), incident location (dropped to muted `#9faab8` now that it's on its own line), then **each case** as three stacked lines — case number, bond/release text via the shared `bondStatusText()`, and affidavit status — followed by that incident's own **"+ add a case"**.
+  - **Stacked rather than inline, deliberately:** ~156px of usable cell width can't hold `$2,500 bond | Affidavit on File` on one line without truncating one of them.
+  - **The case number is the only tap target**, matching the client list's deliberately tightened hit area (2026-06-10), and still routes through `case_number || id` so a numberless case stays reachable via CaseView's primary-key fallback.
+- **Right cell:** the description, with the delete `×` pinned to its top-right corner (`position: absolute` inside a `position: relative` cell, replacing its old role as a flex sibling of the header row) and **"edit incident" beneath it**.
+  - **The edit affordance is now permanent.** It used to render only when the accordion was open (`open && !editing`); with no expanded state there is nothing left to reveal it, so it is always visible.
+
+#### Inline editing spans the full row
+
+`.incidentEditCell` is `grid-column: 1 / -1`. **The three fields belong to different cells**, so editing one while another still showed its old value would read as two competing sources of truth. The commit-on-blur / Enter / Escape logic, the unchanged-check, and the Dexie + sync-queue UPDATE are all carried over untouched — including **the date input staying LAST**, for the 2026-06-10 reason (the native mobile date picker must not cover the fields above it). The add-case form is full-width for the same structural reason: its own two-column bond/status row has no room in a one-sixth-width cell.
+
+#### Gridlines
+
+The old dividers (`1px solid rgba(255, 255, 255, 0.05)`) did not read as a grid. Now:
+
+| Line | Weight | Colour |
+|---|---|---|
+| Row divider (between incidents) | **2px** | `#2C3A4F` |
+| Column split (left/right cells) | **1px** | `#2C3A4F` |
+
+`#2C3A4F` is the palette's existing "Root side borders" colour, so nothing new was introduced. The **weight difference is the hierarchy**: the row boundary stays dominant and the column split reads as secondary.
+
+#### Mobile (≤768px)
+
+Stacks to a single column — left-cell block on top, description beneath — via `grid-template-columns: 1fr`. The column split becomes a horizontal `1px` rule between the two stacked blocks (`border-right` → `border-bottom` on `.incidentLeftCell`), while the **2px row divider does the work of separating one incident from the next**, which matters more once everything is in one column.
+
+#### What is no longer shown
+
+**The charge is no longer displayed in the Incidents section** — the spec assigns the left cell to number/bond/affidavit and the right cell to the description, with no slot for it. Not an information loss in practice: the header case mini-list already lists `case number | full charge (CLASSIFICATION)` for every case on the same page, and CaseView shows it in full.
+
+**Dead CSS removed with the accordion:** `.incidentHeader` (+`:active`), `.incidentHeaderLeft`, `.incidentTitleBlock`, `.incidentMetaLine`, `.incidentDescPart`, `.incidentBody`, `.addCaseInlineBtn` (+`:active`), `.caseRow` (+`:last-child`), `.caseInfo`, `.caseNumber`, `.caseCharge`, `.caseMeta`, `.caseChevron`. `.incidentGroup` survives as the delete-confirmation wrapper (it needs the row divider but not the grid). `.caseNumberPending` survives as a **compound** selector, `.incidentCaseNum.caseNumberPending`, so the pending marker beats the case-number link colour regardless of source order.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged — none in either edited file. ⚠️ **Not yet verified on production.**
+
 ### Affidavit-First Incident/Case Creation (2026-08-10, commit `179a8a9`)
 
 **Inverts the Incidents flow.** Previously an incident had to exist before a case, and a case before an affidavit. The affidavit is the source document, so it now comes first: uploading a PDF **creates** the incident and its case, with every descriptive field left `null` to be populated separately by reading the extracted `warrant_text` over MCP.
@@ -763,18 +808,17 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - Docket type, reason (if set), date/time, courtroom (prefixed "Courtroom"), judge, and ADA (shown as "ADA: [name]" only when `ada_name` is set — single-client view only, never in the client list)
   - **Clear button** in the edit form — deletes the `next_events` row for this client, returns block to empty state
 - **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table. **Renders already expanded on load when the note is non-empty** (2026-08-09); an empty/absent note still starts collapsed. Click-to-toggle itself is unchanged
-- **Incidents** section:
-  - Section header carries two controls (2026-08-10): an **"upload affidavit"** text control (affidavit-first creation — see the 2026-08-10 entry) and the existing `+` button, in that order
-  - Collapsible accordion — each incident header is **two lines** (2026-08-09): line 1 is `{incident_date} — {location}` in blue `#6b9fd4` (the em dash and either half drop out cleanly when blank), line 2 is the description as its own block, flush left under line 1
-  - An incident with **date, location and description all null** shows **"Awaiting details"**; a case with **no case number** shows **"Case # pending"** in its case row (both 2026-08-10) — these are the states an affidavit-first record is created in
+- **Incidents** section — **two-column grid, one row per incident, nothing collapsible** (2026-08-10; replaced the click-to-expand accordion):
+  - Section header carries two controls (2026-08-10): an **"upload affidavit"** text control (affidavit-first creation — see the 2026-08-10 entry) and the existing `+` button, in that order. The `+` still creates a bare incident with no affidavit — needed for things like probation violations that have no incident date
+  - **Left cell** (~1/6 of the section, `minmax(180px, 1fr)` of a 1fr/5fr split): incident date, location, then each case as case number / bond / affidavit status, then that incident's own "+ add a case". The case number is the only tap target and links to `/case/:caseNumber` (falling back to the case `id` when unnumbered)
+  - **Right cell** (~5/6): the incident description, with the delete `×` at its top-right and "edit incident" beneath it
+  - **Gridlines:** 2px `#2C3A4F` row dividers, 1px `#2C3A4F` column split
+  - **Mobile (≤768px):** stacks to one column — left block on top, description beneath, split by a 1px rule; the 2px row divider separates incidents
+  - An incident with **date, location and description all null** shows **"Awaiting details"** in the description cell; a case with **no case number** shows **"Case # pending"** (both 2026-08-10) — these are the states an affidavit-first record is created in
   - Add Incident form fields, in order: **Date, Location, Description** — picking the date auto-fills Description with "The affiant believes that on M/D/YYYY," unless the user has already typed past it (2026-08-09)
-  - Inline "edit incident" edits **all three** fields; the date input stays last in that form so the mobile date picker can't cover the others
+  - Inline "edit incident" edits **all three** fields and **spans the full row**; the date input stays last in that form so the mobile date picker can't cover the others. Save on blur or Enter; Escape cancels
   - **Sorted oldest-first** (earliest `incident_date` at top, latest at bottom) as of 2026-07-28, via `compareIncidentsByDate()`; missing/unparseable dates sort to the end. Case numbers within each incident sorted ascending
-  - No empty-state text when an incident has no cases — renders nothing (2026-07-28)
-  - Inline editing: tap "edit incident" → description textarea (3 rows) and date become editable; save on blur or Enter; Escape cancels
-  - `+` icon button on section header bar opens inline Add Incident form
-  - Each expanded incident shows case rows + "+ add a case" at bottom
-  - Case rows link to `/case/:caseNumber`
+  - **The charge is not shown here** as of 2026-08-10 — it lives in the header case mini-list and in CaseView
 - **Hours** table: drag grip (≡), date, hours (green), description, check-off toggle, × delete button per row
   - Running total at bottom
   - `+` button opens inline form (date defaults to last-used/today, hours dropdown 0.1–2.5)
@@ -824,6 +868,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Date input constrained to `max-width: 160px`
 - Description uses `<textarea rows={3}>` — fully visible while editing
 - Edit inputs stacked vertically (`flex-direction: column`), in the order **description → location → date** (2026-08-09). The date stays last so the native mobile date picker can't cover the fields above it — the reason it was moved below the description on 2026-06-10. Do not reorder these to match the Add Incident form, which is Date → Location → Description
+- **The edit form spans the full grid row** as of 2026-08-10 (`grid-column: 1 / -1`), rather than sitting in one cell of the two-column layout: date/location live in the left cell and the description in the right, so editing one field while another still displayed its old value would read as two competing sources of truth
 - All three fields (description, location, date) commit together through one Dexie write + sync-queue UPDATE; each saves `null` when blank
 - ~~Hanging indent on two-line descriptions: `padding-left: 1.62em; text-indent: -1.62em`~~ — **REMOVED 2026-08-09.** It existed only because the description used to render inline after the date and its wrapped lines needed to clear it. The description is now its own block on line 2, so the indent would have offset it from line 1 rather than aligning it
 
@@ -971,7 +1016,12 @@ Affidavit / criminal-history / courtroom-document PDFs are not cached locally, s
 
 1. **The affidavit-first flow has not been exercised on production.** It builds and lints clean, but nothing has been uploaded through it on the live site yet. Worth checking, in order: the "upload affidavit" control renders beside `+` in the Incidents header; picking a PDF opens the dialog with "New incident" preselected; confirming creates an incident showing **"Awaiting details"** with one case row showing **"Case # pending"** and "Affidavit on File"; the same flow against an **existing** incident adds the case there instead of creating a second incident; and the extracted text is readable via **View Text** after tapping into the new case. **`warrant_text` landing in Supabase is the one to confirm over MCP** — it is the write this whole path is built around.
 
-2. **Incidents two-column layout redesign — deliberately deferred to its own pass.** Explicitly out of scope for the 2026-08-10 work, to be done once the affidavit-first flow is verified.
+2. ~~**Incidents two-column layout redesign — deliberately deferred to its own pass.**~~ — **DONE 2026-08-10**, same day, commit `9e5b33c`. See the "Incidents Two-Column Layout" entry under Completed Features. **Also unverified on production**, and worth checking together with item 1 in the same pass:
+   - **Desktop proportions.** The left cell is one sixth (~188px at 1126px). If it reads wrong, the two knobs are the `5fr` ratio and the `180px` floor in `.incidentRow` — both in [`ClientFile.module.css`](src/pages/ClientFile.module.css).
+   - **Gridline weight.** 2px rows / 1px column split, both `#2C3A4F`. The brief was "actually delineate the rows at a glance"; if they now read as too heavy, drop the row divider to 1px before changing the colour.
+   - **Mobile stacking** at ≤768px, and whether the 2px divider is enough to separate incidents once the columns are stacked.
+   - **A client with many incidents is now a much longer page** — nothing collapses anymore. Worth a look on a phone with a multi-incident client.
+   - **The permanent "edit incident" button** appears on every row now rather than only on an expanded one. Check it doesn't read as clutter at a glance.
 
 3. **A numberless case is addressed by its `id`, so the new case's URL is a UUID.** Existing, documented behavior (2026-07-28) rather than anything new here, but it is now the *common* case rather than an edge case — every affidavit-first case starts numberless. Tapping the "Case # pending" row resolves through `CaseView`'s primary-key fallback.
 
