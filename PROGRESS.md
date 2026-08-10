@@ -151,7 +151,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 ## Completed Features
 
-### Custody Badge Top-Aligned + Prelim-Hearing Countdown REMOVED (2026-08-10, commit `f0e2a9c`)
+### Custody Badge Top-Aligned + Prelim-Hearing Countdown REMOVED (2026-08-10, commit `9c03ca1`)
 
 **No schema change — no column was dropped.** `CaseView.jsx` untouched, client-list custody badge untouched, Incidents section untouched at both breakpoints, no collapse/expand.
 
