@@ -57,7 +57,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `id` | uuid PK | auto |
 | `client_id` | uuid FK → clients | |
 | `docket_type` | text | edited as a preset `<select>` ("Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket") + an optional append-text input; the two are combined into this single column on save (e.g. "Jail Docket Judge Smith covering") and split back on load (2026-06-24, revised from the broken datalist combobox) |
-| `reason` | text | optional — blank, "Review", "Trial", "Settlement", "Discussion", or "Probation". Free text, no enum: the `<select>` is the only constraint, so options are added front-end with no migration. *(This row previously read "Trial, Settlement, or blank" — stale since 2026-07-23; corrected 2026-08-10.)* |
+| `reason` | text | optional — blank, "Review", "Trial", "Settlement", "Discussion", or "PV Hearing". Free text, no enum: the `<select>` is the only constraint, so options are added front-end with no migration. *(This row previously read "Trial, Settlement, or blank" — stale since 2026-07-23; corrected 2026-08-10.)* |
 | `event_date` | text | e.g. "6/7/2026" |
 | `event_time` | text | e.g. "9:05 AM" |
 | `courtroom` | text | e.g. "4B" — displayed as "Courtroom 4B" |
@@ -187,13 +187,17 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
-### Next Event Reason — "Probation" Added (2026-08-10)
+### Next Event Reason — "PV Hearing" Added (2026-08-10)
 
 One option appended to the Next Event form's **Reason** `<select>`, at the bottom after "Discussion". **Front-end only — no schema change and none needed:** `next_events.reason` is a plain nullable text column with no enum or check constraint, so the dropdown is the only thing that constrains it. The control, its styling, and the save path are untouched; the value flows through the existing `...rest` payload to Dexie and the sync queue like every other Reason value, and displays as-is in both views.
 
-Options are now: blank, **Review, Trial, Settlement, Discussion, Probation**.
+Options are now: blank, **Review, Trial, Settlement, Discussion, PV Hearing**.
 
-> **The request described the existing options as "Trial, Settlement, or blank".** That came from this document, not the code — the `next_events.reason` schema row still carried its original 2026-06 description and had been stale since 2026-07-23, when the list became Review/Trial/Settlement/Discussion. **The schema row is now corrected**, and "Probation" was appended at the bottom (matching how "Criminal Court" and courtrooms 6A–6D were added) rather than inserted third.
+> **Shipped first as "Probation", corrected to "PV Hearing" the same day.** The live DB was checked before the swap: **zero `next_events` rows held "Probation"**, so nothing needed migrating and no data was touched. The wrong label was only in the dropdown, never in a saved record.
+
+> **The request described the existing options as "Trial, Settlement, or blank".** That came from this document, not the code — the `next_events.reason` schema row still carried its original 2026-06 description and had been stale since 2026-07-23, when the list became Review/Trial/Settlement/Discussion. **The schema row is now corrected**, and the new option was appended at the bottom (matching how "Criminal Court" and courtrooms 6A–6D were added) rather than inserted third.
+
+**Live `reason` values as of 2026-08-10** (19 rows): Trial ×13, Discussion ×2, Review ×1, Settlement ×1, `''` ×1, and one free-text entry — `"Shelter Court Review (reset from 7/31/2026 — client missed)"`. That last one is the evidence behind the Known Issues note below: off-list values exist in real data.
 
 **Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged.
 
@@ -1115,7 +1119,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - **Client list (ClientRow), one line:** `day-of-week → date → time → courtroom → reason`. **Docket type is NOT shown here** (removed); `reason` is now shown (threaded through `toRowProps`).
 - Legacy display format for reference: `Jail Docket  |  Thursday 7/16/2026  |  9:00 AM`
 - **Docket Type** — edited as a native `<select>` (blank + "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket", "Criminal Court") plus a separate optional "Add'l text" `<input>` immediately after; combined into the single `docket_type` column on save via `[preset, custom].filter(Boolean).join(' ').trim() || null`; split back on load (`splitDocketType()` peels a leading known preset into the select; any remainder or non-matching legacy value goes into the text box). "Criminal Court" added 2026-07-23 — added to **both** `DOCKET_PRESETS` (the dropdown) and, critically, the same list `splitDocketType()` reads, so a saved "Criminal Court [+ append]" round-trips back into the select rather than dumping into the free-text box.
-- **Reason** — `<select>`: blank + Review, Trial, Settlement, Discussion (this exact order, 2026-07-23), **plus "Probation" appended at the bottom 2026-08-10**. No enum validation; stored/displayed as-is.
+- **Reason** — `<select>`: blank + Review, Trial, Settlement, Discussion (this exact order, 2026-07-23), **plus "PV Hearing" appended at the bottom 2026-08-10**. No enum validation; stored/displayed as-is. **Unlike the Time dropdown, this select does NOT preserve an off-list stored value as an extra option** — see Known Issues.
 - **Courtroom** — `<select>`: blank + 3A, 3B, 3C, 4B, 4C, 4D, 5C, 5D, 6A, 6B, 6C, 6D (6A–6D added 2026-07-23 at the bottom).
 - **"NEXT EVENT" label** appears on both the blue display block and the top of the edit form (all-caps/bold `#5b9fd4`, shared `.nextEventLabel` class). Font size bumped 10px → **12px** (+20%, 2026-07-23) — one class change covers both sites.
 - **Edit/Close buttons (2026-07-23).** On the display block the top-right button reads **Edit** (opens the form). On the expanded edit form that same top-right slot shows a **Close** button, and the bottom action button (formerly "Cancel") is also renamed **Close**. Both Close buttons call the same `onCancel` (discard, no save) — identical behavior, by design.
@@ -1382,6 +1386,7 @@ Things explicitly identified and **not** done. Rough priority order.
   - **A misdemeanor TRIAL countdown cannot be built on this model.** Tennessee has no fixed statutory speedy-trial clock analogous to the federal Speedy Trial Act; misdemeanor trial timing is governed by the constitutional speedy-trial right under the Barker v. Wingo balancing factors plus Rule 48(b) discretionary dismissal. There is no date to count down to. If this is built later, the right shape is an ELAPSED-days-since-booking counter with a color threshold flagging cases drifting into viable speedy-trial territory — a judgment prompt, not a deadline.
   - **Verify against primary authority (tncourts.gov) before relying on any of this in practice.** The countdown is a scheduling convenience, not legal advice, and should not be treated as authoritative.
 - ~~Incident date sorting uses `new Date(incident_date)` which is fragile for non-standard date strings~~ — **RESOLVED 2026-07-28.** Replaced with `compareIncidentsByDate()`, which sorts on the parsed numeric key from the existing `dateKey()` helper (never `new Date()`, never string compare) and pushes missing/unparseable dates to the end instead of producing `NaN` comparisons. Order also flipped to oldest-first. See the 2026-07-28 feature entry.
+- **The Next Event Reason `<select>` does not preserve an off-list stored value, and at least one exists.** The Time dropdown deliberately keeps an unlisted stored value as an extra option at the top so editing can't blank it (2026-07-28); **Reason has no equivalent guard**. One live row holds the free-text reason `"Shelter Court Review (reset from 7/31/2026 — client missed)"`, which is not on the list. **Precise behaviour, confirmed by reading the code rather than assumed:** opening that record's edit form shows the select with **no matching option** (it displays as blank) while `form.reason` still holds the real string, so *saving without touching the dropdown preserves it* — but the form misrepresents the stored value, and **one interaction with the select replaces it permanently**. Not fixed here (2026-08-10 was scoped to the options list alone). The fix, if wanted, is the same pattern the Time dropdown already uses.
 - **`extractPdfText.js` loads its pdfjs worker from `unpkg.com`, so text extraction requires network access** — an offline upload stores the PDF and the record but extracts no text. **Accepted, not a bug:** all uploads happen on a stable connection. Do not "fix" by bundling the worker.
 - No pagination — all clients/cases load at once; fine for current scale
 - **`fullSync` uses `select('*')`**, which has a default 1,000-row ceiling in `supabase-js`. Fine at current scale (as of 2026-07-28: 20 clients / 22 incidents / 34 cases / **166 hours** — `hours` is the fastest-growing table and the one that will hit the ceiling first); revisit before any large growth.

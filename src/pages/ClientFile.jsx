@@ -312,7 +312,7 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
             <option>Trial</option>
             <option>Settlement</option>
             <option>Discussion</option>
-            <option>Probation</option>
+            <option>PV Hearing</option>
           </select>
         </div>
       </div>
