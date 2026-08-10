@@ -551,44 +551,45 @@
   color: #c8d0db;
 }
 
+/* Wrapper for the delete-confirmation state, which replaces the whole row and
+   so needs the row divider but not the grid. */
 .incidentGroup {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 2px solid #2C3A4F;
 }
 
-.incidentHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* ── Incidents — two-column grid, one row per incident ───────────────────────
+   Replaces the click-to-expand accordion (2026-08-10). There is no open state
+   at all now: every incident's cases are always visible.
+
+   Left cell is 1fr of a 1fr/5fr split — one sixth of the section — with a 180px
+   floor so it can't be squeezed below its own content ("Affidavit on File" is
+   ~92px at 12px, plus 32px of cell padding). At the app's 1126px desktop width
+   the split lands at roughly 188px / 938px; the floor only starts binding below
+   about a 1080px viewport.
+
+   Dividers are deliberately heavier than the 1px rgba(255,255,255,0.05) hairline
+   this replaced, which did not read as a grid: rows get 2px and the column split
+   1px, both in #2C3A4F (the palette's existing root-border colour) so the row
+   boundary stays the dominant line and the column split reads as secondary. */
+.incidentRow {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 5fr);
   background: #16212F;
-  padding: 9px 12px 9px 16px;
-  cursor: pointer;
-  user-select: none;
+  border-bottom: 2px solid #2C3A4F;
 }
 
-.incidentHeader:active {
-  background: #1a2840;
-}
-
-.incidentHeaderLeft {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
-}
-
-/* Two stacked lines: "date — location" on top, description below. */
-.incidentTitleBlock {
+.incidentLeftCell {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  align-items: flex-start;
+  padding: 10px 16px;
+  border-right: 1px solid #2C3A4F;
   min-width: 0;
 }
 
-/* Line 1 — "{date} — {location}", in the same blue accent the case numbers use.
-   Size and weight are the old .incidentDatePart values, unchanged; only the
-   color is new. Wraps rather than truncating, since a location can be long. */
-.incidentMetaLine {
+/* Date keeps the blue accent the combined "date — location" line used; location
+   drops to the app's muted text now that it is on its own line. */
+.incidentDateLine {
   font-size: 13px;
   font-weight: 600;
   color: #6b9fd4;
@@ -596,18 +597,113 @@
   overflow-wrap: anywhere;
 }
 
-/* Line 2 — its own block directly under line 1, flush left at the same starting
-   x-position. Font size, weight and color are unchanged. The old hanging indent
-   (padding-left: 1.62em / text-indent: -1.62em) is gone: it existed only because
-   the description used to run inline after the date and needed its wrapped lines
-   to clear it. Now that this is a standalone block, that indent would be exactly
-   the left offset relative to line 1 that this layout is meant to remove. */
-.incidentDescPart {
+.incidentLocLine {
+  font-size: 12px;
+  color: #9faab8;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin-top: 1px;
+}
+
+/* One block per case: the number, then bond and affidavit status on their own
+   lines. Stacked rather than inline because ~156px of usable cell width cannot
+   hold "$2,500 bond | Affidavit on File" without truncating one of them. */
+.incidentCaseItem {
+  margin-top: 9px;
+  min-width: 0;
+}
+
+/* The only tap target in the cell, matching the client list's deliberately
+   tightened case-number hit area. */
+.incidentCaseNum {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5b9fd4;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  user-select: text;
+  overflow-wrap: anywhere;
+}
+
+.incidentCaseNum:active {
+  color: #7eb8f7;
+}
+
+/* Compound selector so the pending marker beats .incidentCaseNum's colour
+   regardless of source order. */
+.incidentCaseNum.caseNumberPending {
+  font-style: italic;
+  color: #6b7a99;
+}
+
+.incidentCaseMeta {
+  font-size: 11px;
+  color: #6b7a99;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.incidentAddCaseBtn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: #5b9fd4;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+  margin-top: 11px;
+  text-align: left;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+
+.incidentAddCaseBtn:active {
+  color: #7eb8f7;
+}
+
+/* Right cell — the description. position: relative anchors the × ; the extra
+   right padding keeps a long description from running under it. */
+.incidentDescCell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 34px 10px 16px;
+  min-width: 0;
+}
+
+.incidentDescText {
   font-size: 13px;
   font-weight: 600;
   color: #c8d0dc;
   min-width: 0;
-  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+/* Pinned to the cell's top-right corner instead of being a flex sibling of the
+   old header row. */
+.incidentDescCell .incidentDeleteBtn {
+  position: absolute;
+  top: 7px;
+  right: 11px;
+  padding: 0;
+}
+
+/* Editing spans the full row: the three fields live in different cells, so
+   editing one while another still shows its old value would read as two
+   competing sources of truth. */
+.incidentEditCell {
+  grid-column: 1 / -1;
+  padding: 10px 16px;
+}
+
+/* Also full-width — the add-case form's own two-column bond/status row has no
+   room inside a one-sixth-width cell. */
+.incidentAddCaseCell {
+  grid-column: 1 / -1;
+  border-top: 1px solid #2C3A4F;
 }
 
 /* Affidavit-first upload — the trigger sits beside the Incidents "+" button and
@@ -677,11 +773,6 @@
 .incidentAwaiting {
   font-size: 13px;
   font-weight: 600;
-  font-style: italic;
-  color: #6b7a99;
-}
-
-.caseNumberPending {
   font-style: italic;
   color: #6b7a99;
 }
@@ -767,29 +858,6 @@
   color: #c97060;
 }
 
-.incidentBody {
-  background: #1E2A3A;
-}
-
-.addCaseInlineBtn {
-  display: block;
-  width: 100%;
-  background: none;
-  border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  color: #5b9fd4;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 9px 16px;
-  text-align: left;
-  cursor: pointer;
-  letter-spacing: 0.01em;
-}
-
-.addCaseInlineBtn:active {
-  color: #7eb8f7;
-}
-
 .incidentSectionAddBtn {
   background: none;
   border: none;
@@ -805,51 +873,6 @@
 /* Overrides space-between so children sit flush left */
 .sectionHeaderRowLeft {
   justify-content: flex-start;
-}
-
-.caseRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  background: #1E2A3A;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  cursor: pointer;
-}
-
-.caseRow:last-child {
-  border-bottom: none;
-}
-
-.caseInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.caseNumber {
-  font-size: 11px;
-  font-weight: 600;
-  color: #5b9fd4;
-  letter-spacing: 0.02em;
-}
-
-.caseCharge {
-  font-size: 15px;
-  font-weight: 600;
-  color: #f0f2f5;
-}
-
-.caseMeta {
-  font-size: 12px;
-  color: #6b7a99;
-  margin-top: 1px;
-}
-
-.caseChevron {
-  font-size: 20px;
-  color: #3a4a5e;
-  line-height: 1;
 }
 
 /* Hours section */
@@ -1535,5 +1558,19 @@
 
   .headerCaseList span {
     line-height: 1.35;
+  }
+
+  /* Two columns don't fit a phone: stack to one, left-cell block on top and the
+     description beneath it. The column split becomes a horizontal rule between
+     the two stacked blocks, kept at 1px so it stays clearly subordinate to the
+     2px divider separating one incident from the next — which is what has to do
+     the work of separating incidents once everything is in a single column. */
+  .incidentRow {
+    grid-template-columns: 1fr;
+  }
+
+  .incidentLeftCell {
+    border-right: none;
+    border-bottom: 1px solid #2C3A4F;
   }
 }

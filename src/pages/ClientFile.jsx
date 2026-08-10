@@ -707,7 +707,6 @@ function AffidavitFirstUpload({ clientId, incidents }) {
 
 function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDeleted }) {
   const [incident, setIncident] = useState(initialIncident)
-  const [open, setOpen] = useState(false)
   const [showAddCase, setShowAddCase] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editDesc, setEditDesc] = useState('')
@@ -717,8 +716,7 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
   const [deleting, setDeleting] = useState(false)
   const committingRef = useRef(false)
 
-  function startEdit(e) {
-    e.stopPropagation()
+  function startEdit() {
     setEditDesc(incident.incident_description ?? '')
     setEditDate(toDateInput(incident.incident_date ?? ''))
     setEditLocation(incident.location ?? '')
@@ -799,121 +797,116 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
     )
   }
 
+  const date = formatDateDisplay(incident.incident_date)
+  const loc = incident.location
+  const desc = incident.incident_description
+  // The state an affidavit-first incident is created in: nothing described yet.
+  const undescribed = !date && !loc && !desc
+
+  // case_number is nullable, so the sort must not call localeCompare on null (it
+  // would throw during render and take the whole client file down).
+  const cases = [...(initialIncident.cases ?? [])]
+    .sort((a, b) => (a.case_number ?? '').localeCompare(b.case_number ?? ''))
+
+  // One grid row per incident, always fully visible — there is no expand/collapse
+  // state anymore. Left cell: date, location, then this incident's cases and its
+  // own "add a case". Right cell: the description.
   return (
-    <div className={styles.incidentGroup}>
-      <div
-        className={styles.incidentHeader}
-        onClick={() => { if (!editing) { setOpen(o => !o); setShowAddCase(false) } }}
-      >
-        <div className={styles.incidentHeaderLeft}>
-          {editing ? (
-            <div className={styles.incidentEditInputs} onBlur={onEditContainerBlur} onClick={e => e.stopPropagation()}>
-              <textarea
-                className={styles.incidentNameInput}
-                value={editDesc}
-                placeholder="Description"
-                rows={3}
-                autoFocus
-                style={{ resize: 'none' }}
-                onChange={e => setEditDesc(e.target.value)}
-                onKeyDown={onKeyDown}
-              />
-              <input
-                className={styles.incidentNameInput}
-                value={editLocation}
-                placeholder="Location"
-                onChange={e => setEditLocation(e.target.value)}
-                onKeyDown={onKeyDown}
-              />
-              {/* The date stays LAST on purpose: it was moved below the description
-                  on 2026-06-10 so the native mobile date picker can't cover the
-                  fields above it. Location was inserted between them, not before. */}
-              <input
-                type="date"
-                className={`${styles.incidentNameInput} ${styles.incidentDateInput}`}
-                value={editDate}
-                onChange={e => setEditDate(e.target.value)}
-                onKeyDown={onKeyDown}
-                {...pickerHandlers()}
-              />
-            </div>
-          ) : (
-            /* Two stacked lines: "date — location" on top, description below it
-               flush left. All three fields are nullable. */
-            <div className={styles.incidentTitleBlock}>
-              {(() => {
-                const date = formatDateDisplay(incident.incident_date)
-                const loc = incident.location
-                const desc = incident.incident_description
-                // With nothing at all — the state an affidavit-first incident is
-                // created in — an explicit marker rather than a bare dash, so the
-                // row reads as "not described yet" instead of empty or broken.
-                if (!date && !loc && !desc) return <div className={styles.incidentAwaiting}>{AWAITING_DETAILS}</div>
-                return (
-                  <>
-                    {(date || loc) && (
-                      /* filter-then-join, the same convention the Next Event line
-                         uses: the em dash exists only when both sides do, so a
-                         missing date or location never leaves a dangling separator. */
-                      <div className={styles.incidentMetaLine}>
-                        {[date, loc].filter(Boolean).join(' — ')}
-                      </div>
-                    )}
-                    {desc && <div className={styles.incidentDescPart}>{desc}</div>}
-                  </>
-                )
-              })()}
-            </div>
-          )}
-          {open && !editing && (
+    <div className={styles.incidentRow}>
+      {editing ? (
+        /* Editing spans the full row rather than sitting in one cell: the three
+           fields belong to different cells, so showing the old value of one while
+           editing another would read as two competing sources of truth. */
+        <div className={styles.incidentEditCell}>
+          <div className={styles.incidentEditInputs} onBlur={onEditContainerBlur}>
+            <textarea
+              className={styles.incidentNameInput}
+              value={editDesc}
+              placeholder="Description"
+              rows={3}
+              autoFocus
+              style={{ resize: 'none' }}
+              onChange={e => setEditDesc(e.target.value)}
+              onKeyDown={onKeyDown}
+            />
+            <input
+              className={styles.incidentNameInput}
+              value={editLocation}
+              placeholder="Location"
+              onChange={e => setEditLocation(e.target.value)}
+              onKeyDown={onKeyDown}
+            />
+            {/* The date stays LAST on purpose: it was moved below the description
+                on 2026-06-10 so the native mobile date picker can't cover the
+                fields above it. Location was inserted between them, not before. */}
+            <input
+              type="date"
+              className={`${styles.incidentNameInput} ${styles.incidentDateInput}`}
+              value={editDate}
+              onChange={e => setEditDate(e.target.value)}
+              onKeyDown={onKeyDown}
+              {...pickerHandlers()}
+            />
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className={styles.incidentLeftCell}>
+            {date && <div className={styles.incidentDateLine}>{date}</div>}
+            {loc && <div className={styles.incidentLocLine}>{loc}</div>}
+
+            {cases.map(c => (
+              <div key={c.id} className={styles.incidentCaseItem}>
+                {/* Only the case number is the tap target, matching the client
+                    list. Cases are addressed by case_number in the URL; one
+                    without a number falls back to its id so it stays reachable
+                    (CaseView resolves both). */}
+                <span
+                  className={`${styles.incidentCaseNum} ${c.case_number ? '' : styles.caseNumberPending}`}
+                  {...tapHandlers(() => onCaseTap(c.case_number || c.id))}
+                >
+                  {c.case_number || 'Case # pending'}
+                </span>
+                {bondStatusText(c.bond_amount, c.release_status) && (
+                  <div className={styles.incidentCaseMeta}>{bondStatusText(c.bond_amount, c.release_status)}</div>
+                )}
+                <div className={styles.incidentCaseMeta}>
+                  {c.warrant_url ? 'Affidavit on File' : 'No Affidavit'}
+                </div>
+              </div>
+            ))}
+
+            {!showAddCase && (
+              <button className={styles.incidentAddCaseBtn} onClick={() => setShowAddCase(true)}>
+                + add a case
+              </button>
+            )}
+          </div>
+
+          <div className={styles.incidentDescCell}>
+            <button
+              className={styles.incidentDeleteBtn}
+              onClick={() => setShowDeleteConfirm(true)}
+            >×</button>
+            {desc
+              ? <div className={styles.incidentDescText}>{desc}</div>
+              : undescribed && <div className={styles.incidentAwaiting}>{AWAITING_DETAILS}</div>}
             <button className={styles.incidentEditBtn} onClick={startEdit}>
               edit incident
             </button>
-          )}
-        </div>
-        <button
-          className={styles.incidentDeleteBtn}
-          onClick={e => { e.stopPropagation(); setShowDeleteConfirm(true) }}
-        >×</button>
-      </div>
+          </div>
+        </>
+      )}
 
-      {open && (
-        <div className={styles.incidentBody}>
-          {/* case_number is nullable, so the sort must not call localeCompare on
-              null (it would throw and take the whole client file down). */}
-          {[...(initialIncident.cases ?? [])].sort((a, b) => (a.case_number ?? '').localeCompare(b.case_number ?? '')).map(c => (
-            /* Cases are addressed by case_number in the URL; a case without one
-               falls back to its id so it stays reachable (CaseView resolves both). */
-            <div key={c.id} className={styles.caseRow} {...tapHandlers(() => onCaseTap(c.case_number || c.id))} style={{ cursor: 'pointer', userSelect: 'text' }}>
-              <div className={styles.caseInfo}>
-                {/* A numberless case (affidavit-first, or simply not numbered
-                    yet) previously rendered nothing here, leaving the row with no
-                    identifying line at all. */}
-                {c.case_number
-                  ? <span className={styles.caseNumber}>{c.case_number}</span>
-                  : <span className={`${styles.caseNumber} ${styles.caseNumberPending}`}>Case # pending</span>}
-                <span className={styles.caseCharge}>{[c.charge, c.classification ? `(${c.classification})` : ''].filter(Boolean).join(' ')}</span>
-                <span className={styles.caseMeta}>
-                  {c.warrant_url ? 'Affidavit on File' : 'No Affidavit'}
-                  {bondStatusText(c.bond_amount, c.release_status) && (
-                    <><span className={styles.pipe}>|</span>{bondStatusText(c.bond_amount, c.release_status)}</>
-                  )}
-                </span>
-              </div>
-              <span className={styles.caseChevron}>›</span>
-            </div>
-          ))}
-          {showAddCase ? (
-            <AddCaseForm
-              incidentId={incident.id}
-              onSaved={() => { setShowAddCase(false); onCaseAdded() }}
-              onCancel={() => setShowAddCase(false)}
-            />
-          ) : (
-            <button className={styles.addCaseInlineBtn} onClick={() => setShowAddCase(true)}>
-              + add a case
-            </button>
-          )}
+      {/* Full-width: the add-case form's own two-column bond/status row has no
+          room in a 1/6-width cell. */}
+      {showAddCase && (
+        <div className={styles.incidentAddCaseCell}>
+          <AddCaseForm
+            incidentId={incident.id}
+            onSaved={() => { setShowAddCase(false); onCaseAdded() }}
+            onCancel={() => setShowAddCase(false)}
+          />
         </div>
       )}
     </div>
