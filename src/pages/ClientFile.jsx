@@ -533,6 +533,176 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
   )
 }
 
+// ─── Affidavit-first upload ──────────────────────────────────────────────────
+
+// Marker for a record that exists but hasn't been described yet. An affidavit-
+// first incident is created with incident_date, location and incident_description
+// all null, and its case with a null case_number — without an explicit marker
+// both render as an empty strip that reads as a broken row rather than as a
+// deliberate "not filled in yet".
+const AWAITING_DETAILS = 'Awaiting details'
+
+const NEW_INCIDENT = '__new__'
+
+// Label for an existing incident in the target picker: "date — location" via the
+// same filter-then-join the incident header itself uses, falling back to the
+// description, then to the same Awaiting-details marker — so an incident created
+// by a previous affidavit upload is still selectable and reads consistently.
+function incidentPickerLabel(incident) {
+  const meta = [formatDateDisplay(incident.incident_date), incident.location].filter(Boolean).join(' — ')
+  if (meta) return meta
+  const desc = incident.incident_description?.trim()
+  if (desc) return desc.length > 60 ? `${desc.slice(0, 60)}…` : desc
+  return AWAITING_DETAILS
+}
+
+// The affidavit is the source document, so this path runs in the opposite order
+// from the rest of the Incidents flow: the PDF comes first and the incident +
+// case rows are created FROM it, every descriptive field left null to be filled
+// in afterwards from the extracted warrant_text. Which incident the affidavit
+// belongs to is always ASKED, never inferred from the file.
+function AffidavitFirstUpload({ clientId, incidents }) {
+  const [file, setFile] = useState(null)
+  const [target, setTarget] = useState(NEW_INCIDENT)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState(null)
+
+  function handlePick(e) {
+    const picked = e.target.files?.[0]
+    // Cleared immediately so picking the same file twice still fires onChange.
+    e.target.value = ''
+    if (!picked) return
+    setTarget(NEW_INCIDENT)
+    setError(null)
+    setFile(picked)
+  }
+
+  function cancel() {
+    if (uploading) return
+    setFile(null)
+    setError(null)
+  }
+
+  async function confirm() {
+    setUploading(true)
+    setError(null)
+
+    // Storage upload first, and bail on failure before any row is written: a
+    // failed upload must not leave a blank incident and an affidavit-less case
+    // behind, which is exactly the confusing state this flow exists to avoid.
+    // Same bucket and `warrants/` prefix as CaseView's upload. The case id
+    // stands in for the case number in the path — the identical fallback
+    // CaseView already applies to a numberless case, so a later "Replace
+    // Affidavit" there overwrites this same object rather than orphaning it.
+    const caseId = crypto.randomUUID()
+    const path = `warrants/${caseId}.pdf`
+    const { error: uploadErr } = await supabase.storage
+      .from('warrants')
+      .upload(path, file, { contentType: 'application/pdf', upsert: true })
+    if (uploadErr) { setError(uploadErr.message); setUploading(false); return }
+
+    // Every row goes Dexie → addToSyncQueue, never a direct Supabase write. The
+    // incident is enqueued BEFORE the case so the FIFO queue can never push a
+    // cases row whose incident_id FK hasn't landed on the server yet.
+    let incidentId = target
+    if (target === NEW_INCIDENT) {
+      const newIncidentId = crypto.randomUUID()
+      // All three descriptive columns are nullable; they are deliberately left
+      // null here and populated separately from the extracted text.
+      const incidentRecord = {
+        id: newIncidentId,
+        client_id: clientId,
+        incident_date: null,
+        location: null,
+        incident_description: null,
+      }
+      await db.incidents.put(incidentRecord)
+      await addToSyncQueue('incidents', 'INSERT', newIncidentId, incidentRecord)
+      incidentId = newIncidentId
+    }
+
+    const caseRecord = {
+      id: caseId,
+      incident_id: incidentId,
+      case_number: null,
+      charge: null,
+      charge_abbrev: null,
+      classification: null,
+      bond_amount: null,
+      release_status: null,
+      warrant_url: path,
+    }
+    await db.cases.put(caseRecord)
+    await addToSyncQueue('cases', 'INSERT', caseId, caseRecord)
+
+    // Text extraction — the 2026-07-28 rule verbatim: Dexie then the sync queue,
+    // never a direct Supabase call, awaited before this handler returns, and a
+    // null result skips the write instead of overwriting. The case row is
+    // written above BEFORE extraction runs, so the case survives even when
+    // nothing extracts (a scanned affidavit, or the CDN worker unreachable).
+    const text = await extractPdfText(file)
+    if (text != null) {
+      await db.cases.update(caseId, { warrant_text: text })
+      await addToSyncQueue('cases', 'UPDATE', caseId, { id: caseId, warrant_text: text })
+    } else {
+      console.warn('[warrant_text] no text extracted; case created without it')
+    }
+
+    setUploading(false)
+    setFile(null)
+  }
+
+  return (
+    <>
+      <label className={styles.affidavitUploadBtn}>
+        {uploading ? 'uploading…' : 'upload affidavit'}
+        <input
+          type="file"
+          accept="application/pdf"
+          style={{ display: 'none' }}
+          onChange={handlePick}
+          disabled={uploading}
+        />
+      </label>
+
+      {/* A centered modal rather than an inline panel: this component's trigger
+          lives inside the section-header flex row, so a panel rendered from here
+          would become a child of that row. */}
+      {file && (
+        <div className={styles.affidavitOverlay} onClick={cancel}>
+          <div className={styles.affidavitDialog} onClick={e => e.stopPropagation()}>
+            <div className={styles.affidavitDialogTitle}>Which incident?</div>
+            <div className={styles.affidavitFileName}>{file.name}</div>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel}>Incident</label>
+              <select
+                className={styles.formSelect}
+                value={target}
+                onChange={e => setTarget(e.target.value)}
+                disabled={uploading}
+              >
+                <option value={NEW_INCIDENT}>New incident</option>
+                {incidents.map(inc => (
+                  <option key={inc.id} value={inc.id}>{incidentPickerLabel(inc)}</option>
+                ))}
+              </select>
+            </div>
+            {error && <div className={styles.formError}>{error}</div>}
+            <div className={styles.formActions}>
+              <button className={styles.formSave} onClick={confirm} disabled={uploading}>
+                {uploading ? 'Uploading…' : 'Create'}
+              </button>
+              <button className={styles.formCancel} onClick={cancel} disabled={uploading}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ─── Incident group ──────────────────────────────────────────────────────────
 
 function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDeleted }) {
@@ -675,9 +845,10 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
                 const date = formatDateDisplay(incident.incident_date)
                 const loc = incident.location
                 const desc = incident.incident_description
-                // With nothing at all, a lone dash keeps the header visible and
-                // tappable instead of collapsing to an empty strip.
-                if (!date && !loc && !desc) return <div className={styles.incidentMetaLine}>—</div>
+                // With nothing at all — the state an affidavit-first incident is
+                // created in — an explicit marker rather than a bare dash, so the
+                // row reads as "not described yet" instead of empty or broken.
+                if (!date && !loc && !desc) return <div className={styles.incidentAwaiting}>{AWAITING_DETAILS}</div>
                 return (
                   <>
                     {(date || loc) && (
@@ -715,7 +886,12 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
                falls back to its id so it stays reachable (CaseView resolves both). */
             <div key={c.id} className={styles.caseRow} {...tapHandlers(() => onCaseTap(c.case_number || c.id))} style={{ cursor: 'pointer', userSelect: 'text' }}>
               <div className={styles.caseInfo}>
-                {c.case_number && <span className={styles.caseNumber}>{c.case_number}</span>}
+                {/* A numberless case (affidavit-first, or simply not numbered
+                    yet) previously rendered nothing here, leaving the row with no
+                    identifying line at all. */}
+                {c.case_number
+                  ? <span className={styles.caseNumber}>{c.case_number}</span>
+                  : <span className={`${styles.caseNumber} ${styles.caseNumberPending}`}>Case # pending</span>}
                 <span className={styles.caseCharge}>{[c.charge, c.classification ? `(${c.classification})` : ''].filter(Boolean).join(' ')}</span>
                 <span className={styles.caseMeta}>
                   {c.warrant_url ? 'Affidavit on File' : 'No Affidavit'}
@@ -1828,9 +2004,14 @@ export default function ClientFile() {
       <div className={styles.incidentsWrapper}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
           <span className={styles.sectionTitle}>Incidents</span>
-          {!showIncidentForm && (
-            <button className={styles.addBtn} onClick={() => setShowIncidentForm(true)}>+</button>
-          )}
+          {/* Same two-control header pattern the Hours section uses: a text
+              control beside the square "+", which stays the primary affordance. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <AffidavitFirstUpload clientId={id} incidents={sortedIncidents} />
+            {!showIncidentForm && (
+              <button className={styles.addBtn} onClick={() => setShowIncidentForm(true)}>+</button>
+            )}
+          </div>
         </div>
         {showIncidentForm && (
           <AddIncidentForm

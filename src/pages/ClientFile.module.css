@@ -610,6 +610,82 @@
   margin-top: 2px;
 }
 
+/* Affidavit-first upload — the trigger sits beside the Incidents "+" button and
+   is styled as a text control (like the Hours header's "clear checks") rather
+   than a second square icon, so "+" stays the primary affordance. It is a
+   <label> wrapping a hidden file input, the same convention the affidavit,
+   criminal-history and courtroom-document uploads already use. */
+.affidavitUploadBtn {
+  background: none;
+  border: none;
+  color: #5b9fd4;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.affidavitUploadBtn:active {
+  color: #7eb8f7;
+}
+
+/* Target picker. z-index matches the app's other overlays (TextViewerDrawer /
+   DailyHoursDrawer at 200) so it clears the sticky name bar at z-index 10. */
+.affidavitOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 200;
+}
+
+.affidavitDialog {
+  background: #16212F;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  padding: 16px;
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: default;
+}
+
+.affidavitDialogTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0f2f5;
+}
+
+.affidavitFileName {
+  font-size: 12px;
+  color: #6b7a99;
+  overflow-wrap: anywhere;
+  margin-top: -6px;
+}
+
+/* Blank-record markers. An affidavit-first incident has date, location and
+   description all null and its case has no number yet; both would otherwise
+   render as an empty strip that reads as broken rather than as pending. Muted
+   and italic to distinguish a placeholder from real entered data. */
+.incidentAwaiting {
+  font-size: 13px;
+  font-weight: 600;
+  font-style: italic;
+  color: #6b7a99;
+}
+
+.caseNumberPending {
+  font-style: italic;
+  color: #6b7a99;
+}
+
 .incidentEditInputs {
   display: flex;
   flex-direction: column;
