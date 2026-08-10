@@ -48,8 +48,8 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `closed_at` | timestamptz | set when a client is closed, null when reopened; used to sort the Closed section (most recently closed first) |
 | `criminal_history_url` | text | Supabase Storage public URL for criminal history PDF |
 | `criminal_history_text` | text | extracted text from criminal history PDF — populated on upload |
-| `booking_date` | text | "M/D/YYYY" — date booked / initial appearance before magistrate; optional. Added 2026-06-24 via MCP. Used to compute the in-custody prelim-hearing cutoff (see entry below). |
-| `booking_time` | text | "h:MM AM/PM" (same format as `next_events.event_time`) — time of booking; optional, hour-only in the UI. Added 2026-06-24 via MCP. |
+| `booking_date` | text | "M/D/YYYY" — date booked / initial appearance before magistrate; optional. Added 2026-06-24 via MCP. Originally added to compute the in-custody prelim-hearing cutoff; **that countdown was removed 2026-08-10 and this column was deliberately KEPT** — still written by the New/Edit Client forms, still a useful fact on its own, and retained so the countdown can be rebuilt without data loss. **Do not drop.** |
+| `booking_time` | text | "h:MM AM/PM" (same format as `next_events.event_time`) — time of booking; optional, hour-only in the UI. Added 2026-06-24 via MCP. **Kept deliberately** when the prelim countdown was removed 2026-08-10, same reasoning as `booking_date`. **Do not drop.** |
 
 ### `next_events`
 | Column | Type | Notes |
@@ -150,6 +150,43 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 ---
 
 ## Completed Features
+
+### Custody Badge Top-Aligned + Prelim-Hearing Countdown REMOVED (2026-08-10, commit `f0e2a9c`)
+
+**No schema change — no column was dropped.** `CaseView.jsx` untouched, client-list custody badge untouched, Incidents section untouched at both breakpoints, no collapse/expand.
+
+#### 1. Single-client header custody badge moved to the top of the row
+
+**Horizontal position is unchanged** — still `grid-column: 3`, still `align-items: flex-end`, so the badge stays flush right exactly where it was. Only the vertical changed: `align-items: center` on the row is now overridden by `align-self: start` on `.badgeStack`, at **both** breakpoints.
+
+**The target was the top of the visible name text, not the top of the grid area**, and those differ for two stacked reasons:
+
+1. the name shares a flex row with the **28px** indigent circle, whose `align-items: center` centres the name's ~20px line box inside it;
+2. inside that line box sits the font's own leading above the cap height (ascent − cap height).
+
+`margin-top: 9px` is the sum of the two. **It lands within a pixel at both breakpoints** — the mobile name is smaller (15px vs 17px) but sits in the same 28px circle row, so the larger centring offset almost exactly cancels the smaller leading. **That 9px is the knob:** raise it to push the badge down, lower it to pull it up.
+
+- **Mobile specifically:** the badge spans grid rows 1–2 there, and the row's `align-items: center` was centring it against *name block + mini-list*, which is what put it low on multi-case clients. `align-self: start` fixes exactly that.
+- **`.nameRowLeft` also gained `align-self: start`.** In the usual case it is the tallest item and already filled the row, so this is a no-op. It matters only on desktop for a client whose **case mini-list is taller than the name block** (roughly 5+ cases): without it the name would drift down while the badge stayed pinned to the top, and the two would no longer share a top edge — defeating the whole point.
+
+#### 2. In-custody preliminary-hearing countdown — REMOVED
+
+**Deliberately removed 2026-08-10.** The 14-day countdown, its date math, the weekend rollover, its render site, and all CSS that became dead with it are gone. Swept repo-wide rather than removing only the obvious render site:
+
+| Removed | |
+|---|---|
+| `src/prelimDeadline.js` | **File deleted.** `computePrelimCutoff`, `shortWeekday`, `formatMD`, `formatBookingTimeCompact` existed only to serve this feature and had no other callers |
+| `ClientRow.jsx` | Import, `showPrelim`, `cutoffDate`, and the two-line render block |
+| `ClientRow.module.css` | `.prelimBlock`, `.prelimRow1`, `.prelimRow2`, and the `≤768px` `.prelimRow1, .prelimRow2` font-size override |
+| `ClientList.jsx` | `bookingDate` / `bookingTime` no longer threaded through `toRowProps` (nothing consumed them once the block was gone) |
+
+> **`clients.booking_date` and `clients.booking_time` were deliberately RETAINED** — the columns, their "BOOKED/INITIAL APPEARANCE" fields in the New and Edit Client forms (date + hour + AM/PM + Clear), and their offline-first save path are all untouched and still work. Booking date and time are useful facts in their own right, and keeping them means **the countdown can be rebuilt later with no data loss and no backfill**. Do not drop these columns.
+
+> **The Rule 5 research in this document is KEPT ON PURPOSE.** The 14-day figure, the 2018 amendment that raised it from 10 days (and the warning not to "correct" it back), the misdemeanor-coverage caveat, the booking-date-as-proxy assumption, the Rule 45 holiday simplification, and the note on why a misdemeanor *trial* countdown can't be built on this model — all of it stays under Known Issues as reference for a future rebuild. **It was not deleted just because the feature was.**
+
+**One knock-on effect, expected and not a regression:** in the client list, an in-custody client with a booking date previously had its custody badge pushed down by the two prelim lines sitting above it in `.badgeArea`. With those lines gone the badge is centred like every other client's. `.badgeArea` itself and every badge rule were left untouched — this is the absence of the block above it, not a change to the badge.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged. ⚠️ **Not yet verified on production.**
 
 ### Mobile Incident Separators Reworked + "+ add a case" Unbolded (2026-08-10, commit `d677276`)
 
@@ -740,7 +777,11 @@ Five independent UI/data cleanups:
 4. **Docket Type → preset select + optional append text.** ~~Initially shipped as an `<input>+<datalist>` combobox~~ — **revised same day** because the datalist dropdown never opened on iOS or desktop. Now a real native `<select>` (blank + the four presets) plus a separate optional `<input>` ("Add'l text (optional)") right after it. On save the two are combined into the single `docket_type` column via `[docketPreset, docketCustom].filter(Boolean).join(' ').trim() || null`; on load `splitDocketType()` peels a leading known preset back into the select and puts the remainder (or any legacy/custom value) into the text box. Flows through the existing `...rest` save payload to both Dexie and the sync queue. Display renders the combined `docket_type` as-is.
 5. **`cases.classification` added (field + two display spots).** New optional `<select>` placed immediately after "Abbrev. (for client list)" in **both** `CaseView.jsx`'s edit form and `ClientFile.jsx`'s inline `AddCaseForm`. Options in order (**uppercased same-day; existing row migrated via MCP**): blank, "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (least→most serious); blank stores null. Included in both the Dexie write and the sync-queue payload for case INSERT (AddCaseForm) and UPDATE (CaseView); CaseView pre-populates from the existing value. Displayed in parentheses after the charge in the single-client case rows (`ClientFile.jsx`), inheriting the charge-text font exactly, only when set (no empty parens). In the **client list** (`ClientRow.jsx`) it's in its own span styled to match the **next-event info line** (`.caseClassification` ≈ `.next`: blue `#6b9fd4`, normal weight 400, 13px desktop / 11px mobile) — ~~originally matched case-number style (bold, 10/11px); restyled same-day~~. A `{' '}` fragment before the span guarantees exactly one space between the charge abbrev and the `(CLASSIFICATION)`. `classification` reaches `ClientRow` via the full case objects already carried in `ClientList.jsx` `toRowProps` — no extra threading needed.
 
-### In-Custody Preliminary-Hearing Countdown (2026-06-24)
+### In-Custody Preliminary-Hearing Countdown (2026-06-24) — ⚠️ REMOVED 2026-08-10
+
+> ⚠️ **THIS FEATURE NO LONGER EXISTS.** It was deliberately removed on 2026-08-10 (see the entry at the top of Completed Features). `src/prelimDeadline.js` is deleted and the render site, its CSS, and the prop threading are all gone.
+>
+> **The entry below is retained as the build record for a future rebuild** — the columns it added (`clients.booking_date`, `clients.booking_time`) still exist and are still populated by the New/Edit Client forms, so a rebuild needs no migration and no backfill. The legal reasoning is still live and still worth reading before rebuilding: see the Rule 5 discussion under Known Issues, which was also deliberately kept.
 
 Adds a per-client preliminary-hearing deadline line to the client list for in-custody defendants.
 
@@ -964,7 +1005,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Two sections: **Active** (`relieved_closed = false`) and **Closed** (`relieved_closed = true`) — header text rendered as "CLOSED" via CSS `text-transform: uppercase`
 - **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — always sorted by `closed_at` DESC, null-`closed_at` clients at the bottom. (See the 2026-06-21 "Client List + Next Event Batch" entry.)
 - Each section header shows a count badge (e.g. "Active 12")
-- Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge
+- Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge. **No prelim-hearing countdown** — that two-line block above the badge was removed 2026-08-10, so the badge is now centred for every client
 - **Same-incident bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a `[` in `#6b9fd4` (the case-number colour) drawn in the gutter to the left of the case table. ⚠️ The list is sorted purely on the numeric part of the case number with **no incident component**, so same-incident cases can interleave; a non-contiguous group is deliberately left unbracketed rather than drawn across a foreign case. See the 2026-08-10 entry and Open Items.
 - **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), right-anchored so all case number left edges are flush. **As of 2026-08-09 it is an in-flow flex item on desktop, not `position: absolute`** — the absolute version was out of flow, so a row never grew and a client with 5+ cases bled into the neighbouring rows (see the 2026-08-09 entry; mobile was always in-flow and is unchanged). `charge_abbrev` shown if set, falls back to `charge`; if `classification` is set, it follows in parens (e.g. `Sex Offender Registration Viol (A MIS)`), styled to match the next-event info line (`#6b9fd4`, normal weight, 13px desktop / 11px mobile)
 - Badge colors: **In Custody** → muted crimson (`#b85555`); **Bonded Out** / **Out** → muted green (`#3d9e6a`); **CLOSED** / relieved clients → gray
@@ -1054,7 +1095,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Six options: `out`, `ror` ("ROR'd"), `pretrialed_out`, `bonded_out`, `in_custody`, `no_bond_held` ("No Bond/Held"). **Dropdown display order as of 2026-07-23 (2nd batch): Out, ROR'd, Pretrialed Out, Bonded Out, In Custody, No Bond/Held** — display order only in both New/Edit Client; stored values unchanged. `no_bond_held` added front-end only (existing text column, no schema change).
 - **Badge colors:** "Out", "ROR'd", "Pretrialed Out", "Bonded Out" → muted green (`#3d9e6a`); **"In Custody" and "No Bond/Held" → muted crimson (`#b85555`)** — both are physically in custody. The closed-section gray override wins over both. All badges muted from original bright colors.
 - Rendered in three places, all kept in sync: `ClientRow`'s `CustodyBadge` (explicit label map + red arm covering `in_custody` **or** `no_bond_held`, else green), the `ClientFile` header (per-status span; gray when the client is closed), and the New/Edit Client `<select>`s.
-- **In-custody preliminary-hearing countdown** gates on `custody_status === 'in_custody' || custody_status === 'no_bond_held'` (both in custody). The other four statuses (`out`/`ror`/`pretrialed_out`/`bonded_out`) do **not** trigger it.
+- ~~**In-custody preliminary-hearing countdown** gates on `custody_status === 'in_custody' || custody_status === 'no_bond_held'`.~~ — **the countdown was REMOVED 2026-08-10.** No custody status triggers anything beyond its badge now. (The gate is recorded here because a rebuild would want the same one.)
 
 ### charge_abbrev
 - `cases` table has `charge_abbrev text` column (added via `ALTER TABLE cases ADD COLUMN charge_abbrev text`)
@@ -1129,7 +1170,6 @@ src/
   localDB.js               # Dexie IndexedDB schema — mirrors 7 Supabase tables + sync_queue
   syncManager.js           # fullSync, processSyncQueue, addToSyncQueue, startBackgroundSync
   extractPdfText.js        # PDF text extraction utility — pdfjs-dist v6 + CDN worker
-  prelimDeadline.js        # Prelim-hearing date math — computePrelimCutoff, shortWeekday, formatMD, formatBookingTimeCompact
   caseGrouping.js          # bracketBlocks() — same-incident "[" grouping + contiguity guard, shared by ClientRow and ClientFile
   dateUtils.js             # Shared "M/D/YYYY" helpers — dateKey, todayString, toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, shiftDate
   seed.js                  # One-time seed script (node src/seed.js)
@@ -1183,9 +1223,31 @@ src/
 
 ## Coming Next
 
-### Features
+## ⏸ DEFERRED — decided, not forgotten
 
-- **Automation layer** — recurring tasks, reminders, or hooks (e.g. auto-notify before hearing dates)
+Three items explicitly parked as of **2026-08-10**. Each is a deliberate deferral with a known reason, not an oversight or a lost thread. Listed most-actionable first.
+
+### D1. `src/seed.js` — broken, and carries a SECOND copy of the Supabase anon key
+
+**The credential duplication is the reason this matters**, more than the breakage. `seed.js` holds its **own hardcoded copy of the Supabase anon key**, entirely independent of the one in `src/supabaseClient.js`. Two copies of a credential means a future key rotation silently misses one, and it widens the surface for no benefit — **nothing in the app imports this file**.
+
+It is also **broken and would fail on first run**: it inserts into columns that no longer exist — `cases.da_name` and `clients.criminal_history` (both dropped 2026-06-09) — and would throw at the first case insert. It additionally writes the dormant `clients.bond_amount`.
+
+**Decision pending: repair it against the current schema, or delete it.** Both are fine; **leaving a broken seed script that looks runnable is the worst of the three options**, which is exactly the state it is in now. If repaired, the anon key must come from `supabaseClient.js` rather than a second literal.
+
+### D2. Extraction progress state during PDF upload
+
+Whether to surface a distinct **"Extracting text…"** state while `extractPdfText` is awaited on upload. The `await` itself is **not** up for debate — it is the 2026-07-28 data-loss fix and must not be reverted to fire-and-forget (see that entry). The open question is purely whether the UI should say what it is doing during that window, rather than sitting on a generic "Uploading…".
+
+**This got more visible on 2026-08-10**, when affidavit upload became the **entry point for creating an incident and its case** rather than the last step on an already-existing case. The wait now sits between the user's action and a record appearing at all, so a large scanned PDF reads as a stall in a place it did not before.
+
+### D3. Automation layer
+
+Recurring tasks, reminders, or hooks — for example auto-notifying before hearing dates. **Not yet scoped**: no trigger mechanism, delivery channel, or storage model has been chosen, and the app currently has no server-side component to run scheduled work.
+
+---
+
+### Features
 
 #### Offline PDF availability (deferred)
 
@@ -1236,16 +1298,16 @@ Things explicitly identified and **not** done. Rough priority order.
 
 1. ~~`EditClient.jsx` still reads from Supabase, not Dexie — the last remaining offline gap.~~ — **RESOLVED 2026-07-28.** [`EditClient.jsx`](src/pages/EditClient.jsx) now loads the client via `useLiveQuery(() => db.clients.get(id), [id])`, matching `useClientFile`. A `useEffect` populates the form **once** from the first non-`undefined` live value (`setForm(prev => prev ?? {...})`) so a later background-sync update to the same client can't stomp an in-progress edit; `liveClient === null` still surfaces "Client not found." Save path unchanged — writes still go to Dexie + `addToSyncQueue`, which pushes to Supabase. Editing a client now works offline. **New eslint error** (18 → 19): `react-hooks/set-state-in-effect` on the populate effect — the exact same rule already present at [`CaseView.jsx:146`](src/pages/CaseView.jsx:146) for its analogous `liveData` sync effect, not a new class of problem.
 
-2. **`src/seed.js` is broken and carries a duplicate credential.** It inserts into three columns that no longer exist — `cases.da_name` (dropped 2026-06-09), `clients.criminal_history` (dropped 2026-06-09) — and also writes the dormant `clients.bond_amount`. Running it would fail at the first case insert. It additionally holds a **second hardcoded copy of the Supabase anon key**, independent of `supabaseClient.js`. It is referenced by nothing. **Either repair it against the current schema or delete it**; leaving a broken seed script that looks runnable is the worst of the three options.
+2. **`src/seed.js` is broken and carries a duplicate credential.** → **Promoted to [D1](#d1-srcseedjs--broken-and-carries-a-second-copy-of-the-supabase-anon-key) in the DEFERRED section (2026-08-10)**, where the duplicate-anon-key problem is spelled out as the reason it matters. Still unresolved; still a pending repair-or-delete decision.
 
-3. **Out-of-custody preliminary-hearing countdown is not implemented.** Tenn. R. Crim. P. 5 sets a **30-day** period for defendants released from custody; only the 14-day in-custody branch exists, so out-of-custody clients show no deadline at all despite having one. **Deliberately deferred, not forgotten** — see the fuller Rule 5 discussion under Known Issues, including the misdemeanor-coverage and Rule 45 holiday caveats.
+3. ~~**Out-of-custody preliminary-hearing countdown is not implemented.**~~ — **MOOT as of 2026-08-10: the entire prelim countdown was removed**, so neither branch exists now. The Rule 5 research (including the 30-day out-of-custody period, the misdemeanor-coverage caveat and the Rule 45 holiday simplification) is **deliberately retained** under Known Issues for a future rebuild, and `booking_date`/`booking_time` were kept so a rebuild needs no data work.
 
 4. **Still NOT NULL, still required by design — do not remove these guards without a migration.** `clients.first_name`, `clients.last_name`, `hours.entry_date`, `hours.hours`, `hours.description`, `courtroom_documents.name`, `courtroom_documents.file_url`. Removing client-side validation on any of these would let the Dexie write succeed and the background Supabase sync **fail silently**, which is worse than the validation message.
 
-5. **Uploads are slower now, by design.** PDF text extraction is `await`ed before the upload handler returns, so "Uploading…" / "Saving…" stays up until the text is persisted. **That delay is the fix** — it is exactly the window that was previously losing data — so do not "optimize" it back into a fire-and-forget call. **Open question:** whether to surface extraction progress (or a distinct "Extracting text…" state) for large PDFs, rather than making the change faster.
+5. **Uploads are slower now, by design.** PDF text extraction is `await`ed before the upload handler returns, so "Uploading…" / "Saving…" stays up until the text is persisted. **That delay is the fix** — it is exactly the window that was previously losing data — so do not "optimize" it back into a fire-and-forget call. **The open question** — whether to surface a distinct "Extracting text…" state — is **promoted to D2 in the DEFERRED section (2026-08-10)**, where it now matters more because affidavit upload creates the incident and case.
 
 ### Known Issues / Things to Revisit
-- **Preliminary-hearing countdown — verified correct, but incomplete. Revisit.** The 14-day figure was re-verified against Tenn. R. Crim. P. 5 on 2026-07-23 and is CURRENT. Rule 5 was amended in 2018, raising the in-custody period from 10 days to 14; many practitioners and secondary sources still say "the ten-day rule," which is the pre-2018 version. **Do not "correct" 14 back to 10.** Known gaps in the current implementation, in rough priority order:
+- **Preliminary-hearing countdown — ⚠️ THE FEATURE WAS REMOVED 2026-08-10.** Everything below is **retained deliberately as reference for a possible future rebuild**, not as a description of live behavior. `clients.booking_date` / `clients.booking_time` still exist and are still captured by the New/Edit Client forms, so a rebuild starts with data already in hand. Read this section before rebuilding. The 14-day figure was re-verified against Tenn. R. Crim. P. 5 on 2026-07-23 and is CURRENT. Rule 5 was amended in 2018, raising the in-custody period from 10 days to 14; many practitioners and secondary sources still say "the ten-day rule," which is the pre-2018 version. **Do not "correct" 14 back to 10.** Known gaps in the current implementation, in rough priority order:
   - **Only the in-custody branch is implemented.** Rule 5 also sets a 30-day period for defendants released from custody. The tool shows nothing for out-of-custody clients, who still have a deadline.
   - **The tool implicitly treats this as a felony-only rule. It isn't.** Rule 5 applies the same scheduling requirement to misdemeanors of greater magnitude than a small offense, unless the defendant expressly waives the right to a jury trial and to prosecution by indictment or presentment. A portion of the General Sessions misdemeanor docket is already covered and the tool doesn't distinguish.
   - **Booking date is a proxy for the initial appearance before the magistrate.** Sound in Davidson County, where commissioner review happens at booking. May not hold in other counties (e.g. Rutherford) if the app is ever used there.

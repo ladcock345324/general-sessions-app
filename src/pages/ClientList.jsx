@@ -84,8 +84,9 @@ function toRowProps(client) {
     oca: client.oca,
     status: client.relieved_closed ? 'closed' : 'active',
     custodyStatus: client.custody_status,
-    bookingDate: client.booking_date ?? null,
-    bookingTime: client.booking_time ?? null,
+    // booking_date / booking_time are no longer threaded to ClientRow: the
+    // prelim-hearing countdown that used them was removed 2026-08-10. The
+    // columns and their New/Edit Client form fields are retained.
     nextHearing: (client.next_events && client.next_events.length > 0)
       ? {
           date:      client.next_events[0].event_date,

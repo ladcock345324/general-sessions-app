@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
-import { computePrelimCutoff, shortWeekday, formatMD, formatBookingTimeCompact } from '../prelimDeadline'
 import { bracketBlocks } from '../caseGrouping'
 import styles from './ClientRow.module.css'
 
@@ -84,13 +83,12 @@ function RelivedBadge() {
 
 export default function ClientRow({ client, relieved = false, onClick }) {
   const navigate = useNavigate()
-  const { id, lastName, firstName, gender, oca, custodyStatus, bookingDate, bookingTime, nextHearing, relievedClosed, caseNumbers, indigentStatus } = client
-
-  // In-custody preliminary-hearing line: only when in custody (in_custody OR
-  // no_bond_held — both are physically in custody) AND a booking date is set.
-  // Cutoff = booking + 14 days (weekend rollover), computed at render.
-  const showPrelim = (custodyStatus === 'in_custody' || custodyStatus === 'no_bond_held') && !!bookingDate
-  const cutoffDate = showPrelim ? computePrelimCutoff(bookingDate) : ''
+  // bookingDate / bookingTime are deliberately NOT destructured here: the
+  // in-custody preliminary-hearing countdown that consumed them was removed
+  // 2026-08-10. The clients.booking_date and clients.booking_time COLUMNS are
+  // retained, as are their New/Edit Client form fields — only the countdown is
+  // gone. See PROGRESS.md.
+  const { id, lastName, firstName, gender, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers, indigentStatus } = client
 
   let nextSegments = null
   if (nextHearing && nextHearing.date) {
@@ -156,16 +154,6 @@ export default function ClientRow({ client, relieved = false, onClick }) {
         )}
         <div className={styles.right}>
           <div className={styles.badgeArea}>
-            {showPrelim && (
-              <div className={styles.prelimBlock}>
-                <div className={styles.prelimRow1}>
-                  {formatBookingTimeCompact(bookingTime)} {shortWeekday(bookingDate)} {formatMD(bookingDate)}
-                </div>
-                <div className={styles.prelimRow2}>
-                  → {shortWeekday(cutoffDate)} {formatMD(cutoffDate)}
-                </div>
-              </div>
-            )}
             {relieved ? (
               <div className={styles.badgeStack}>
                 <CustodyBadge status={custodyStatus} muted />

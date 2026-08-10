@@ -85,10 +85,17 @@
   padding: 12px 16px;
 }
 
+/* align-self: start anchors this to the top of its grid area rather than letting
+   the row's align-items: center float it. In the usual case this column is the
+   tallest item and already filled the row, so it is a no-op; it matters only on
+   desktop for a client whose case mini-list (column 2) is taller than the name
+   block, where without it the name would drift down while the badge stayed at
+   the top and the two would no longer share a top edge. */
 .nameRowLeft {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-self: start;
   min-width: 0;
 }
 
@@ -203,12 +210,34 @@
 /* Pinned to column 3 explicitly rather than left to auto-placement: with no cases
    the mini-list wrapper is an empty div, and without this the badge could land in
    column 2 and drift toward the middle of the row. */
+/* Vertically top-aligned as of 2026-08-10 (was centred against the full row
+   height). HORIZONTAL POSITION IS UNCHANGED — still grid-column 3, still
+   align-items: flex-end, so the badge stays flush right exactly where it was.
+
+   align-self: start puts the badge at the top of the grid AREA, which is the
+   row's content box — but the target is the top of the visible NAME TEXT, which
+   sits lower for two stacked reasons:
+     1. the name shares a flex row with the 28px indigent circle, and that row's
+        align-items: center centres the name's ~20px line box inside it;
+     2. inside that line box there is the font's own leading above the cap
+        height (ascent minus cap height).
+   The 9px margin is the sum of those two, and it lands within a pixel at both
+   breakpoints — the mobile name is smaller (15px vs 17px) but sits inside the
+   same 28px circle row, so the larger centring offset almost exactly cancels
+   the smaller leading. THIS IS THE KNOB: raise it to push the badge down,
+   lower it to pull the badge up.
+
+   On mobile the base align-self: start also fixes the badge sitting low on
+   multi-case clients — it spans grid rows 1-2 there, and align-items: center
+   was centring it against name block + mini-list rather than the name. */
 .badgeStack {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
   grid-column: 3;
+  align-self: start;
+  margin-top: 9px;
 }
 
 .closedBadge {
