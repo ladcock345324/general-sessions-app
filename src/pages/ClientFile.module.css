@@ -596,11 +596,19 @@
    Replaces the click-to-expand accordion (2026-08-10). There is no open state
    at all now: every incident's cases are always visible.
 
-   Left cell is 1fr of a 1fr/5fr split — one sixth of the section — with a 180px
-   floor so it can't be squeezed below its own content (the widest line it holds
-   is now "$1,500 Bond | Affidavit", ~110px at 11px, plus 32px of cell padding).
-   At the app's 1126px desktop width the split lands at roughly 188px / 938px;
-   the floor only starts binding below about a 1080px viewport.
+   Left cell is 2fr of a 2fr/7fr split — 22.2% / 77.8%, or about 250px / 876px at
+   the app's 1126px desktop width. Widened from 1fr/5fr (16.7%, ~188px) on
+   2026-08-10 by ~62px, roughly the rendered width of one case number
+   ("GS1121243" is ~66px at 12px/700 with 0.02em tracking), to make room for the
+   charge abbreviation now sitting beside it.
+
+   The 246px floor was raised with it, from 180px, so it still can't squeeze the
+   cell under its own content: "GS1121243 THEFT" is ~109px at these sizes, plus
+   the number span's 14px hit-area padding and 32px of cell padding, ~155px. The
+   floor only starts binding below about a 1107px viewport, so the fr ratio is
+   what governs at the app's normal width.
+
+   Mobile is unaffected — the ≤768px block overrides this to a single column.
 
    Dividers are deliberately heavier than the 1px rgba(255,255,255,0.05) hairline
    this replaced, which did not read as a grid: rows get 2px and the column split
@@ -608,7 +616,7 @@
    boundary stays the dominant line and the column split reads as secondary. */
 .incidentRow {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(0, 5fr);
+  grid-template-columns: minmax(246px, 2fr) minmax(0, 7fr);
   background: #16212F;
   border-bottom: 2px solid #2C3A4F;
 }
@@ -687,6 +695,21 @@
 .incidentCaseNum.caseNumberPending {
   font-style: italic;
   color: #6b7a99;
+}
+
+/* charge_abbrev, sitting inside the case-number span so it shares its click
+   target. Font family is inherited, which is the same family the bond line
+   below inherits; size and colour are matched to that line explicitly. The
+   weight, letter-spacing and font-style resets are load-bearing rather than
+   tidiness — without them this would pick up the number's 700 weight and
+   0.02em tracking, and on an unnumbered case the .caseNumberPending italic
+   as well. */
+.incidentCaseAbbrev {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6b7a99;
+  letter-spacing: normal;
+  font-style: normal;
 }
 
 /* Navigates to the same case as the number above it — a second, much larger

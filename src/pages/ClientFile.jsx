@@ -905,6 +905,19 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
                     {...tapHandlers(open)}
                   >
                     {c.case_number || 'Case # pending'}
+                    {/* charge_abbrev only, never the full charge, and frequently
+                        null — every affidavit-first case starts without one. It
+                        lives INSIDE the case-number span so it shares the same
+                        click target and the same enlarged hit area; the muted
+                        styling that makes it match the bond line is applied by
+                        the nested class, which also has to reset the weight,
+                        letter-spacing and italic it would otherwise inherit
+                        from the number. The separating space sits inside the
+                        conditional, so a null abbrev leaves no trailing space
+                        and no placeholder. */}
+                    {c.charge_abbrev && (
+                      <span className={styles.incidentCaseAbbrev}>{' '}{c.charge_abbrev}</span>
+                    )}
                   </span>
                   {(bond || affidavit) && (
                     /* Also navigates — a second, much larger target for the
