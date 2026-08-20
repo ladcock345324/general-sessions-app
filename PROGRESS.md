@@ -194,7 +194,7 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
-### Dead-Code Sweep — 15 Unreferenced CSS Classes Removed (2026-08-20, fifth batch)
+### Dead-Code Sweep — 15 Unreferenced CSS Classes Removed (2026-08-20, fifth batch, commit `f87f2f7`)
 
 Repo hygiene only. **No schema change, no behaviour change, no JS/JSX change** — the entire diff is 121 deleted lines across five `.module.css` files. Same conservative bar as the 2026-06-24 housekeeping session: nothing removed without a zero-reference result confirmed by search.
 
@@ -227,6 +227,8 @@ Repo hygiene only. **No schema change, no behaviour change, no JS/JSX change** �
 - **`src/seed.js` is imported by nothing** — already the documented **D1 deferral** ("repair it against the current schema, or delete it — decision pending"). Not touched, per that standing decision.
 
 **Verification:** `npm run build` clean and `npx eslint .` at **20 errors** after each removal batch and again at the end. The detector re-run reports **306 classes, zero unreferenced**. Diff confirmed to be **pure deletions** — 17 removed blank lines, exactly one per block, no added lines beyond the surviving `.placeholder` selector.
+
+**Confirmed on production by diffing the deployed stylesheet before and after.** The live CSS went from **263 to 248 class names (45,136 → 43,567 bytes)**, and the set difference is **exactly the 15 intended classes, with zero unexpected removals and zero additions** — a mechanical proof that nothing else in the app's styling moved.
 
 > **A first attempt at tidying the blank lines was reverted.** A blanket "collapse doubled blank lines" pass also touched two pre-existing blank lines and the trailing newline in `ClientRow.module.css` — unrelated formatting churn in a diff that was supposed to be dead-code-only. The removals were redone with a remover that consumes each block plus exactly one trailing blank line, so nothing outside a dead rule is touched.
 
