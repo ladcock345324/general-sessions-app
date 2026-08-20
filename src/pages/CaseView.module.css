@@ -185,12 +185,6 @@
   margin-bottom: 6px;
 }
 
-/* DA */
-.daText {
-  font-size: 14px;
-  color: #9faab8;
-}
-
 /* Notes */
 /* PV detail fields (2026-08-20) — always editable, no edit mode. Styling is
    deliberately the Notes textarea's, not the compact form-row vocabulary: these
@@ -392,7 +386,6 @@
   cursor: not-allowed;
 }
 
-.notFound,
 .placeholder {
   font-size: 14px;
   color: #6b7a99;

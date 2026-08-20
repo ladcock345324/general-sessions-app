@@ -44,12 +44,6 @@
   gap: 6px;
 }
 
-.twoCol {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
 /* Booking field: date input + hour + AM/PM dropdowns, side by side. */
 .bookingGrid {
   display: grid;
@@ -103,38 +97,6 @@
 .input:focus,
 .select:focus {
   border-color: rgba(94, 150, 200, 0.5);
-}
-
-/* $ prefix on bond field */
-.prefixInput {
-  display: flex;
-  align-items: center;
-  background: #16212F;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.prefixInput:focus-within {
-  border-color: rgba(94, 150, 200, 0.5);
-}
-
-.prefix {
-  padding: 0 0 0 12px;
-  font-size: 15px;
-  color: #6b7a99;
-  flex-shrink: 0;
-}
-
-.inputPrefixed {
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  padding-left: 4px;
-}
-
-.inputPrefixed:focus {
-  border-color: transparent;
 }
 
 /* Error */

@@ -264,15 +264,6 @@
   background: #1E2A3A;
 }
 
-/* Dark section header row (bg matches #16212F strips) */
-.sectionHeaderRowDark {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #16212F;
-  padding: 5px 16px;
-}
-
 /* Inline forms */
 .inlineForm {
   background: #16212F;
@@ -368,12 +359,6 @@
   appearance: auto;
   -webkit-appearance: auto;
   color-scheme: dark;
-}
-
-.formHint {
-  font-size: 11px;
-  color: #4a5a70;
-  margin-top: 1px;
 }
 
 .formPrefixInput {
@@ -1070,45 +1055,11 @@
   color: #c97060;
 }
 
-.incidentSectionAddBtn {
-  background: none;
-  border: none;
-  color: #5b9fd4;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-  margin-left: 10px;
-  letter-spacing: 0.01em;
-}
-
-/* Overrides space-between so children sit flush left */
-.sectionHeaderRowLeft {
-  justify-content: flex-start;
-}
-
 /* Hours section */
 .section {
   margin-top: 8px;
   background: #0f1820;
   color: #c8d0db;
-}
-
-.sectionHeaderRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #0f1820;
-  padding: 5px 16px;
-}
-
-/* Exact copy of ClientList.module.css .sectionHeader */
-.clientListSectionHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 16px;
-  background: #0f1820;
 }
 
 .sectionTitle {
@@ -1623,23 +1574,6 @@
 
 .closeCaseBtn:active {
   background: rgba(180, 140, 60, 0.08);
-}
-
-.reopenCaseBtn {
-  background: none;
-  border: 1px solid rgba(94, 150, 200, 0.35);
-  color: #6b9fd4;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  letter-spacing: 0.02em;
-  width: 100%;
-}
-
-.reopenCaseBtn:active {
-  background: rgba(94, 150, 200, 0.08);
 }
 
 .confirmBox {

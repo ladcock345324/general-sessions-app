@@ -27,12 +27,6 @@
   letter-spacing: 0.02em;
 }
 
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .signOutBtn {
   background: none;
   border: none;

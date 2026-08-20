@@ -12,10 +12,6 @@
   border-bottom: none;
 }
 
-.dimmed {
-  opacity: 0.5;
-}
-
 .info {
   display: flex;
   flex-direction: column;

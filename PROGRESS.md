@@ -194,6 +194,42 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
+### Dead-Code Sweep — 15 Unreferenced CSS Classes Removed (2026-08-20, fifth batch)
+
+Repo hygiene only. **No schema change, no behaviour change, no JS/JSX change** — the entire diff is 121 deleted lines across five `.module.css` files. Same conservative bar as the 2026-06-24 housekeeping session: nothing removed without a zero-reference result confirmed by search.
+
+**Lint baseline confirmed first: still 20 errors, unchanged**, and all 20 are the long-standing ones (Node globals in `scripts/` + `seed.js`, 3 × react-refresh on the context files, 3 × setState-in-effect, 1 × empty block in `extractPdfText`). **None originates from the PV / Next Event / Reason work.**
+
+**What the linter already guarantees.** `eslint.config.js` extends `js.configs.recommended`, which enables `no-unused-vars` — so unused imports and unused in-module symbols are already impossible at a clean baseline. That narrowed the sweep to the two things ESLint cannot see: **CSS-module classes** and **cross-file exports**.
+
+⚠️ **A first pass at the CSS detector reported 321 of 321 classes unused** — obviously wrong. The cause was backslash mangling in the shell heredoc: `\b`/`\w` reached the file as `\b`/`\w`, so the regex compiled to `[A-Za-z_$][w$]*.row` and matched nothing. **The detector now runs a self-test** (`styles.row` must match) and aborts if it fails. Worth remembering: a dead-code result of "everything is dead" is a broken tool, not a finding.
+
+**Removed — 15 classes, 17 rule blocks** (including `:focus`/`:active`/`:focus-within` companions), each verified by raw text search across every `.js`/`.jsx` file, plus `index.html`, `App.css` and `index.css`:
+
+| File | Classes | Why they were dead |
+|---|---|---|
+| `ClientRow.module.css` | `.dimmed` | — |
+| `CaseView.module.css` | `.daText`, `.notFound` | `.daText` is left from the removed DA section; `.notFound` was one half of a grouped `.notFound, .placeholder` selector — **`.placeholder` is live and was kept** |
+| `ClientFile.module.css` | `.sectionHeaderRowDark`, `.formHint`, `.incidentSectionAddBtn`, `.sectionHeaderRowLeft`, `.sectionHeaderRow`, `.clientListSectionHeader`, `.reopenCaseBtn` | The section headers moved to **inline styles** (`background: #0f1820`) — already documented in the UI reference. `.reopenCaseBtn` is dead because **Close/Reopen is one button whose label toggles**, styled `.closeCaseBtn` |
+| `ClientList.module.css` | `.headerActions` | — |
+| `NewClient.module.css` | `.twoCol`, `.prefixInput`, `.prefix`, `.inputPrefixed` | Leftovers from the `$`-prefixed **bond field removed from the New/Edit Client forms** (bond moved to `cases.bond_amount`). Checked against **both** consumers — `NewClient.jsx` and `EditClient.jsx` share this stylesheet |
+
+⚠️ **Near-miss worth recording:** `NewClient.module.css`'s `.prefixInput` / `.prefix` / `.inputPrefixed` are dead, but `ClientFile.module.css`'s almost identically named **`.formPrefixInput` / `.formPrefix` / `.formInputPrefixed` are LIVE** (the Add Case bond field). A substring-based search would have deleted working styles. The four orphaned comments above the removed blocks went with them.
+
+**Everything the session's churn was suspected of leaving behind came back clean:**
+- **`pv_sentence`** — zero live-code references anywhere in `src/`; the only three mentions are comments marking it deprecated. Confirmed still correct.
+- **AddCaseForm PV-checkbox CSS** — **not orphaned.** `.formCheckRow`, `.formCheckRowEnd`, `.formCheckbox` and `.formCheckLabel` are all still referenced, because the checkbox **moved** to `AddIncidentForm` rather than disappearing. The byte-for-byte JS revert did not strand its stylesheet.
+- **`ada_name` in the Next Event form** — exactly one live reference in the whole app: the display line in `NextEventBlock`. The form holds no state for it and writes no key. Precisely the intended end state.
+- **Docket `PV` / `REASON_OPTIONS`** — both fully wired. `DOCKET_PRESETS` is read by `splitDocketType()` **and** the dropdown; `REASON_OPTIONS` is read by the off-list guard **and** rendered via `reasonOptions`.
+
+**Flagged, deliberately NOT removed:**
+- **`processSyncQueue` is exported from `syncManager.js` with no importer** — but it is **called three times inside its own module** (`fullSync`, the background interval, and the `online` handler). It is live code; only the `export` keyword is redundant. Left alone: it reads as the module's public API alongside `fullSync`, and dropping the keyword buys nothing.
+- **`src/seed.js` is imported by nothing** — already the documented **D1 deferral** ("repair it against the current schema, or delete it — decision pending"). Not touched, per that standing decision.
+
+**Verification:** `npm run build` clean and `npx eslint .` at **20 errors** after each removal batch and again at the end. The detector re-run reports **306 classes, zero unreferenced**. Diff confirmed to be **pure deletions** — 17 removed blank lines, exactly one per block, no added lines beyond the surviving `.placeholder` selector.
+
+> **A first attempt at tidying the blank lines was reverted.** A blanket "collapse doubled blank lines" pass also touched two pre-existing blank lines and the trailing newline in `ClientRow.module.css` — unrelated formatting churn in a diff that was supposed to be dead-code-only. The removals were redone with a remover that consumes each block plus exactly one trailing blank line, so nothing outside a dead rule is touched.
+
 ### Reason Dropdown Off-List Guard + `warrant_text` Triage Refresh (2026-08-20, fourth batch, commit `8ab7035`)
 
 **One code change and one doc correction. No schema change.**
