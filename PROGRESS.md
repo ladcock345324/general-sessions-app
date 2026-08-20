@@ -194,7 +194,7 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
-### Reason Dropdown Off-List Guard + `warrant_text` Triage Refresh (2026-08-20, fourth batch)
+### Reason Dropdown Off-List Guard + `warrant_text` Triage Refresh (2026-08-20, fourth batch, commit `8ab7035`)
 
 **One code change and one doc correction. No schema change.**
 
