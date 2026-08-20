@@ -709,6 +709,25 @@
   margin-top: 0;
 }
 
+/* Centre the case label against the ROW's height, not its own content height
+   (2026-08-20). The grid stretches both cells to the row, and the row is sized
+   by the right cell's 1–3 line PV block — so without this the case label sits
+   pinned to the top of a cell that may be three lines tall while the block
+   opposite it is centred. Both cells now centre, so the pairing stays aligned
+   at any line count. PV rows only; a normal row's left cell is unchanged. */
+.incidentLeftCellPv {
+  justify-content: center;
+}
+
+/* The label half of "Conviction Date: 5/4/2026". ONLY the label text is
+   underlined — the colon and the value are plain, which is why the colon lives
+   outside this span in the JSX rather than inside its text. The offset keeps
+   the rule off the descenders. */
+.pvLineLabel {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* The PV detail block is 0–3 lines depending on which fields are filled in, so
    it is centred rather than top-aligned: at one line it sits opposite the case
    number instead of floating above it, and at three it still reads as one

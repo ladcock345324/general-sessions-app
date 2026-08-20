@@ -991,11 +991,23 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
   // 2026-08-20 and is deprecated (kept in the DB, never read or written — the
   // same pattern as clients.age and clients.bond_amount).
   const pvCase = cases.find(c => c.is_pv) ?? null
-  const pvLine3 = [pvCase?.pv_probation_length, pvCase?.pv_special_info].filter(Boolean).join(' · ')
+  const pvConvictionDate = formatDateDisplay(pvCase?.pv_conviction_date) || null
+  const pvCrime = pvCase?.pv_crime || null
+  const pvLength = pvCase?.pv_probation_length || null
+  const pvSpecial = pvCase?.pv_special_info || null
+
+  // Labels are underlined, the colon after them is NOT (2026-08-20) — hence the
+  // colon sitting OUTSIDE the .pvLineLabel span rather than inside its text.
+  // Special info is deliberately unlabelled: it is a free-text remark, not a
+  // named field, so on line 3 it either trails a labelled probation length after
+  // " · " or, when the length is blank, stands alone with no label at all —
+  // there would be nothing to label it as.
   const pvLines = [
-    formatDateDisplay(pvCase?.pv_conviction_date) || null,
-    pvCase?.pv_crime || null,
-    pvLine3 || null,
+    pvConvictionDate && <><span className={styles.pvLineLabel}>Conviction Date</span>: {pvConvictionDate}</>,
+    pvCrime && <><span className={styles.pvLineLabel}>Convicted Crime</span>: {pvCrime}</>,
+    pvLength
+      ? <><span className={styles.pvLineLabel}>Probation Length</span>: {pvLength}{pvSpecial ? ` · ${pvSpecial}` : ''}</>
+      : pvSpecial,
   ].filter(Boolean)
 
   // One grid row per incident, always fully visible — there is no expand/collapse
