@@ -189,7 +189,7 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
-### Eight-Change Batch — PV Cases, Overdue Indicator, Form Reorders (2026-08-19)
+### Eight-Change Batch — PV Cases, Overdue Indicator, Form Reorders (2026-08-19, commit `4496af6`)
 
 Eight requested changes in one session. **No schema change was made in this session** — `cases.is_pv` and `cases.pv_sentence` already existed (added ahead of the front-end) and were built against as-is. **No Dexie version bump:** the `cases` store is `'id, incident_id, case_number'`, so neither new column is indexed; both flow through the existing `select('*')` fullSync and the case insert payload untouched, the same pattern as `release_status` and `classification`. Verified against `localDB.js` rather than assumed.
 
