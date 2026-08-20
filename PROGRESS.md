@@ -194,7 +194,7 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
-### PV Round 4 — Centred Case Label + Underlined Field Labels (2026-08-20, third batch)
+### PV Round 4 — Centred Case Label + Underlined Field Labels (2026-08-20, third batch, commit `4482bcb`)
 
 Two display-only follow-ups to Round 3. **No schema change, no data change, no new columns.** Both are scoped to `is_pv`; normal incident rows are untouched.
 
