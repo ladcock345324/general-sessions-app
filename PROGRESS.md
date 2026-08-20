@@ -194,7 +194,7 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
-### PV Round 3 — Four Detail Fields, Matched "PV" Styling, Streamlined Case View (2026-08-20)
+### PV Round 3 — Four Detail Fields, Matched "PV" Styling, Streamlined Case View (2026-08-20, commit `9f9f38c`)
 
 **Schema (applied via Supabase MCP outside the app, four columns on `cases`):** `pv_conviction_date`, `pv_crime`, `pv_probation_length`, `pv_special_info` — all `text`, all nullable. **`cases.pv_sentence` is now DEPRECATED**: no longer read or written anywhere, **column deliberately kept**, same pattern as `clients.age` / `clients.bond_amount`. **No Dexie version bump** — none of the four is indexed (`cases` is `'id, incident_id, case_number'`), so they ride the existing `select('*')` fullSync and insert payloads.
 
