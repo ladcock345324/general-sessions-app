@@ -190,7 +190,7 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
-### PV Creation Moved to the Add Incident Form + "Courtroom wait time" Pinned Top (2026-08-19, second batch)
+### PV Creation Moved to the Add Incident Form + "Courtroom wait time" Pinned Top (2026-08-19, second batch, commit `be13a22`)
 
 Two follow-ups to the batch below, same day. **One schema change, applied via Supabase MCP outside the app: `incidents.is_pv` (boolean, NOT NULL, default false).** `cases.is_pv` and `cases.pv_sentence` are **reused, not replaced** — nothing was dropped. **No Dexie version bump:** `incidents` is `'id, client_id'` and `cases` is `'id, incident_id, case_number'`, so neither `is_pv` is indexed; both flow through the existing `select('*')` fullSync and insert payloads untouched.
 
