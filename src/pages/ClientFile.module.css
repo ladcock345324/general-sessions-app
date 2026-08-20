@@ -699,6 +699,26 @@
   min-width: 0;
 }
 
+/* PV incident row (2026-08-20). The left cell's first case item carries a 9px
+   top margin to separate it from the location line above it; on a PV row there
+   is no date or location, so that margin read as unexplained empty space at the
+   top of the cell. Zeroed here ONLY for PV, so normal rows keep their spacing
+   exactly. Scoped to the first item so a hypothetical second case would still
+   be separated from the first. */
+.incidentLeftCellPv .incidentCaseItem:first-child {
+  margin-top: 0;
+}
+
+/* The PV detail block is 0–3 lines depending on which fields are filled in, so
+   it is centred rather than top-aligned: at one line it sits opposite the case
+   number instead of floating above it, and at three it still reads as one
+   block. The gap is dropped to 2px — these are three lines of one record, not
+   three separate entries like the normal cell's description + controls. */
+.incidentDescCellPv {
+  justify-content: center;
+  gap: 2px;
+}
+
 /* Date and location both take the description's text colour (#c8d0dc) as of
    2026-08-10 — the blue accent the date carried from the old combined
    "date — location" line is gone. Font sizes are unchanged (13px / 12px).

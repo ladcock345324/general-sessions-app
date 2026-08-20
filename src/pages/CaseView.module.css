@@ -192,6 +192,67 @@
 }
 
 /* Notes */
+/* PV detail fields (2026-08-20) — always editable, no edit mode. Styling is
+   deliberately the Notes textarea's, not the compact form-row vocabulary: these
+   ARE the page's content for a PV case, standing where Notes and the affidavit
+   row stand on a normal one, so they carry the same visual weight.
+
+   .pvField stacks label over input; .pvFieldHead keeps the label and the
+   transient "Saved" tick on one line so the tick appearing cannot reflow the
+   field. Fields are spaced by margin rather than a gap on .section, so .section
+   keeps behaving identically for every other user of it. */
+.pvField {
+  margin-bottom: 14px;
+}
+
+.pvField:last-child {
+  margin-bottom: 0;
+}
+
+.pvFieldHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  min-height: 14px;
+}
+
+/* .sectionLabel carries its own margin-bottom for its other uses; inside the
+   head row that would push the label off-centre against the "Saved" tick. */
+.pvFieldHead .sectionLabel {
+  margin-bottom: 0;
+}
+
+.pvInput {
+  width: 100%;
+  background: #16212F;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #f0f2f5;
+  font-size: 14px;
+  font-family: inherit;
+  padding: 10px 12px;
+  outline: none;
+  line-height: 1.5;
+}
+
+.pvInput::placeholder {
+  color: #3a4a5e;
+}
+
+.pvInput:focus {
+  border-color: rgba(94, 150, 200, 0.4);
+}
+
+/* Native date picker: restore the control's own appearance so the icon shows,
+   and force a dark scheme so it renders light text on the dark field — the same
+   treatment ClientFile.module.css gives its date inputs. */
+.pvInput[type="date"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  color-scheme: dark;
+}
+
 .notesInput {
   width: 100%;
   background: #16212F;

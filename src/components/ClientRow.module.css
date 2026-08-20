@@ -142,6 +142,26 @@
   vertical-align: middle;
 }
 
+/* "- PV" in place of the charge/classification text (2026-08-20). It must read
+   as the SAME type as the case number beside it — family, size, weight and
+   colour all match .caseNum — so the pairing reads as one label rather than a
+   number with a faint annotation, which is how the old .caseCharge styling made
+   it look. Only .caseNum's LAYOUT properties are deliberately not copied: the
+   56px column width and the tap-target cursor belong to the number alone.
+   padding-left matches .caseCharge so the gap after the number is unchanged.
+   Font size is re-declared in the ≤768px block below, tracking .caseNum there
+   too — if one moves, move the other. */
+.casePv {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b9fd4;
+  text-align: left;
+  padding-left: 6px;
+  white-space: nowrap;
+  line-height: 1.5;
+  user-select: text;
+}
+
 .caseCharge {
   font-size: 8.8px;
   font-weight: 500;
@@ -309,6 +329,11 @@
   .caseNum {
     font-size: 11px;
     white-space: nowrap;
+  }
+
+  /* Tracks .caseNum's mobile size, per the note on .casePv above. */
+  .casePv {
+    font-size: 11px;
   }
 
   .caseClassification {

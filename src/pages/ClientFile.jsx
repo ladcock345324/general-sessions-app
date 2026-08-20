@@ -394,13 +394,21 @@ function affiantTemplate(mdy) {
 }
 
 function AddIncidentForm({ clientId, onSaved, onCancel }) {
-  // is_pv / case_number / pv_sentence drive the probation-violation branch. A PV
+  // is_pv / case_number / the four pv_* fields drive the probation-violation
+  // branch. A PV
   // is not an incident that later grows cases — it is one incident and one case
   // created together, which is why the entry point lives here rather than in the
   // per-incident "+ add a case" form (where it was first built, 2026-08-19, and
   // from which it was removed the same day: that flow left a blank "Awaiting
   // details" incident wrapped around an otherwise-clean PV case).
-  const [form, setForm] = useState({ incident_date: '', location: '', incident_description: '', is_pv: false, case_number: '', pv_sentence: '' })
+  const [form, setForm] = useState({
+    incident_date: '', location: '', incident_description: '',
+    is_pv: false, case_number: '',
+    // The four PV detail columns (2026-08-20). These replaced pv_sentence, which
+    // is deprecated — kept in the DB but never read or written, the same pattern
+    // as clients.age and clients.bond_amount.
+    pv_conviction_date: '', pv_crime: '', pv_probation_length: '', pv_special_info: '',
+  })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -465,7 +473,13 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
       release_status: null,
       status: 'open',
       is_pv: true,
-      pv_sentence: form.pv_sentence.trim() || null,
+      // Every field is optional — validation was removed app-wide for this kind
+      // of field, so a blank saves as null rather than ''. pv_sentence is
+      // deliberately NOT written: deprecated 2026-08-20, replaced by these four.
+      pv_conviction_date: form.pv_conviction_date.trim() || null,
+      pv_crime: form.pv_crime.trim() || null,
+      pv_probation_length: form.pv_probation_length.trim() || null,
+      pv_special_info: form.pv_special_info.trim() || null,
     }
     await db.cases.put(caseRecord)
     await addToSyncQueue('cases', 'INSERT', caseId, caseRecord)
@@ -520,9 +534,30 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
             <label className={styles.formLabel}>Case Number</label>
             <input className={styles.formInput} value={form.case_number} onChange={e => set('case_number', e.target.value)} placeholder="e.g. GS1041482" />
           </div>
+          {/* Conviction Date uses the same <input type="date"> + toDateInput /
+              fromDateInput + pickerHandlers() convention as every other date
+              field in the app, so it stores "M/D/YYYY" like the rest. */}
           <div className={styles.formRow}>
-            <label className={styles.formLabel}>Sentence (if known)</label>
-            <input className={styles.formInput} value={form.pv_sentence} onChange={e => set('pv_sentence', e.target.value)} placeholder="Optional — faced if probation is revoked" />
+            <label className={styles.formLabel}>Conviction Date</label>
+            <input
+              type="date"
+              className={styles.formInput}
+              value={toDateInput(form.pv_conviction_date)}
+              onChange={e => set('pv_conviction_date', fromDateInput(e.target.value))}
+              {...pickerHandlers()}
+            />
+          </div>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Crime</label>
+            <input className={styles.formInput} value={form.pv_crime} onChange={e => set('pv_crime', e.target.value)} placeholder="e.g. DUI (MIS)" />
+          </div>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Probation Length</label>
+            <input className={styles.formInput} value={form.pv_probation_length} onChange={e => set('pv_probation_length', e.target.value)} placeholder="e.g. 11 months 29 days" />
+          </div>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Special Info</label>
+            <input className={styles.formInput} value={form.pv_special_info} onChange={e => set('pv_special_info', e.target.value)} placeholder="Optional — probation conditions / notes" />
           </div>
         </>
       ) : (
@@ -943,9 +978,25 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
   // The nested case line already reads "[case number] - PV" via the case-level
   // logic, and is the only content in the left cell.
   const isPvIncident = !!incident.is_pv
-  // pv_sentence lives on the case, not the incident. A PV holds one case, but
-  // find() rather than [0] so a sentence is still surfaced if that ever changes.
-  const pvSentence = cases.find(c => c.pv_sentence)?.pv_sentence ?? null
+  // The PV detail block lives on the CASE, not the incident. A PV holds exactly
+  // one case, but find() rather than [0] keeps this working if that ever changes.
+  //
+  // Three lines, each rendered only when it has content, so the block is 0–3
+  // lines tall and never leaves an empty row behind:
+  //   1. conviction date   2. crime   3. probation length · special info
+  // Line 3 joins its two fields with " · " — the same separator bondReleaseText()
+  // uses for bond + release status — and drops out entirely when neither is set.
+  //
+  // pv_sentence is NOT read here: it was replaced by these four columns on
+  // 2026-08-20 and is deprecated (kept in the DB, never read or written — the
+  // same pattern as clients.age and clients.bond_amount).
+  const pvCase = cases.find(c => c.is_pv) ?? null
+  const pvLine3 = [pvCase?.pv_probation_length, pvCase?.pv_special_info].filter(Boolean).join(' · ')
+  const pvLines = [
+    formatDateDisplay(pvCase?.pv_conviction_date) || null,
+    pvCase?.pv_crime || null,
+    pvLine3 || null,
+  ].filter(Boolean)
 
   // One grid row per incident, always fully visible — there is no expand/collapse
   // state anymore. Left cell: date, location, then this incident's cases and its
@@ -990,7 +1041,11 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
         </div>
       ) : (
         <>
-          <div className={styles.incidentLeftCell}>
+          {/* .incidentLeftCellPv zeroes the first case item's 9px top margin.
+              That margin exists to separate the first case from the location
+              line above it — on a PV row there is nothing above it, so it read
+              as unexplained empty space at the top of the cell. */}
+          <div className={`${styles.incidentLeftCell}${isPvIncident ? ` ${styles.incidentLeftCellPv}` : ''}`}>
             {!isPvIncident && date && <div className={styles.incidentDateLine}>{date}</div>}
             {!isPvIncident && loc && <div className={styles.incidentLocLine}>{loc}</div>}
 
@@ -1030,11 +1085,15 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
                         conditional, so a null abbrev leaves no trailing space
                         and no placeholder. */}
                     {c.is_pv ? (
-                      /* Same substitution as the two mini-lists, in the same
-                         nested span so "- PV" shares the case number's enlarged
-                         tap target and muted styling. A PV never has a
-                         charge_abbrev, so the two are mutually exclusive. */
-                      <span className={styles.incidentCaseAbbrev}>{' '}- PV</span>
+                      /* Same substitution as the two mini-lists. Deliberately
+                         BARE text, not wrapped in .incidentCaseAbbrev: as of
+                         2026-08-20 "PV" must render identically to the case
+                         number, and sitting unwrapped inside that span inherits
+                         its family, size, weight, colour and tracking exactly —
+                         there is no second declaration to drift out of sync. A
+                         PV never has a charge_abbrev, so the two are mutually
+                         exclusive. */
+                      <>{' '}- PV</>
                     ) : c.charge_abbrev && (
                       <span className={styles.incidentCaseAbbrev}>{' '}{c.charge_abbrev}</span>
                     )}
@@ -1060,19 +1119,22 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
             )}
           </div>
 
-          <div className={styles.incidentDescCell}>
+          <div className={`${styles.incidentDescCell}${isPvIncident ? ` ${styles.incidentDescCellPv}` : ''}`}>
             <button
               className={styles.incidentDeleteBtn}
               onClick={() => setShowDeleteConfirm(true)}
             >×</button>
-            {/* A PV incident shows the case's sentence here, or nothing at all —
-                explicitly NOT the "Awaiting details" placeholder, which is what
-                made the old under-an-incident PV flow read as a half-finished
-                record. An unset sentence leaves the cell genuinely empty. */}
+            {/* A PV incident shows its case's PV detail block here, or nothing at
+                all — explicitly NOT the "Awaiting details" placeholder, which is
+                what made the old under-an-incident PV flow read as a half-
+                finished record. With no fields filled in the cell stays
+                genuinely empty. The block is vertically centred by
+                .incidentDescCellPv on the cell itself, so it stays centred at
+                one, two or three lines. */}
             {isPvIncident ? (
-              pvSentence && (
-                <div className={styles.incidentDescText}>Sentence: {pvSentence}</div>
-              )
+              pvLines.map((line, i) => (
+                <div key={i} className={styles.incidentDescText}>{line}</div>
+              ))
             ) : (
               /* "edit incident" flows inline after the last word of the
                  description rather than starting its own line beneath it. */
@@ -2193,7 +2255,7 @@ export default function ClientFile() {
                       rule as the client list, so the two mini-lists still read
                       identically for the same case. */}
                   {c.is_pv ? (
-                    <span className={rowStyles.caseCharge} style={{ cursor: 'default' }}>- PV</span>
+                    <span className={rowStyles.casePv} style={{ cursor: 'default' }}>- PV</span>
                   ) : (
                     <>
                       {c.charge && <span className={rowStyles.caseCharge} style={{ cursor: 'default' }}>| {c.charge}</span>}

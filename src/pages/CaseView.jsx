@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { toDateInput, fromDateInput, pickerHandlers } from '../dateUtils'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { supabase } from '../supabaseClient'
 import { extractPdfText } from '../extractPdfText'
@@ -119,6 +120,98 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
   )
 }
 
+// ─── PV field (always editable) ──────────────────────────────────────────────
+
+// One probation-violation detail field, editable in place: no edit mode, no Save
+// button, no extra click. Commits on blur and on Enter; Escape restores the last
+// saved value — the same convention the inline "edit incident" fields in
+// ClientFile already use.
+//
+// The date variant commits on CHANGE rather than blur. Picking a date is a
+// discrete action, not typing, and a native mobile date picker does not reliably
+// produce a blur to hang the save on. It therefore does NOT also commit on blur:
+// doing both would enqueue a second, identical UPDATE for every pick.
+//
+// PV cases only. Nothing here is reachable from a normal case.
+function PvField({ label, value, placeholder, type, onCommit }) {
+  const [draft, setDraft] = useState(value ?? '')
+  const [saved, setSaved] = useState(false)
+  const inFlight = useRef(false)
+  const skipBlur = useRef(false)
+
+  // Re-seed the draft when the STORED value changes underneath (our own write
+  // landing, or a background sync). This is React's documented "adjust state
+  // while rendering" pattern rather than a useEffect: setState inside an effect
+  // body causes a cascading second render, and the repo's lint rule rejects it.
+  // The guard makes it converge in one pass — and because typing changes only
+  // `draft`, never `value`, it cannot clobber an edit in progress.
+  const [seededFrom, setSeededFrom] = useState(value ?? '')
+  if ((value ?? '') !== seededFrom) {
+    setSeededFrom(value ?? '')
+    setDraft(value ?? '')
+  }
+
+  // Clears the transient "Saved" tick. Keyed on `saved` so each commit restarts
+  // the timer, and cleaned up so it can't fire after unmount.
+  useEffect(() => {
+    if (!saved) return
+    const t = setTimeout(() => setSaved(false), 2000)
+    return () => clearTimeout(t)
+  }, [saved])
+
+  async function commit(next) {
+    if (inFlight.current) return
+    // Blank saves as null, never '' — the same rule every other write follows.
+    const normalized = (next ?? '').trim() || null
+    if (normalized === (value ?? null)) return
+    inFlight.current = true
+    await onCommit(normalized)
+    inFlight.current = false
+    setSaved(true)
+  }
+
+  return (
+    <div className={styles.pvField}>
+      <div className={styles.pvFieldHead}>
+        <span className={styles.sectionLabel}>{label}</span>
+        {saved && <span className={styles.notesSavedMsg}>Saved</span>}
+      </div>
+      {type === 'date' ? (
+        <input
+          type="date"
+          className={styles.pvInput}
+          value={toDateInput(draft)}
+          onChange={e => {
+            const mdy = fromDateInput(e.target.value)
+            setDraft(mdy)
+            commit(mdy)
+          }}
+          {...pickerHandlers()}
+        />
+      ) : (
+        <input
+          className={styles.pvInput}
+          value={draft}
+          placeholder={placeholder}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={() => {
+            if (skipBlur.current) { skipBlur.current = false; return }
+            commit(draft)
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() }
+            if (e.key === 'Escape') {
+              setDraft(value ?? '')
+              skipBlur.current = true
+              e.currentTarget.blur()
+            }
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function CaseView() {
@@ -126,10 +219,6 @@ export default function CaseView() {
   const navigate = useNavigate()
 
   const [notes, setNotes] = useState('')
-  // What the client faces if probation is revoked. PV cases only, and optional
-  // even then — it is frequently unknown when the case is created, which is why
-  // it is editable here rather than only at creation.
-  const [pvSentence, setPvSentence] = useState('')
 
   const liveData = useLiveQuery(async () => {
     // Cases are addressed by case_number, but that column is nullable as of
@@ -149,17 +238,12 @@ export default function CaseView() {
   const liveWarrantText = caseData?.warrant_text ?? null
 
   useEffect(() => {
-    if (liveData !== undefined) {
-      setNotes(liveData?.caseRecord?.notes ?? '')
-      setPvSentence(liveData?.caseRecord?.pv_sentence ?? '')
-    }
+    if (liveData !== undefined) setNotes(liveData?.caseRecord?.notes ?? '')
   }, [liveData])
 
   const [editing, setEditing] = useState(false)
   const [notesSaving, setNotesSaving] = useState(false)
   const [notesSaved, setNotesSaved] = useState(false)
-  const [pvSaving, setPvSaving] = useState(false)
-  const [pvSaved, setPvSaved] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showWarrantText, setShowWarrantText] = useState(false)
@@ -272,6 +356,23 @@ export default function CaseView() {
   const hasAffidavit = !!caseData.warrant_url
   const bondText = bondStatusText(caseData.bond_amount, caseData.release_status)
 
+  // A probation violation is not a charged offense, so most of this page does
+  // not apply to it (2026-08-20): no affidavit controls, no bond/affidavit meta
+  // line, no Notes (pv_special_info covers that), and no Edit button — that form
+  // edits case number, charge, classification, bond and status, none of which a
+  // PV has. In their place the four pv_* fields render always-editable below.
+  //
+  // Deliberately KEPT: the "PV" label in the charge slot, the client-name header,
+  // Back, Delete Case, and Disposition (still useful for recording a PV outcome).
+  // Every branch below is gated on this flag — a normal case is untouched.
+  const isPv = !!caseData.is_pv
+
+  // One column per call, so a field only ever writes its own value.
+  async function savePvField(column, value) {
+    await db.cases.update(caseData.id, { [column]: value })
+    await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, [column]: value })
+  }
+
   function handleSaved(newCaseNumber) {
     setEditing(false)
     if (newCaseNumber !== caseNumber) {
@@ -290,7 +391,7 @@ export default function CaseView() {
               {clientName.last_name}, {clientName.first_name}
             </div>
           )}
-          {!editing && (
+          {!editing && !isPv && (
             <button className={styles.editBtn} onClick={() => setEditing(true)}>Edit</button>
           )}
         </header>
@@ -302,14 +403,16 @@ export default function CaseView() {
             is dropped HERE ONLY: the number is already the large label directly
             above, so repeating it would print it twice in four lines. Same PV
             token, same slot, no stutter. */}
-        {caseData.is_pv
+        {isPv
           ? <div className={styles.charge}>PV</div>
           : caseData.charge && <div className={styles.charge}>{caseData.charge}</div>}
-        <div className={styles.meta}>
-          {hasAffidavit && <span className={styles.affidavitTag}>Affidavit</span>}
-          {hasAffidavit && bondText && <span className={styles.pipe}>|</span>}
-          {bondText}
-        </div>
+        {!isPv && (
+          <div className={styles.meta}>
+            {hasAffidavit && <span className={styles.affidavitTag}>Affidavit</span>}
+            {hasAffidavit && bondText && <span className={styles.pipe}>|</span>}
+            {bondText}
+          </div>
+        )}
       </div>
 
       {editing ? (
@@ -318,6 +421,37 @@ export default function CaseView() {
           onSaved={handleSaved}
           onCancel={() => setEditing(false)}
         />
+      ) : isPv ? (
+        /* The four PV detail fields, always editable in place — no edit mode and
+           no Save button (see PvField). They replace the affidavit row, the
+           Notes section and the Edit form, none of which apply to a PV. Each
+           field writes only its own column. */
+        <div className={styles.section}>
+          <PvField
+            label="Conviction Date"
+            type="date"
+            value={caseData.pv_conviction_date}
+            onCommit={v => savePvField('pv_conviction_date', v)}
+          />
+          <PvField
+            label="Crime"
+            placeholder="e.g. DUI (MIS)"
+            value={caseData.pv_crime}
+            onCommit={v => savePvField('pv_crime', v)}
+          />
+          <PvField
+            label="Probation Length"
+            placeholder="e.g. 11 months 29 days"
+            value={caseData.pv_probation_length}
+            onCommit={v => savePvField('pv_probation_length', v)}
+          />
+          <PvField
+            label="Special Info"
+            placeholder="Optional — probation conditions / notes"
+            value={caseData.pv_special_info}
+            onCommit={v => savePvField('pv_special_info', v)}
+          />
+        </div>
       ) : (
         <>
           <div className={styles.warrantRow}>
@@ -353,42 +487,6 @@ export default function CaseView() {
             {uploadError && <div className={styles.uploadError}>{uploadError}</div>}
           </div>
 
-          {/* PV cases only. Rendered whenever is_pv is set, not only when a
-              sentence is already stored — the value is usually unknown at
-              creation, so the control has to exist for an empty one or there
-              would be no way to fill it in later. Sits above Notes because it
-              is a fact about the case, not a working note. Saves exactly like
-              Notes: Dexie write + sync-queue UPDATE, blank stored as null. */}
-          {caseData.is_pv && (
-            <div className={styles.section}>
-              <div className={styles.sectionLabel}>Sentence (if known)</div>
-              <textarea
-                className={styles.notesInput}
-                value={pvSentence}
-                onChange={e => { setPvSentence(e.target.value); setPvSaved(false) }}
-                placeholder="What client faces if probation is revoked…"
-                rows={2}
-              />
-              <div className={styles.notesActions}>
-                <button
-                  className={styles.notesSaveBtn}
-                  disabled={pvSaving}
-                  onClick={async () => {
-                    setPvSaving(true)
-                    const value = pvSentence.trim() || null
-                    await db.cases.update(caseData.id, { pv_sentence: value })
-                    await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, pv_sentence: value })
-                    setPvSaving(false)
-                    setPvSaved(true)
-                  }}
-                >
-                  {pvSaving ? 'Saving…' : 'Save Sentence'}
-                </button>
-                {pvSaved && <span className={styles.notesSavedMsg}>Saved</span>}
-              </div>
-            </div>
-          )}
-
           <div className={styles.section}>
             <div className={styles.sectionLabel}>Notes</div>
             <textarea
@@ -415,14 +513,16 @@ export default function CaseView() {
               {notesSaved && <span className={styles.notesSavedMsg}>Saved</span>}
             </div>
           </div>
-
-          {caseData.disposition && (
-            <div className={styles.section}>
-              <div className={styles.sectionLabel}>Disposition</div>
-              <div className={styles.dispositionText}>{caseData.disposition}</div>
-            </div>
-          )}
         </>
+      )}
+
+      {/* Shown for PV and normal cases alike — a disposition is just as useful
+          for recording how a violation resolved. Deliberately left in place. */}
+      {!editing && caseData.disposition && (
+        <div className={styles.section}>
+          <div className={styles.sectionLabel}>Disposition</div>
+          <div className={styles.dispositionText}>{caseData.disposition}</div>
+        </div>
       )}
 
       {/* ── Delete Case ── */}

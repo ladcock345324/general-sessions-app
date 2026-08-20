@@ -174,7 +174,13 @@ export default function ClientRow({ client, relieved = false, onClick }) {
                         The case-number span above is untouched, so the tap
                         target and navigation are identical either way. */}
                     {c.is_pv ? (
-                      <span className={styles.caseCharge}>- PV</span>
+                      /* .casePv, not .caseCharge: as of 2026-08-20 "PV" renders
+                         in the case number's exact type (family, size, weight,
+                         colour), not the muted charge style. It stays a SIBLING
+                         span rather than moving inside .caseNum, because that
+                         span is the tap target and is width-locked to the
+                         56px number column. */
+                      <span className={styles.casePv}>- PV</span>
                     ) : (
                       <>
                         {charge && <span className={styles.caseCharge}>| {charge}</span>}
