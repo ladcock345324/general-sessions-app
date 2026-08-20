@@ -68,6 +68,21 @@
   line-height: 1;
 }
 
+/* Overdue next event — CLIENT LIST ONLY. Applied by ClientRow.jsx when the
+   event's date+time is more than 3 hours past (see isOverdue there). The whole
+   line flips to the same muted crimson the in-custody badge uses (#b85555), for
+   palette consistency; .pipe sets no color of its own, so this single override
+   carries every separator with it.
+
+   The weight bump is deliberate: on the #1E2A3A row this crimson sits at ~3.1:1
+   contrast against the ~5.2:1 of the blue it replaces, and the line shrinks to
+   11px on mobile. .badgeRed already pairs this exact hue with weight 600, so
+   this matches existing usage rather than inventing a treatment. */
+.nextOverdue {
+  color: #b85555;
+  font-weight: 600;
+}
+
 .nextEmpty {
   font-size: 13px;
 }

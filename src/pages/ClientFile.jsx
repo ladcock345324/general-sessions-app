@@ -161,7 +161,7 @@ function NextEventBlock({ event, onEdit }) {
 
 // ─── Next Event form ─────────────────────────────────────────────────────────
 
-const DOCKET_PRESETS = ['Jail Docket', 'Bond Docket', 'Review Docket', 'Settlement Docket', 'Criminal Court']
+const DOCKET_PRESETS = ['Jail Docket', 'Bond Docket', 'Review Docket', 'Settlement Docket', 'Criminal Court', 'PV']
 
 // docket_type is one column but edited as a preset <select> + optional append text.
 // Split a stored value back into { docketPreset, docketCustom }: if it begins with
@@ -174,7 +174,11 @@ function splitDocketType(stored) {
   return { docketPreset: '', docketCustom: s }
 }
 
-const EMPTY_EVENT = { docketPreset: 'Jail Docket', docketCustom: '', reason: '', event_date: '', event_time: '9:00 AM', courtroom: '', judge: '', ada_name: '' }
+// No ada_name key: the Assistant DA Name input was removed from the form
+// 2026-08-19. next_events.ada_name is still a live column — it is displayed on
+// line 2 of the single-client blue block — so the form deliberately neither
+// holds nor writes it, leaving whatever is already stored untouched.
+const EMPTY_EVENT = { docketPreset: 'Jail Docket', docketCustom: '', reason: '', event_date: '', event_time: '9:00 AM', courtroom: '', judge: '' }
 
 const COURTROOMS = ['', '3A', '3B', '3C', '4B', '4C', '4D', '5C', '5D', '6A', '6B', '6C', '6D']
 
@@ -186,7 +190,7 @@ const JUDGES = [
   'S. Coleman',
   'A. Escobar',
   'R. Hayes (PRESIDING)',
-  'J. Holt',
+  'A. Holt',
   'L. Jones',
   'M. Floyd',
   'G. Robinson',
@@ -231,7 +235,6 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
           courtroom:   existing.courtroom,
           judge:       judgeInList ? existingJudge : 'Other',
           judgeOther:  judgeInList ? '' : existingJudge,
-          ada_name:    existing.ada_name ?? '',
         }
       : { ...EMPTY_EVENT, judgeOther: '' }
   )
@@ -264,6 +267,9 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
     setSaving(true)
     setError(null)
 
+    // `rest` carries no ada_name — the key is absent from form state entirely, so
+    // neither the Dexie write nor the sync-queue payload mentions it. Editing an
+    // event therefore leaves an existing ada_name alone instead of nulling it out.
     const { judgeOther, docketPreset, docketCustom, ...rest } = form
     const payload = {
       ...rest,
@@ -289,33 +295,12 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
         <span className={styles.nextEventLabel}>Next Event</span>
         <button className={styles.nextEventEditBtn} onClick={onCancel} disabled={saving}>Close</button>
       </div>
-      <div className={styles.formTwoCol}>
-        <div className={styles.formRow}>
-          <label className={styles.formLabel}>Docket Type</label>
-          <select className={styles.formSelect} value={form.docketPreset} onChange={e => set('docketPreset', e.target.value)}>
-            <option value="">—</option>
-            {DOCKET_PRESETS.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
-          <input
-            className={styles.formInput}
-            style={{ marginTop: 6 }}
-            value={form.docketCustom}
-            onChange={e => set('docketCustom', e.target.value)}
-            placeholder="Add'l text (optional)"
-          />
-        </div>
-        <div className={styles.formRow}>
-          <label className={styles.formLabel}>Reason</label>
-          <select className={styles.formSelect} value={form.reason} onChange={e => set('reason', e.target.value)}>
-            <option value="">—</option>
-            <option>Review</option>
-            <option>Trial</option>
-            <option>Settlement</option>
-            <option>Discussion</option>
-            <option>PV Hearing</option>
-          </select>
-        </div>
-      </div>
+      {/* Field order (2026-08-19): Date + Time, Judge, Courtroom, Docket Type +
+          Reason, Add'l Text. FORM ONLY — the display order in the blue block
+          above and in the client list row is deliberately different and was not
+          touched. The "Assistant DA Name" input was removed in the same change;
+          next_events.ada_name is still displayed on line 2 of the blue block,
+          and save() no longer sends the key at all so existing values survive. */}
       <div className={styles.formTwoCol}>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Date</label>
@@ -336,12 +321,6 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
         </div>
       </div>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Courtroom</label>
-        <select className={styles.formSelect} value={form.courtroom} onChange={e => set('courtroom', e.target.value)}>
-          {COURTROOMS.map(c => <option key={c} value={c}>{c || '—'}</option>)}
-        </select>
-      </div>
-      <div className={styles.formRow}>
         <label className={styles.formLabel}>Judge</label>
         <select className={styles.formSelect} value={form.judge} onChange={e => set('judge', e.target.value)}>
           {JUDGES.map(j => <option key={j} value={j}>{j || '—'}</option>)}
@@ -358,12 +337,41 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
         )}
       </div>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Assistant DA Name</label>
+        <label className={styles.formLabel}>Courtroom</label>
+        <select className={styles.formSelect} value={form.courtroom} onChange={e => set('courtroom', e.target.value)}>
+          {COURTROOMS.map(c => <option key={c} value={c}>{c || '—'}</option>)}
+        </select>
+      </div>
+      <div className={styles.formTwoCol}>
+        <div className={styles.formRow}>
+          <label className={styles.formLabel}>Docket Type</label>
+          <select className={styles.formSelect} value={form.docketPreset} onChange={e => set('docketPreset', e.target.value)}>
+            <option value="">—</option>
+            {DOCKET_PRESETS.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        <div className={styles.formRow}>
+          <label className={styles.formLabel}>Reason</label>
+          <select className={styles.formSelect} value={form.reason} onChange={e => set('reason', e.target.value)}>
+            <option value="">—</option>
+            <option>Review</option>
+            <option>Trial</option>
+            <option>Settlement</option>
+            <option>Discussion</option>
+            <option>PV Hearing</option>
+          </select>
+        </div>
+      </div>
+      {/* Still the same docketCustom field, still combined into the single
+          docket_type column on save — only lifted out of the Docket Type cell
+          into its own full-width row at the bottom of the form. */}
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Add&apos;l Text</label>
         <input
           className={styles.formInput}
-          value={form.ada_name}
-          onChange={e => set('ada_name', e.target.value)}
-          placeholder="Optional"
+          value={form.docketCustom}
+          onChange={e => set('docketCustom', e.target.value)}
+          placeholder="Add'l text (optional)"
         />
       </div>
       {error && <div className={styles.formError}>{error}</div>}
@@ -463,7 +471,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
 // Kept byte-identical to the copy in CaseView.jsx.
 const CLASSIFICATIONS = ['', 'CAPITAL', 'A FEL', 'B FEL', 'C FEL', 'D FEL', 'E FEL', 'A MIS', 'B MIS', 'C MIS', 'MIS']
 
-const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '', release_status: '' }
+const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '', release_status: '', is_pv: false, pv_sentence: '' }
 
 function AddCaseForm({ incidentId, onSaved, onCancel }) {
   const [form, setForm] = useState(EMPTY_CASE)
@@ -478,16 +486,36 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
     setSaving(true)
     setError(null)
     const newId = crypto.randomUUID()
-    const record = {
-      id: newId,
-      incident_id: incidentId,
-      case_number: form.case_number.trim() || null,
-      charge: form.charge.trim() || null,
-      charge_abbrev: form.charge_abbrev.trim() || null,
-      classification: form.classification || null,
-      bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
-      release_status: form.release_status || null,
-    }
+    // A probation violation is not a charged offense, so it carries none of the
+    // charge/bond fields — they are written as explicit nulls rather than left
+    // off the payload, so the record shape is identical either way and a PV can
+    // never inherit a stale value. `status` is omitted in both branches, exactly
+    // as before: Postgres defaults it to 'open' on the upsert.
+    const record = form.is_pv
+      ? {
+          id: newId,
+          incident_id: incidentId,
+          case_number: form.case_number.trim() || null,
+          charge: null,
+          charge_abbrev: null,
+          classification: null,
+          bond_amount: null,
+          release_status: null,
+          is_pv: true,
+          pv_sentence: form.pv_sentence.trim() || null,
+        }
+      : {
+          id: newId,
+          incident_id: incidentId,
+          case_number: form.case_number.trim() || null,
+          charge: form.charge.trim() || null,
+          charge_abbrev: form.charge_abbrev.trim() || null,
+          classification: form.classification || null,
+          bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
+          release_status: form.release_status || null,
+          is_pv: false,
+          pv_sentence: null,
+        }
     await db.cases.put(record)
     await addToSyncQueue('cases', 'INSERT', newId, record)
     onSaved()
@@ -495,42 +523,65 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
 
   return (
     <div className={styles.inlineForm}>
+      {/* Checked, this collapses the form to case number + sentence: a PV has no
+          charge, classification, bond or release status to record. The hidden
+          fields keep their state, so unchecking restores anything already typed
+          — only the PV branch of save() decides what actually gets written. */}
+      <label className={styles.formCheckRow}>
+        <input
+          type="checkbox"
+          className={styles.formCheckbox}
+          checked={form.is_pv}
+          onChange={e => set('is_pv', e.target.checked)}
+        />
+        <span className={styles.formCheckLabel}>Probation Violation</span>
+      </label>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Case Number</label>
         <input className={styles.formInput} value={form.case_number} onChange={e => set('case_number', e.target.value)} placeholder="e.g. GS1041482" />
       </div>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Charge</label>
-        <input className={styles.formInput} value={form.charge} onChange={e => set('charge', e.target.value)} placeholder="e.g. Vandalism" />
-      </div>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Abbrev. (for client list)</label>
-        <input className={styles.formInput} value={form.charge_abbrev} onChange={e => set('charge_abbrev', e.target.value)} placeholder="Optional" />
-      </div>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Classification</label>
-        <select className={styles.formSelect} value={form.classification} onChange={e => set('classification', e.target.value)}>
-          {CLASSIFICATIONS.map(c => <option key={c} value={c}>{c || '—'}</option>)}
-        </select>
-      </div>
-      <div className={styles.formTwoCol}>
+      {form.is_pv && (
         <div className={styles.formRow}>
-          <label className={styles.formLabel}>Bond Amount</label>
-          <div className={styles.formPrefixInput}>
-            <span className={styles.formPrefix}>$</span>
-            <input className={`${styles.formInput} ${styles.formInputPrefixed}`} type="number" min="0" value={form.bond_amount} onChange={e => set('bond_amount', e.target.value)} placeholder="Optional" />
-          </div>
+          <label className={styles.formLabel}>Sentence (if known)</label>
+          <input className={styles.formInput} value={form.pv_sentence} onChange={e => set('pv_sentence', e.target.value)} placeholder="Optional — faced if probation is revoked" />
+        </div>
+      )}
+      {!form.is_pv && (
+        <>
+        <div className={styles.formRow}>
+          <label className={styles.formLabel}>Charge</label>
+          <input className={styles.formInput} value={form.charge} onChange={e => set('charge', e.target.value)} placeholder="e.g. Vandalism" />
         </div>
         <div className={styles.formRow}>
-          <label className={styles.formLabel}>Status</label>
-          <select className={styles.formSelect} value={form.release_status} onChange={e => set('release_status', e.target.value)}>
-            <option value="">—</option>
-            <option value="held_without_bond">Held without bond</option>
-            <option value="pretrial_released">Pretrial Released</option>
-            <option value="ror">ROR&apos;d</option>
+          <label className={styles.formLabel}>Abbrev. (for client list)</label>
+          <input className={styles.formInput} value={form.charge_abbrev} onChange={e => set('charge_abbrev', e.target.value)} placeholder="Optional" />
+        </div>
+        <div className={styles.formRow}>
+          <label className={styles.formLabel}>Classification</label>
+          <select className={styles.formSelect} value={form.classification} onChange={e => set('classification', e.target.value)}>
+            {CLASSIFICATIONS.map(c => <option key={c} value={c}>{c || '—'}</option>)}
           </select>
         </div>
-      </div>
+        <div className={styles.formTwoCol}>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Bond Amount</label>
+            <div className={styles.formPrefixInput}>
+              <span className={styles.formPrefix}>$</span>
+              <input className={`${styles.formInput} ${styles.formInputPrefixed}`} type="number" min="0" value={form.bond_amount} onChange={e => set('bond_amount', e.target.value)} placeholder="Optional" />
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Status</label>
+            <select className={styles.formSelect} value={form.release_status} onChange={e => set('release_status', e.target.value)}>
+              <option value="">—</option>
+              <option value="held_without_bond">Held without bond</option>
+              <option value="pretrial_released">Pretrial Released</option>
+              <option value="ror">ROR&apos;d</option>
+            </select>
+          </div>
+        </div>
+        </>
+      )}
       {error && <div className={styles.formError}>{error}</div>}
       <div className={styles.formActions}>
         <button className={styles.formSave} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
@@ -916,7 +967,13 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
                         from the number. The separating space sits inside the
                         conditional, so a null abbrev leaves no trailing space
                         and no placeholder. */}
-                    {c.charge_abbrev && (
+                    {c.is_pv ? (
+                      /* Same substitution as the two mini-lists, in the same
+                         nested span so "- PV" shares the case number's enlarged
+                         tap target and muted styling. A PV never has a
+                         charge_abbrev, so the two are mutually exclusive. */
+                      <span className={styles.incidentCaseAbbrev}>{' '}- PV</span>
+                    ) : c.charge_abbrev && (
                       <span className={styles.incidentCaseAbbrev}>{' '}{c.charge_abbrev}</span>
                     )}
                   </span>
@@ -1125,6 +1182,9 @@ const DESCRIPTION_OPTIONS = [
   'Reviewed () affidavits 0. ; Reviewed criminal history 0. ; TOTAL:',
   'Jail visit with client',
   'Initial client meeting',
+  // Deliberately breaks the otherwise-alphabetical run, by request (2026-08-19):
+  // it belongs beside the other in-court entries, not filed under C.
+  'Courtroom wait time',
   'Met with ADA',
   'Met, negotiated with ADA',
   'Rescheduled Appearance',
@@ -1146,6 +1206,36 @@ const DESCRIPTION_OPTIONS = [
   'Case dismissed',
   'Closed file',
 ]
+
+// Descriptions that carry a conventional time value. Picking one of these from
+// the dropdown pre-fills the Hours field; the field stays editable afterward,
+// exactly as before. A description NOT listed here — including "Courtroom wait
+// time" and anything typed by hand — leaves Hours untouched, so there is no
+// forced default outside this map.
+//
+// Keys must match the DESCRIPTION_OPTIONS strings byte for byte: the lookup is a
+// plain case-sensitive property hit, not a fuzzy match. Values are strings so
+// they equal the HOURS_OPTIONS <option> values and the <select> stays controlled.
+const DEFAULT_HOURS_BY_DESCRIPTION = {
+  'Opened file': '0.5',
+  'Closed file': '0.5',
+  'Jail visit with client': '0.4',
+  'Initial client meeting': '0.3',
+  'Met with ADA': '0.1',
+  'Met, negotiated with ADA': '0.1',
+  'Rescheduled Appearance': '0.1',
+  'Draft, send email requesting client zoom visit': '0.2',
+  'Client zoom visit': '0.3',
+  'Guilty plea taken by judge': '0.2',
+  'Case dismissed': '0.1',
+}
+
+// Shared by AddHoursForm and EditHoursForm. Applies a dropdown pick as ONE state
+// update, so description and hours can never land in separate renders.
+function applyDescriptionPick(form, description) {
+  const preset = DEFAULT_HOURS_BY_DESCRIPTION[description]
+  return { ...form, description, ...(preset ? { hours: preset } : {}) }
+}
 
 // localStorage key holding the last entry_date the user saved, used to default
 // the date field on the next new hours entry.
@@ -1200,17 +1290,13 @@ function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
 
   return (
     <div className={styles.inlineForm}>
-      <div className={styles.formTwoCol}>
-        <div className={styles.formRow}>
-          <label className={styles.formLabel}>Date</label>
-          <input type="date" className={styles.formInput} value={toDateInput(form.entry_date)} onChange={e => set('entry_date', fromDateInput(e.target.value))} {...pickerHandlers()} />
-        </div>
-        <div className={styles.formRow}>
-          <label className={styles.formLabel}>Hours</label>
-          <select className={styles.formSelect} value={form.hours} onChange={e => set('hours', e.target.value)}>
-            {HOURS_OPTIONS.map(h => <option key={h} value={h}>{h}</option>)}
-          </select>
-        </div>
+      {/* Field order is date → description → hours (2026-08-19). Hours moved below
+          description because picking a common description can now fill Hours in,
+          so the field it drives has to come after it. Date and Hours no longer
+          share a two-column row — that pairing is what the reorder breaks. */}
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Date</label>
+        <input type="date" className={styles.formInput} value={toDateInput(form.entry_date)} onChange={e => set('entry_date', fromDateInput(e.target.value))} {...pickerHandlers()} />
       </div>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Description</label>
@@ -1219,10 +1305,16 @@ function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
           className={styles.formSelect}
           style={{ marginTop: 6 }}
           value=""
-          onChange={e => { if (e.target.value) set('description', e.target.value) }}
+          onChange={e => { if (e.target.value) setForm(f => applyDescriptionPick(f, e.target.value)) }}
         >
           <option value="">Pick a common description…</option>
           {DESCRIPTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Hours</label>
+        <select className={styles.formSelect} value={form.hours} onChange={e => set('hours', e.target.value)}>
+          {HOURS_OPTIONS.map(h => <option key={h} value={h}>{h}</option>)}
         </select>
       </div>
       {error && <div className={styles.formError}>{error}</div>}
@@ -1265,17 +1357,13 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
 
   return (
     <div className={styles.inlineForm}>
-      <div className={styles.formTwoCol}>
-        <div className={styles.formRow}>
-          <label className={styles.formLabel}>Date</label>
-          <input type="date" className={styles.formInput} value={toDateInput(form.entry_date)} onChange={e => set('entry_date', fromDateInput(e.target.value))} {...pickerHandlers()} />
-        </div>
-        <div className={styles.formRow}>
-          <label className={styles.formLabel}>Hours</label>
-          <select className={styles.formSelect} value={form.hours} onChange={e => set('hours', e.target.value)}>
-            {HOURS_OPTIONS.map(h => <option key={h} value={h}>{h}</option>)}
-          </select>
-        </div>
+      {/* Field order is date → description → hours (2026-08-19). Hours moved below
+          description because picking a common description can now fill Hours in,
+          so the field it drives has to come after it. Date and Hours no longer
+          share a two-column row — that pairing is what the reorder breaks. */}
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Date</label>
+        <input type="date" className={styles.formInput} value={toDateInput(form.entry_date)} onChange={e => set('entry_date', fromDateInput(e.target.value))} {...pickerHandlers()} />
       </div>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Description</label>
@@ -1284,10 +1372,16 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
           className={styles.formSelect}
           style={{ marginTop: 6 }}
           value=""
-          onChange={e => { if (e.target.value) set('description', e.target.value) }}
+          onChange={e => { if (e.target.value) setForm(f => applyDescriptionPick(f, e.target.value)) }}
         >
           <option value="">Pick a common description…</option>
           {DESCRIPTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Hours</label>
+        <select className={styles.formSelect} value={form.hours} onChange={e => set('hours', e.target.value)}>
+          {HOURS_OPTIONS.map(h => <option key={h} value={h}>{h}</option>)}
         </select>
       </div>
       {error && <div className={styles.formError}>{error}</div>}
@@ -2020,8 +2114,17 @@ export default function ClientFile() {
               const rows = block.items.map(c => (
                 <div key={c.id} className={rowStyles.caseTableRow}>
                   <span className={rowStyles.caseNum} style={{ cursor: 'default' }}>{c.case_number || '—'}</span>
-                  {c.charge && <span className={rowStyles.caseCharge} style={{ cursor: 'default' }}>| {c.charge}</span>}
-                  {c.classification && <>{' '}<span className={rowStyles.caseClassification}>({c.classification})</span></>}
+                  {/* PV stands in for charge + classification here too — same
+                      rule as the client list, so the two mini-lists still read
+                      identically for the same case. */}
+                  {c.is_pv ? (
+                    <span className={rowStyles.caseCharge} style={{ cursor: 'default' }}>- PV</span>
+                  ) : (
+                    <>
+                      {c.charge && <span className={rowStyles.caseCharge} style={{ cursor: 'default' }}>| {c.charge}</span>}
+                      {c.classification && <>{' '}<span className={rowStyles.caseClassification}>({c.classification})</span></>}
+                    </>
+                  )}
                 </div>
               ))
               return block.bracket

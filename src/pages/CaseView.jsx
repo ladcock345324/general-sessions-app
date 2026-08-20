@@ -126,6 +126,10 @@ export default function CaseView() {
   const navigate = useNavigate()
 
   const [notes, setNotes] = useState('')
+  // What the client faces if probation is revoked. PV cases only, and optional
+  // even then — it is frequently unknown when the case is created, which is why
+  // it is editable here rather than only at creation.
+  const [pvSentence, setPvSentence] = useState('')
 
   const liveData = useLiveQuery(async () => {
     // Cases are addressed by case_number, but that column is nullable as of
@@ -145,12 +149,17 @@ export default function CaseView() {
   const liveWarrantText = caseData?.warrant_text ?? null
 
   useEffect(() => {
-    if (liveData !== undefined) setNotes(liveData?.caseRecord?.notes ?? '')
+    if (liveData !== undefined) {
+      setNotes(liveData?.caseRecord?.notes ?? '')
+      setPvSentence(liveData?.caseRecord?.pv_sentence ?? '')
+    }
   }, [liveData])
 
   const [editing, setEditing] = useState(false)
   const [notesSaving, setNotesSaving] = useState(false)
   const [notesSaved, setNotesSaved] = useState(false)
+  const [pvSaving, setPvSaving] = useState(false)
+  const [pvSaved, setPvSaved] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showWarrantText, setShowWarrantText] = useState(false)
@@ -288,7 +297,14 @@ export default function CaseView() {
         {/* Both nullable — a lone dash keeps the header from collapsing to an
             empty strip when the case has no number yet. */}
         <div className={styles.caseNumberLabel}>{caseData.case_number || '—'}</div>
-        {caseData.charge && <div className={styles.charge}>{caseData.charge}</div>}
+        {/* PV replaces the charge line, matching the "[case number] - PV" the
+            client list and both mini-lists show. The leading "[case number] -"
+            is dropped HERE ONLY: the number is already the large label directly
+            above, so repeating it would print it twice in four lines. Same PV
+            token, same slot, no stutter. */}
+        {caseData.is_pv
+          ? <div className={styles.charge}>PV</div>
+          : caseData.charge && <div className={styles.charge}>{caseData.charge}</div>}
         <div className={styles.meta}>
           {hasAffidavit && <span className={styles.affidavitTag}>Affidavit</span>}
           {hasAffidavit && bondText && <span className={styles.pipe}>|</span>}
@@ -336,6 +352,42 @@ export default function CaseView() {
             </label>
             {uploadError && <div className={styles.uploadError}>{uploadError}</div>}
           </div>
+
+          {/* PV cases only. Rendered whenever is_pv is set, not only when a
+              sentence is already stored — the value is usually unknown at
+              creation, so the control has to exist for an empty one or there
+              would be no way to fill it in later. Sits above Notes because it
+              is a fact about the case, not a working note. Saves exactly like
+              Notes: Dexie write + sync-queue UPDATE, blank stored as null. */}
+          {caseData.is_pv && (
+            <div className={styles.section}>
+              <div className={styles.sectionLabel}>Sentence (if known)</div>
+              <textarea
+                className={styles.notesInput}
+                value={pvSentence}
+                onChange={e => { setPvSentence(e.target.value); setPvSaved(false) }}
+                placeholder="What client faces if probation is revoked…"
+                rows={2}
+              />
+              <div className={styles.notesActions}>
+                <button
+                  className={styles.notesSaveBtn}
+                  disabled={pvSaving}
+                  onClick={async () => {
+                    setPvSaving(true)
+                    const value = pvSentence.trim() || null
+                    await db.cases.update(caseData.id, { pv_sentence: value })
+                    await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, pv_sentence: value })
+                    setPvSaving(false)
+                    setPvSaved(true)
+                  }}
+                >
+                  {pvSaving ? 'Saving…' : 'Save Sentence'}
+                </button>
+                {pvSaved && <span className={styles.notesSavedMsg}>Saved</span>}
+              </div>
+            </div>
+          )}
 
           <div className={styles.section}>
             <div className={styles.sectionLabel}>Notes</div>

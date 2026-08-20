@@ -33,6 +33,32 @@ function formatDateDisplay(mdy) {
   return `${Number(m[1])}/${Number(m[2])}/${m[3]}`
 }
 
+// An event is "overdue" once its date+time is more than three hours in the past.
+// This is the client list's only stale-next-event signal and is deliberately
+// scoped to this component — ClientFile's blue block and CaseView are unchanged.
+//
+// Purely derived at render: nothing is stored, so it clears itself the moment the
+// next event is updated. It does NOT re-evaluate on a timer — a row flips to red
+// on its next render (navigation, or any Dexie change via useLiveQuery), which is
+// the accepted cost of having no stored flag.
+//
+// BOTH fields are required. A blank date or a blank time yields no meaningful
+// cutoff, so those events are never marked overdue rather than being measured
+// from an assumed midnight. Built from numeric Date(y, m, d, h, min) args, never
+// new Date(string) — the same rule the rest of the app follows for these
+// hand-entered "M/D/YYYY" strings.
+const OVERDUE_GRACE_MS = 3 * 60 * 60 * 1000
+
+function isOverdue(dateStr, timeStr) {
+  const dm = String(dateStr ?? '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  const tm = String(timeStr ?? '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (!dm || !tm) return false
+  let hours = Number(tm[1]) % 12
+  if (/PM/i.test(tm[3])) hours += 12
+  const when = new Date(Number(dm[3]), Number(dm[1]) - 1, Number(dm[2]), hours, Number(tm[2]))
+  return Date.now() - when.getTime() > OVERDUE_GRACE_MS
+}
+
 const INDIGENT_CYCLE = { red: 'yellow', yellow: 'green', green: 'gold', gold: 'red' }
 const INDIGENT_COLOR = { red: '#b85555', yellow: '#E8913A', green: '#3d9e6a', gold: '#FFD700' }
 
@@ -91,7 +117,9 @@ export default function ClientRow({ client, relieved = false, onClick }) {
   const { id, lastName, firstName, gender, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers, indigentStatus } = client
 
   let nextSegments = null
+  let nextOverdue = false
   if (nextHearing && nextHearing.date) {
+    nextOverdue = isOverdue(nextHearing.date, nextHearing.time)
     const d = new Date(nextHearing.date)
     const weekday = isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' }) + ', '
     const t = nextHearing.time
@@ -116,7 +144,7 @@ export default function ClientRow({ client, relieved = false, onClick }) {
         </div>
         {nextSegments
           ? (
-            <span className={styles.next}>
+            <span className={`${styles.next}${nextOverdue ? ` ${styles.nextOverdue}` : ''}`}>
               {nextSegments.map((seg, i) => (
                 <span key={i}>{i > 0 && <span className={styles.pipe}>|</span>}{seg}</span>
               ))}
@@ -141,8 +169,18 @@ export default function ClientRow({ client, relieved = false, onClick }) {
                 return (
                   <div key={c.id} className={styles.caseTableRow}>
                     <span className={styles.caseNum} onPointerDown={pd} onPointerUp={pu}>{c.case_number || '—'}</span>
-                    {charge && <span className={styles.caseCharge}>| {charge}</span>}
-                    {c.classification && <>{' '}<span className={styles.caseClassification}>({c.classification})</span></>}
+                    {/* A probation violation has no charge, abbrev or
+                        classification to show — "- PV" stands in for all three.
+                        The case-number span above is untouched, so the tap
+                        target and navigation are identical either way. */}
+                    {c.is_pv ? (
+                      <span className={styles.caseCharge}>- PV</span>
+                    ) : (
+                      <>
+                        {charge && <span className={styles.caseCharge}>| {charge}</span>}
+                        {c.classification && <>{' '}<span className={styles.caseClassification}>({c.classification})</span></>}
+                      </>
+                    )}
                   </div>
                 )
               })
