@@ -182,6 +182,17 @@ const EMPTY_EVENT = { docketPreset: 'Jail Docket', docketCustom: '', reason: '',
 
 const COURTROOMS = ['', '3A', '3B', '3C', '4B', '4C', '4D', '5C', '5D', '6A', '6B', '6C', '6D']
 
+// Reason presets, in this exact order (2026-07-23; "PV Hearing" appended
+// 2026-08-10). Extracted from inline <option> elements 2026-08-20 so the same
+// off-list guard TIME_OPTIONS has can be applied to it — see reasonOptions in
+// NextEventForm. No blank entry here: the select renders its own "—" first,
+// exactly as the Time select does.
+//
+// next_events.reason is plain nullable text with no enum or check constraint, so
+// this list is the ONLY thing constraining the value — and off-list values exist
+// in real data.
+const REASON_OPTIONS = ['Review', 'Trial', 'Settlement', 'Discussion', 'PV Hearing']
+
 const JUDGES = [
   '',
   'J. Bell',
@@ -250,6 +261,18 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
   const timeOptions = storedTime && !TIME_OPTIONS.includes(storedTime)
     ? [storedTime, ...TIME_OPTIONS]
     : TIME_OPTIONS
+
+  // The same guard for reason (2026-08-20), and for a sharper reason than the
+  // time one: without it the select renders BLANK for an off-list stored value
+  // while form.reason still holds the real string. Saving without touching the
+  // dropdown preserved it, but a single interaction replaced it permanently with
+  // no way back — a silent data-loss path, not just a display wart.
+  // e.g. "Shelter Court Review (reset from 7/31/2026 — client missed)".
+  // The extra option drops off once the user picks a listed value.
+  const storedReason = form.reason ?? ''
+  const reasonOptions = storedReason && !REASON_OPTIONS.includes(storedReason)
+    ? [storedReason, ...REASON_OPTIONS]
+    : REASON_OPTIONS
 
   async function clear() {
     setSaving(true)
@@ -352,13 +375,9 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
         </div>
         <div className={styles.formRow}>
           <label className={styles.formLabel}>Reason</label>
-          <select className={styles.formSelect} value={form.reason} onChange={e => set('reason', e.target.value)}>
+          <select className={styles.formSelect} value={form.reason ?? ''} onChange={e => set('reason', e.target.value)}>
             <option value="">—</option>
-            <option>Review</option>
-            <option>Trial</option>
-            <option>Settlement</option>
-            <option>Discussion</option>
-            <option>PV Hearing</option>
+            {reasonOptions.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
         </div>
       </div>
