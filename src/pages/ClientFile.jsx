@@ -394,7 +394,13 @@ function affiantTemplate(mdy) {
 }
 
 function AddIncidentForm({ clientId, onSaved, onCancel }) {
-  const [form, setForm] = useState({ incident_date: '', location: '', incident_description: '' })
+  // is_pv / case_number / pv_sentence drive the probation-violation branch. A PV
+  // is not an incident that later grows cases — it is one incident and one case
+  // created together, which is why the entry point lives here rather than in the
+  // per-incident "+ add a case" form (where it was first built, 2026-08-19, and
+  // from which it was removed the same day: that flow left a blank "Awaiting
+  // details" incident wrapped around an otherwise-clean PV case).
+  const [form, setForm] = useState({ incident_date: '', location: '', incident_description: '', is_pv: false, case_number: '', pv_sentence: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -416,13 +422,69 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
     })
   }
 
+  // Probation violation: one incident + its single case, created together in one
+  // action. Modeled directly on AffidavitFirstUpload's two-row creation, and it
+  // inherits that flow's ordering rule — the incident is enqueued BEFORE the
+  // case, so the FIFO sync queue can never push a cases row whose incident_id FK
+  // has not landed on the server yet. Both rows go Dexie → addToSyncQueue; never
+  // a direct Supabase write.
+  async function savePv() {
+    setSaving(true)
+    setError(null)
+
+    const incidentId = crypto.randomUUID()
+    // A PV incident has no date, location or description by construction — those
+    // are the three fields the form hides. is_pv is what the Incidents section
+    // reads to skip rendering them (and the "Awaiting details" placeholder).
+    const incidentRecord = {
+      id: incidentId,
+      client_id: clientId,
+      incident_date: null,
+      location: null,
+      incident_description: null,
+      is_pv: true,
+    }
+    await db.incidents.put(incidentRecord)
+    await addToSyncQueue('incidents', 'INSERT', incidentId, incidentRecord)
+
+    // Identical field population to what the old AddCaseForm PV checkbox wrote —
+    // only the trigger moved. The charge/bond columns are explicit nulls rather
+    // than omitted, so the record shape matches a normal case exactly. `status`
+    // IS sent here (unlike the normal case insert, which lets Postgres default
+    // it) so the local Dexie row is correct before the next fullSync, not only
+    // after it.
+    const caseId = crypto.randomUUID()
+    const caseRecord = {
+      id: caseId,
+      incident_id: incidentId,
+      case_number: form.case_number.trim() || null,
+      charge: null,
+      charge_abbrev: null,
+      classification: null,
+      bond_amount: null,
+      release_status: null,
+      status: 'open',
+      is_pv: true,
+      pv_sentence: form.pv_sentence.trim() || null,
+    }
+    await db.cases.put(caseRecord)
+    await addToSyncQueue('cases', 'INSERT', caseId, caseRecord)
+
+    onSaved()
+  }
+
   async function save() {
+    if (form.is_pv) return savePv()
     // All three fields are nullable in Postgres (incident_date became nullable
     // 2026-07-28, location was added nullable), so none is required — a blank
     // saves as null, not ''.
     setSaving(true)
     setError(null)
     const newId = crypto.randomUUID()
+    // is_pv is deliberately NOT sent on the normal path: the column is NOT NULL
+    // DEFAULT false, and leaving it off keeps all three incident-creation paths
+    // (here, affidavit-first, and this form's PV branch writing it explicitly)
+    // consistent with how they behaved before PV existed.
     const record = {
       id: newId,
       client_id: clientId,
@@ -437,24 +499,54 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
 
   return (
     <div className={styles.inlineForm}>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Date</label>
+      {/* Top-right, above every field: it decides which form you are filling in,
+          so it has to be read before anything below it. Checked, Date/Location/
+          Description are replaced by Case Number + Sentence — a PV has no
+          incident narrative to record. The hidden fields keep their state, so
+          unchecking restores anything already typed; only the save branch
+          decides what is actually written. */}
+      <label className={`${styles.formCheckRow} ${styles.formCheckRowEnd}`}>
         <input
-          type="date"
-          className={styles.formInput}
-          value={toDateInput(form.incident_date)}
-          onChange={e => setIncidentDate(fromDateInput(e.target.value))}
-          {...pickerHandlers()}
+          type="checkbox"
+          className={styles.formCheckbox}
+          checked={form.is_pv}
+          onChange={e => set('is_pv', e.target.checked)}
         />
-      </div>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Location</label>
-        <input className={styles.formInput} value={form.location} onChange={e => set('location', e.target.value)} placeholder="Optional" />
-      </div>
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>Description</label>
-        <input className={styles.formInput} value={form.incident_description} onChange={e => set('incident_description', e.target.value)} placeholder="e.g. Watch Theft Incident" />
-      </div>
+        <span className={styles.formCheckLabel}>Probation Violation</span>
+      </label>
+      {form.is_pv ? (
+        <>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Case Number</label>
+            <input className={styles.formInput} value={form.case_number} onChange={e => set('case_number', e.target.value)} placeholder="e.g. GS1041482" />
+          </div>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Sentence (if known)</label>
+            <input className={styles.formInput} value={form.pv_sentence} onChange={e => set('pv_sentence', e.target.value)} placeholder="Optional — faced if probation is revoked" />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Date</label>
+            <input
+              type="date"
+              className={styles.formInput}
+              value={toDateInput(form.incident_date)}
+              onChange={e => setIncidentDate(fromDateInput(e.target.value))}
+              {...pickerHandlers()}
+            />
+          </div>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Location</label>
+            <input className={styles.formInput} value={form.location} onChange={e => set('location', e.target.value)} placeholder="Optional" />
+          </div>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Description</label>
+            <input className={styles.formInput} value={form.incident_description} onChange={e => set('incident_description', e.target.value)} placeholder="e.g. Watch Theft Incident" />
+          </div>
+        </>
+      )}
       {error && <div className={styles.formError}>{error}</div>}
       <div className={styles.formActions}>
         <button className={styles.formSave} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
@@ -471,7 +563,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
 // Kept byte-identical to the copy in CaseView.jsx.
 const CLASSIFICATIONS = ['', 'CAPITAL', 'A FEL', 'B FEL', 'C FEL', 'D FEL', 'E FEL', 'A MIS', 'B MIS', 'C MIS', 'MIS']
 
-const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '', release_status: '', is_pv: false, pv_sentence: '' }
+const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '', release_status: '' }
 
 function AddCaseForm({ incidentId, onSaved, onCancel }) {
   const [form, setForm] = useState(EMPTY_CASE)
@@ -486,36 +578,16 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
     setSaving(true)
     setError(null)
     const newId = crypto.randomUUID()
-    // A probation violation is not a charged offense, so it carries none of the
-    // charge/bond fields — they are written as explicit nulls rather than left
-    // off the payload, so the record shape is identical either way and a PV can
-    // never inherit a stale value. `status` is omitted in both branches, exactly
-    // as before: Postgres defaults it to 'open' on the upsert.
-    const record = form.is_pv
-      ? {
-          id: newId,
-          incident_id: incidentId,
-          case_number: form.case_number.trim() || null,
-          charge: null,
-          charge_abbrev: null,
-          classification: null,
-          bond_amount: null,
-          release_status: null,
-          is_pv: true,
-          pv_sentence: form.pv_sentence.trim() || null,
-        }
-      : {
-          id: newId,
-          incident_id: incidentId,
-          case_number: form.case_number.trim() || null,
-          charge: form.charge.trim() || null,
-          charge_abbrev: form.charge_abbrev.trim() || null,
-          classification: form.classification || null,
-          bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
-          release_status: form.release_status || null,
-          is_pv: false,
-          pv_sentence: null,
-        }
+    const record = {
+      id: newId,
+      incident_id: incidentId,
+      case_number: form.case_number.trim() || null,
+      charge: form.charge.trim() || null,
+      charge_abbrev: form.charge_abbrev.trim() || null,
+      classification: form.classification || null,
+      bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
+      release_status: form.release_status || null,
+    }
     await db.cases.put(record)
     await addToSyncQueue('cases', 'INSERT', newId, record)
     onSaved()
@@ -523,65 +595,42 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
 
   return (
     <div className={styles.inlineForm}>
-      {/* Checked, this collapses the form to case number + sentence: a PV has no
-          charge, classification, bond or release status to record. The hidden
-          fields keep their state, so unchecking restores anything already typed
-          — only the PV branch of save() decides what actually gets written. */}
-      <label className={styles.formCheckRow}>
-        <input
-          type="checkbox"
-          className={styles.formCheckbox}
-          checked={form.is_pv}
-          onChange={e => set('is_pv', e.target.checked)}
-        />
-        <span className={styles.formCheckLabel}>Probation Violation</span>
-      </label>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Case Number</label>
         <input className={styles.formInput} value={form.case_number} onChange={e => set('case_number', e.target.value)} placeholder="e.g. GS1041482" />
       </div>
-      {form.is_pv && (
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Charge</label>
+        <input className={styles.formInput} value={form.charge} onChange={e => set('charge', e.target.value)} placeholder="e.g. Vandalism" />
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Abbrev. (for client list)</label>
+        <input className={styles.formInput} value={form.charge_abbrev} onChange={e => set('charge_abbrev', e.target.value)} placeholder="Optional" />
+      </div>
+      <div className={styles.formRow}>
+        <label className={styles.formLabel}>Classification</label>
+        <select className={styles.formSelect} value={form.classification} onChange={e => set('classification', e.target.value)}>
+          {CLASSIFICATIONS.map(c => <option key={c} value={c}>{c || '—'}</option>)}
+        </select>
+      </div>
+      <div className={styles.formTwoCol}>
         <div className={styles.formRow}>
-          <label className={styles.formLabel}>Sentence (if known)</label>
-          <input className={styles.formInput} value={form.pv_sentence} onChange={e => set('pv_sentence', e.target.value)} placeholder="Optional — faced if probation is revoked" />
+          <label className={styles.formLabel}>Bond Amount</label>
+          <div className={styles.formPrefixInput}>
+            <span className={styles.formPrefix}>$</span>
+            <input className={`${styles.formInput} ${styles.formInputPrefixed}`} type="number" min="0" value={form.bond_amount} onChange={e => set('bond_amount', e.target.value)} placeholder="Optional" />
+          </div>
         </div>
-      )}
-      {!form.is_pv && (
-        <>
         <div className={styles.formRow}>
-          <label className={styles.formLabel}>Charge</label>
-          <input className={styles.formInput} value={form.charge} onChange={e => set('charge', e.target.value)} placeholder="e.g. Vandalism" />
-        </div>
-        <div className={styles.formRow}>
-          <label className={styles.formLabel}>Abbrev. (for client list)</label>
-          <input className={styles.formInput} value={form.charge_abbrev} onChange={e => set('charge_abbrev', e.target.value)} placeholder="Optional" />
-        </div>
-        <div className={styles.formRow}>
-          <label className={styles.formLabel}>Classification</label>
-          <select className={styles.formSelect} value={form.classification} onChange={e => set('classification', e.target.value)}>
-            {CLASSIFICATIONS.map(c => <option key={c} value={c}>{c || '—'}</option>)}
+          <label className={styles.formLabel}>Status</label>
+          <select className={styles.formSelect} value={form.release_status} onChange={e => set('release_status', e.target.value)}>
+            <option value="">—</option>
+            <option value="held_without_bond">Held without bond</option>
+            <option value="pretrial_released">Pretrial Released</option>
+            <option value="ror">ROR&apos;d</option>
           </select>
         </div>
-        <div className={styles.formTwoCol}>
-          <div className={styles.formRow}>
-            <label className={styles.formLabel}>Bond Amount</label>
-            <div className={styles.formPrefixInput}>
-              <span className={styles.formPrefix}>$</span>
-              <input className={`${styles.formInput} ${styles.formInputPrefixed}`} type="number" min="0" value={form.bond_amount} onChange={e => set('bond_amount', e.target.value)} placeholder="Optional" />
-            </div>
-          </div>
-          <div className={styles.formRow}>
-            <label className={styles.formLabel}>Status</label>
-            <select className={styles.formSelect} value={form.release_status} onChange={e => set('release_status', e.target.value)}>
-              <option value="">—</option>
-              <option value="held_without_bond">Held without bond</option>
-              <option value="pretrial_released">Pretrial Released</option>
-              <option value="ror">ROR&apos;d</option>
-            </select>
-          </div>
-        </div>
-        </>
-      )}
+      </div>
       {error && <div className={styles.formError}>{error}</div>}
       <div className={styles.formActions}>
         <button className={styles.formSave} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
@@ -885,6 +934,19 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
   const cases = [...(initialIncident.cases ?? [])]
     .sort((a, b) => (a.case_number ?? '').localeCompare(b.case_number ?? ''))
 
+  // A probation-violation incident (2026-08-19). It has no date, location or
+  // description by construction and holds exactly ONE case, so the whole
+  // incident chrome collapses: no date/location lines, no "+ add a case", no
+  // "Awaiting details", and no "edit incident" — that button edits precisely the
+  // three fields this branch hides, so leaving it would let the user type a
+  // description that then renders nowhere. The × delete button is untouched.
+  // The nested case line already reads "[case number] - PV" via the case-level
+  // logic, and is the only content in the left cell.
+  const isPvIncident = !!incident.is_pv
+  // pv_sentence lives on the case, not the incident. A PV holds one case, but
+  // find() rather than [0] so a sentence is still surfaced if that ever changes.
+  const pvSentence = cases.find(c => c.pv_sentence)?.pv_sentence ?? null
+
   // One grid row per incident, always fully visible — there is no expand/collapse
   // state anymore. Left cell: date, location, then this incident's cases and its
   // own "add a case". Right cell: the description.
@@ -929,8 +991,8 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
       ) : (
         <>
           <div className={styles.incidentLeftCell}>
-            {date && <div className={styles.incidentDateLine}>{date}</div>}
-            {loc && <div className={styles.incidentLocLine}>{loc}</div>}
+            {!isPvIncident && date && <div className={styles.incidentDateLine}>{date}</div>}
+            {!isPvIncident && loc && <div className={styles.incidentLocLine}>{loc}</div>}
 
             {/* No same-incident bracket here, deliberately: every case in this
                 cell belongs to this incident by construction, so the grouping is
@@ -991,7 +1053,7 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
               )
             })}
 
-            {!showAddCase && (
+            {!isPvIncident && !showAddCase && (
               <button className={styles.incidentAddCaseBtn} onClick={() => setShowAddCase(true)}>
                 + add a case
               </button>
@@ -1003,16 +1065,26 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
               className={styles.incidentDeleteBtn}
               onClick={() => setShowDeleteConfirm(true)}
             >×</button>
-            {/* "edit incident" flows inline after the last word of the
-                description rather than starting its own line beneath it. */}
-            <div className={styles.incidentDescText}>
-              {desc}
-              {!desc && undescribed && <span className={styles.incidentAwaiting}>{AWAITING_DETAILS}</span>}
-              {' '}
-              <button className={styles.incidentEditBtn} onClick={startEdit}>
-                edit incident
-              </button>
-            </div>
+            {/* A PV incident shows the case's sentence here, or nothing at all —
+                explicitly NOT the "Awaiting details" placeholder, which is what
+                made the old under-an-incident PV flow read as a half-finished
+                record. An unset sentence leaves the cell genuinely empty. */}
+            {isPvIncident ? (
+              pvSentence && (
+                <div className={styles.incidentDescText}>Sentence: {pvSentence}</div>
+              )
+            ) : (
+              /* "edit incident" flows inline after the last word of the
+                 description rather than starting its own line beneath it. */
+              <div className={styles.incidentDescText}>
+                {desc}
+                {!desc && undescribed && <span className={styles.incidentAwaiting}>{AWAITING_DETAILS}</span>}
+                {' '}
+                <button className={styles.incidentEditBtn} onClick={startEdit}>
+                  edit incident
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -1178,13 +1250,16 @@ const HOURS_OPTIONS = Array.from({ length: 25 }, (_, i) => ((i + 1) / 10).toFixe
 // Common descriptions offered as a dropdown; picking one fills the (still
 // editable) description text field. Shared by AddHoursForm and EditHoursForm.
 const DESCRIPTION_OPTIONS = [
+  // Pinned to the TOP of the list by request (2026-08-19), ahead of every other
+  // option — it is the one picked most often. Deliberately outside the
+  // alphabetical run that follows; do not "restore" it to sort order. It
+  // carries no entry in DEFAULT_HOURS_BY_DESCRIPTION, so picking it leaves the
+  // Hours field alone.
+  'Courtroom wait time',
   'Opened file',
   'Reviewed () affidavits 0. ; Reviewed criminal history 0. ; TOTAL:',
   'Jail visit with client',
   'Initial client meeting',
-  // Deliberately breaks the otherwise-alphabetical run, by request (2026-08-19):
-  // it belongs beside the other in-court entries, not filed under C.
-  'Courtroom wait time',
   'Met with ADA',
   'Met, negotiated with ADA',
   'Rescheduled Appearance',

@@ -302,8 +302,11 @@
   color: #6b7a99;
 }
 
-/* Probation Violation toggle, top of the Add Case form. The app had no checkbox
-   anywhere before this, so rather than invent a control vocabulary it borrows
+/* Probation Violation toggle, top-right of the Add INCIDENT form (it lived in
+   the Add Case form for part of 2026-08-19, then moved — a PV is created as an
+   incident + its one case together, not added under an existing incident).
+   The app had no checkbox anywhere before this, so rather than invent a
+   control vocabulary it borrows
    the existing one: .formCheckLabel is .formLabel's exact type treatment, and
    accent-color tints the native box to the form's blue so it reads as part of
    the dark surface. The whole row is a <label>, so the text is a tap target too
@@ -313,6 +316,13 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+}
+
+/* Right-aligned variant, used by the Add Incident form's PV toggle so it sits
+   top-right above the fields it swaps out. Pushed to the end rather than given
+   its own row justification inline, so the base .formCheckRow stays reusable. */
+.formCheckRowEnd {
+  justify-content: flex-end;
 }
 
 .formCheckbox {
