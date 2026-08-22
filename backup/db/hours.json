@@ -1,0 +1,4952 @@
+[
+  {
+    "id": "0021c9fe-d13a-4081-a1de-099cfb80feeb",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/17/2026",
+    "hours": 0.7,
+    "description": "Review affidavit 0.2; Review extensive criminal history 0.5",
+    "created_at": "2026-07-21T21:38:51.174835",
+    "sort_order": -17.5
+  },
+  {
+    "id": "0025962c-15da-48c0-b4b7-4ad0a4df7878",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/28/2026",
+    "hours": 0.2,
+    "description": "Client zoom visit",
+    "created_at": "2026-07-28T22:32:40.747128",
+    "sort_order": -20
+  },
+  {
+    "id": "009a1ce3-1566-4b68-9d54-5115a2f323f0",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Met, negotiated with ADA",
+    "created_at": "2026-08-22T01:48:40.031517",
+    "sort_order": -28.53515625
+  },
+  {
+    "id": "00a16672-f133-4b06-91c5-ca13758cb7a8",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.4,
+    "description": "Jail visit with client, convey offer, weigh options",
+    "created_at": "2026-08-22T06:02:19.827638",
+    "sort_order": -9.9981689453125
+  },
+  {
+    "id": "00ef14db-f36e-4745-8851-70108da8db8d",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/11/2026",
+    "hours": 0.1,
+    "description": "Met with family",
+    "created_at": "2026-08-18T05:18:17.55705",
+    "sort_order": 0.3125
+  },
+  {
+    "id": "0172bcf4-14b3-41eb-a152-c916a21f0bf3",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Fill out, execute representation notice",
+    "created_at": "2026-08-22T05:33:48.780582",
+    "sort_order": -10
+  },
+  {
+    "id": "02777b36-7677-4fef-8d82-21636a24fa42",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/17/2026",
+    "hours": 0.1,
+    "description": "Rescheduled appearance",
+    "created_at": "2026-07-20T16:29:54.671528",
+    "sort_order": -18.75
+  },
+  {
+    "id": "0342f145-e535-49d0-8378-087c25a08b17",
+    "client_id": "218e23ef-c09c-4ae1-b701-8bd672679e20",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Met with client",
+    "created_at": "2026-08-22T01:38:26.71051",
+    "sort_order": -25
+  },
+  {
+    "id": "0348f8dc-f3dd-458e-b8e8-e31a02dbbef4",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/18/2026",
+    "hours": 1,
+    "description": "Draft bond reduction motion",
+    "created_at": "2026-07-20T16:33:03.766513",
+    "sort_order": -30
+  },
+  {
+    "id": "03ddab65-e239-4beb-ae90-728734120bb4",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/18/2026",
+    "hours": 0.2,
+    "description": "Draft; send email to DA re: bond motion",
+    "created_at": "2026-07-20T16:37:12.162824",
+    "sort_order": -40
+  },
+  {
+    "id": "03ee074d-a017-47cb-9963-fa693a7abab0",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/17/2026",
+    "hours": 0.5,
+    "description": "Open file",
+    "created_at": "2026-07-20T23:15:23.160898",
+    "sort_order": 40
+  },
+  {
+    "id": "043efb03-04ff-42d3-91e7-75b7f1f83854",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "8/19/2026",
+    "hours": 0.2,
+    "description": "Coordinate with client via phone",
+    "created_at": "2026-08-22T05:29:32.433519",
+    "sort_order": -250
+  },
+  {
+    "id": "055479a6-410a-45a0-935d-d391c2f93e09",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/11/2026",
+    "hours": 0.2,
+    "description": "Draft, send email requesting BWC viewing appt",
+    "created_at": "2026-08-22T03:07:00.735476",
+    "sort_order": -102.5
+  },
+  {
+    "id": "058209fa-bdcc-492d-9b35-21d859fdedf8",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "7/20/2026",
+    "hours": 0.1,
+    "description": "Update client via text",
+    "created_at": "2026-07-20T22:29:58.953281",
+    "sort_order": -120
+  },
+  {
+    "id": "05bad89c-a8f7-42e5-a52e-053b787f4677",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.2,
+    "description": "Completed plea agreement form",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 385
+  },
+  {
+    "id": "0667814c-e0a3-458f-bd01-ed1b54a67617",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/7/2026",
+    "hours": 0.2,
+    "description": "Completed & executed information agreement",
+    "created_at": "2026-07-21T21:52:18.430747",
+    "sort_order": -120
+  },
+  {
+    "id": "06ccfd29-8e92-4a02-9211-6b4fd8e64487",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Continued all open cases to 8/5",
+    "created_at": "2026-08-22T02:11:09.845045",
+    "sort_order": -88.75
+  },
+  {
+    "id": "071ab58f-f733-45be-96f7-d8b8c4d3eff0",
+    "client_id": "b05dea7a-c597-4e45-bd1e-feebe9de19f6",
+    "entry_date": "7/29/2026",
+    "hours": 0.2,
+    "description": "Initial client meeting",
+    "created_at": "2026-07-29T19:38:36.886112",
+    "sort_order": -20
+  },
+  {
+    "id": "07a0698d-7767-455c-80f5-f7ce84616e26",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.2,
+    "description": "Plea taken by judge",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 355
+  },
+  {
+    "id": "07a764e5-5da7-4b46-bd5a-0caf1219e3da",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.4,
+    "description": "Met with client, discussed incident",
+    "created_at": "2026-08-22T01:39:47.006978",
+    "sort_order": -29.0625
+  },
+  {
+    "id": "0811fe0e-b0bd-41eb-8af5-69373fb26c8e",
+    "client_id": "77c9d677-44a5-43b7-a9c7-2d5fab656885",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Looked up charges",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 35
+  },
+  {
+    "id": "0868ea40-e068-4ff6-a017-d03cd83f8c7e",
+    "client_id": "94f81408-4a46-48ec-9ffb-1452a58b81a7",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Scanned affidavit",
+    "created_at": "2026-08-22T04:59:06.936969",
+    "sort_order": 40
+  },
+  {
+    "id": "08c0c4d5-dd6e-40f1-8802-ba488a5b3fa2",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/28/2026",
+    "hours": 0.5,
+    "description": "Close file",
+    "created_at": "2026-07-06T07:30:44.643787",
+    "sort_order": 200
+  },
+  {
+    "id": "08c21ff1-37a0-4a97-947b-39a420d823e1",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T05:51:02.029578",
+    "sort_order": -5
+  },
+  {
+    "id": "097d344e-70e4-4342-895b-b6c516747b8b",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Investigate client custody/BCC status",
+    "created_at": "2026-08-18T16:13:08.589618",
+    "sort_order": -125
+  },
+  {
+    "id": "0b15fe57-3f8d-4ad5-9fe8-d017261a83e2",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "entry_date": "8/19/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T05:24:48.118733",
+    "sort_order": -50
+  },
+  {
+    "id": "0b6b24f6-9b7e-4b86-a976-212e9c3038a9",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/6/2026",
+    "hours": 0.3,
+    "description": "Investigate immigration status; ICE detainer",
+    "created_at": "2026-08-18T05:19:17.384896",
+    "sort_order": 6.25
+  },
+  {
+    "id": "0c1240cf-4ccb-4ce0-8f80-2e342a4f1379",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/7/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client; advise to accept agreement",
+    "created_at": "2026-07-21T21:52:48.017989",
+    "sort_order": -110
+  },
+  {
+    "id": "0d3ccac7-c40d-4bf2-8aed-5bdb3d7365d1",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "6/1/2026",
+    "hours": 0.1,
+    "description": "Dismissed",
+    "created_at": "2026-07-06T07:12:25.595196",
+    "sort_order": 120
+  },
+  {
+    "id": "0d8361c6-f78c-4881-9cfd-b7a83b301103",
+    "client_id": "c5e4b0ff-8b78-4bef-b8aa-05fd4eb66b3b",
+    "entry_date": "8/12/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-18T05:30:50.591709",
+    "sort_order": -10
+  },
+  {
+    "id": "0dee6ea0-645d-42a0-b047-9d45724d84c5",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/25/2026",
+    "hours": 0.4,
+    "description": "Client zoom visit",
+    "created_at": "2026-07-21T00:45:23.931474",
+    "sort_order": -30
+  },
+  {
+    "id": "0e0ea51c-4b37-46e4-8f1b-cd8c9b72499a",
+    "client_id": "b05dea7a-c597-4e45-bd1e-feebe9de19f6",
+    "entry_date": "7/29/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-29T19:37:36.922113",
+    "sort_order": 0
+  },
+  {
+    "id": "0e141c4b-435f-4d0f-a798-276f96591047",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.2,
+    "description": "Investigate, research weapon alteration charge",
+    "created_at": "2026-08-22T05:58:52.491059",
+    "sort_order": -9.84375
+  },
+  {
+    "id": "0e28cd5a-dad6-4897-8e2c-93e2f8570f92",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/2/2026",
+    "hours": 0.2,
+    "description": "Jail visit with client; advise to accept agreement",
+    "created_at": "2026-07-21T21:50:18.085317",
+    "sort_order": -80
+  },
+  {
+    "id": "0f139f31-1182-47df-898d-57ad81bdab4a",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-07-29T19:58:29.99268",
+    "sort_order": -70
+  },
+  {
+    "id": "0f1502ea-5a16-4f10-b711-b7fb5c5ba55c",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.4,
+    "description": "Reviewed (2) affidavits 0.3 ; Reviewed criminal history 0.1 ; TOTAL: .4",
+    "created_at": "2026-08-22T01:39:47.006978",
+    "sort_order": -28.90625
+  },
+  {
+    "id": "0f335e6e-4f68-48e4-900b-7d3bab845e27",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/18/2026",
+    "hours": 0.9,
+    "description": "Review (2) affidavits 0.3 ; Review criminal history 0.6",
+    "created_at": "2026-07-20T23:24:22.861237",
+    "sort_order": 38.75
+  },
+  {
+    "id": "0f6136b4-2b68-47d7-8afc-dfb4d2944c8a",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "entry_date": "8/19/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T05:25:47.851378",
+    "sort_order": -70
+  },
+  {
+    "id": "0fcdf933-6b4c-418f-9cb3-c3ae61078f08",
+    "client_id": "94f81408-4a46-48ec-9ffb-1452a58b81a7",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Looked up charges",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 45
+  },
+  {
+    "id": "100667c5-aa2c-4d87-9f2f-920f49a681ad",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/3/2026",
+    "hours": 0.5,
+    "description": "Open file",
+    "created_at": "2026-07-20T15:37:55.080601",
+    "sort_order": 90
+  },
+  {
+    "id": "1032614b-4c09-42af-a1d0-19cd6008185d",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/17/2026",
+    "hours": 0.5,
+    "description": "Jail visit with client",
+    "created_at": "2026-07-21T21:39:51.023086",
+    "sort_order": -18.125
+  },
+  {
+    "id": "1069b095-5ebe-41aa-b43b-96411932152e",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/24/2026",
+    "hours": 0.2,
+    "description": "Retrieve conditions of release from clerk",
+    "created_at": "2026-07-21T22:40:15.617557",
+    "sort_order": -75
+  },
+  {
+    "id": "107c7298-8b66-4159-90e3-35714166e183",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "5/26/2026",
+    "hours": 0.5,
+    "description": "Open file",
+    "created_at": "2026-07-06T06:40:26.121933",
+    "sort_order": 270
+  },
+  {
+    "id": "121b90cd-dcff-43a6-9cac-bf0ba095670e",
+    "client_id": "77c9d677-44a5-43b7-a9c7-2d5fab656885",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with client, exchanged contact info",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 5
+  },
+  {
+    "id": "12a51e63-16fd-4302-bf3b-97cb180c3ea0",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/15/2026",
+    "hours": 0.2,
+    "description": "Obtain; review letter from client's employer",
+    "created_at": "2026-07-20T15:54:44.874563",
+    "sort_order": 25
+  },
+  {
+    "id": "12b85183-6bfe-4747-a0df-89b8e5f6a4fc",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.2,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-18T05:36:50.77004",
+    "sort_order": -110
+  },
+  {
+    "id": "12ca85dc-8aaa-4bae-a1ec-2a0d1fb95489",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Confirmed ICE detainer with DCSO",
+    "created_at": "2026-08-22T00:52:33.458576",
+    "sort_order": -110
+  },
+  {
+    "id": "12dc7d6f-0d62-4f65-afff-35fcc8d335d7",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "7/1/2026",
+    "hours": 0.5,
+    "description": "Close file",
+    "created_at": "2026-07-21T00:36:53.823961",
+    "sort_order": 20
+  },
+  {
+    "id": "12f14965-697e-417a-aba3-0df51054e79b",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/13/2026",
+    "hours": 0.2,
+    "description": "Draft, send email requesting client zoom visit",
+    "created_at": "2026-08-18T05:51:28.618667",
+    "sort_order": 5
+  },
+  {
+    "id": "135219d3-6448-4184-a841-505c41050b24",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/17/2026",
+    "hours": 0.2,
+    "description": "Client zoom visit",
+    "created_at": "2026-08-17T19:54:24.493295",
+    "sort_order": -10
+  },
+  {
+    "id": "13c1db72-e58c-42b0-be93-0ca54fa57182",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.2,
+    "description": "Fill out, execute waiver form",
+    "created_at": "2026-08-22T06:03:52.348894",
+    "sort_order": -9.99977111816407
+  },
+  {
+    "id": "13d3c63e-695c-4559-b6cd-34a11536368d",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/2/2026",
+    "hours": 0.4,
+    "description": "Jail visit with client; advise to accept agreement",
+    "created_at": "2026-07-21T21:49:56.705414",
+    "sort_order": -70
+  },
+  {
+    "id": "1512fb7d-9ccc-4dcb-afcf-e004afb547b8",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "5/31/2026",
+    "hours": 0.8,
+    "description": "Prepare defense",
+    "created_at": "2026-07-20T14:49:35.043667",
+    "sort_order": 155
+  },
+  {
+    "id": "15b5859c-7baa-4052-b019-946001c41e64",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "6/15/2026",
+    "hours": 0.6,
+    "description": "Phone call with client; discuss circumstances",
+    "created_at": "2026-06-16T19:42:22.88497",
+    "sort_order": 70
+  },
+  {
+    "id": "16110570-0313-49b6-9ac1-1630186e9415",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/24/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-21T22:08:14.771559",
+    "sort_order": -80
+  },
+  {
+    "id": "16260e9d-e934-49f6-88c3-74b6d18cde57",
+    "client_id": "4293d91d-140f-46ea-9705-741cfbeb2b1a",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Receive phone call from client, status update",
+    "created_at": "2026-08-18T21:18:46.235959",
+    "sort_order": -30
+  },
+  {
+    "id": "17588607-396d-431c-908b-c951e4d880cb",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.2,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T00:57:55.40268",
+    "sort_order": 0.46875
+  },
+  {
+    "id": "178cfa9f-2d5e-4031-ad37-505826613e75",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "entry_date": "8/18/2026",
+    "hours": 0.5,
+    "description": "Prepared for preliminary hearing",
+    "created_at": "2026-08-19T05:05:34.7289",
+    "sort_order": -30
+  },
+  {
+    "id": "17c28bbd-07e7-411c-90f6-5ed4b3c757a4",
+    "client_id": "efa25bd0-8c02-44b0-a014-8845d9bef27a",
+    "entry_date": "7/24/2026",
+    "hours": 0.1,
+    "description": "Explain charges & upcoming court date",
+    "created_at": "2026-07-28T22:38:19.804043",
+    "sort_order": -10
+  },
+  {
+    "id": "18fa9c71-34c3-4e82-91f7-97323c4e758f",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "8/19/2026",
+    "hours": 0.1,
+    "description": "Address court on scheduling",
+    "created_at": "2026-08-22T05:29:49.769563",
+    "sort_order": -260
+  },
+  {
+    "id": "190503d5-5327-4ee2-804f-e750b751c6b6",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T00:58:55.442425",
+    "sort_order": -40
+  },
+  {
+    "id": "1956497f-d2fa-4ac4-912b-f63c16678fc3",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Met with ADA re: rescheduling, DUI court screen",
+    "created_at": "2026-08-18T15:30:29.283125",
+    "sort_order": -20
+  },
+  {
+    "id": "1a13a563-8797-4fc6-9500-49704b43a5b4",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T00:52:33.652847",
+    "sort_order": -130
+  },
+  {
+    "id": "1a75aea9-c911-44dd-b642-e60738532707",
+    "client_id": "efa25bd0-8c02-44b0-a014-8845d9bef27a",
+    "entry_date": "7/27/2026",
+    "hours": 0.4,
+    "description": "Reviewed citation 0.3 ; Reviewed criminal history 0.1 ; TOTAL: 0.4",
+    "created_at": "2026-08-13T00:30:04.907191",
+    "sort_order": -30
+  },
+  {
+    "id": "1b0e93c5-26ab-4c63-a394-cdcfb63e672f",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/2/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-21T21:50:26.467893",
+    "sort_order": -75
+  },
+  {
+    "id": "1b3d2d10-c397-4417-a704-0605575ffa71",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/23/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-07-20T23:28:53.039287",
+    "sort_order": -15
+  },
+  {
+    "id": "1b53e58a-14c4-4272-bb0c-840a6540e007",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-22T06:03:27.314306",
+    "sort_order": -9.99992370605469
+  },
+  {
+    "id": "1c2f72d4-0471-47a6-869e-b9c9fffa42fe",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T03:20:31.413302",
+    "sort_order": -5
+  },
+  {
+    "id": "1cd4cf01-dfec-43a9-9aba-c46be73fb678",
+    "client_id": "629e8757-dc16-4d71-a61c-779c3dc71523",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with client",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 32.5
+  },
+  {
+    "id": "1ce8672f-1bbd-4828-b40a-e471727346d8",
+    "client_id": "ab56f58c-375f-4bac-8f69-144402acbaca",
+    "entry_date": "7/25/2026",
+    "hours": 0.6,
+    "description": "Reviewed (3) affidavits 0.4 ; Reviewed criminal history 0.2 ; TOTAL: 0.6",
+    "created_at": "2026-08-13T00:25:17.023807",
+    "sort_order": -10
+  },
+  {
+    "id": "1d3ab776-b702-469f-9ca2-4e4d4a7b4dd5",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Attempted jail visit with client; informed client was hospitalized",
+    "created_at": "2026-07-29T19:52:37.582265",
+    "sort_order": -55
+  },
+  {
+    "id": "1de99a6c-97f6-410b-ae74-a0ef0a6ecf2c",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "7/24/2026",
+    "hours": 0.3,
+    "description": "Reviewed citation 0.2 ; Reviewed criminal history 0.1 ; TOTAL: 0.3",
+    "created_at": "2026-08-13T00:48:39.312781",
+    "sort_order": -5
+  },
+  {
+    "id": "1ef38f45-f518-4354-be38-3b39a867a949",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T01:28:45.333044",
+    "sort_order": -27.5
+  },
+  {
+    "id": "1f259ade-cfdb-4384-8c9a-847af0f4d654",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "entry_date": "7/30/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-31T16:42:32.997591",
+    "sort_order": 0
+  },
+  {
+    "id": "1f8e7e8e-01f3-4fe3-86c8-42891880193c",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T06:01:49.836924",
+    "sort_order": -9.9993896484375
+  },
+  {
+    "id": "1fecb2b7-0d0c-4392-9d36-61dfec78680c",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/24/2026",
+    "hours": 0.2,
+    "description": "Jail visit with client; advise on plea",
+    "created_at": "2026-07-21T22:09:14.633314",
+    "sort_order": -90
+  },
+  {
+    "id": "20247a68-7a39-412d-b53b-8ea31030aba5",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "6/9/2026",
+    "hours": 0.1,
+    "description": "Verified indigency with judge",
+    "created_at": "2026-07-21T00:24:53.846437",
+    "sort_order": 70
+  },
+  {
+    "id": "2096fa36-ad70-4ee1-a91c-8d7c9a950b34",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "entry_date": "8/3/2026",
+    "hours": 0.3,
+    "description": "Initial client meeting",
+    "created_at": "2026-08-22T01:27:15.640574",
+    "sort_order": -10
+  },
+  {
+    "id": "20986d64-2e96-41ec-9788-500e08bbe4b3",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "entry_date": "7/31/2026",
+    "hours": 0.3,
+    "description": "Capias Hearing",
+    "created_at": "2026-07-31T16:43:13.619412",
+    "sort_order": -40
+  },
+  {
+    "id": "20b4330c-d5fb-4ee2-9aa0-94d8e3286d02",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-22T01:02:25.880669",
+    "sort_order": -150
+  },
+  {
+    "id": "20db3125-51de-4f16-93be-a0d83529ea88",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/30/2026",
+    "hours": 0.2,
+    "description": "Address court on 2 OOP's",
+    "created_at": "2026-07-20T23:42:23.048299",
+    "sort_order": -60
+  },
+  {
+    "id": "2116ce9c-0b7a-4359-a7b5-b0f41439a176",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/11/2026",
+    "hours": 0.2,
+    "description": "Draft, send email requesting BWC viewing appt",
+    "created_at": "2026-08-22T03:03:39.904137",
+    "sort_order": 15
+  },
+  {
+    "id": "21445be5-b880-4e1e-a081-f7930dbda64b",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Enter guilty plea",
+    "created_at": "2026-08-22T01:03:54.690182",
+    "sort_order": -190
+  },
+  {
+    "id": "217c12ce-ac8a-43d1-9b08-fe076c87ca7a",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/17/2026",
+    "hours": 0.2,
+    "description": "Draft, send email requesting client zoom visit",
+    "created_at": "2026-08-17T19:53:54.568139",
+    "sort_order": 0
+  },
+  {
+    "id": "2184007f-36d6-4a2f-9af7-633f74349d91",
+    "client_id": "19d8d350-199b-4248-af78-97948a6cb13a",
+    "entry_date": "7/24/2026",
+    "hours": 0.1,
+    "description": "Meet client & exchange contact info",
+    "created_at": "2026-07-28T22:41:19.588553",
+    "sort_order": -10
+  },
+  {
+    "id": "21864ed4-1de4-49a7-a693-6c5caae4bf1b",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.2,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T05:09:57.783361",
+    "sort_order": 382.5
+  },
+  {
+    "id": "2290c26e-cef2-4f5f-849d-ab7a8a7e5a58",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/10/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-18T04:35:02.090807",
+    "sort_order": -99.0625
+  },
+  {
+    "id": "229895b2-40e3-4380-bf37-f22677a8bbb1",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/28/2026",
+    "hours": 0.2,
+    "description": "Client zoom visit",
+    "created_at": "2026-07-28T22:31:15.909216",
+    "sort_order": -20
+  },
+  {
+    "id": "233a8f8d-a6ae-4b02-85aa-892b3a284459",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "entry_date": "8/13/2026",
+    "hours": 0.1,
+    "description": "Investigate custody status",
+    "created_at": "2026-08-13T21:34:10.426307",
+    "sort_order": -70
+  },
+  {
+    "id": "236b54b6-a658-4792-9cc4-7c21a64f2c72",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "File representation notice with clerk",
+    "created_at": "2026-08-18T19:00:48.159698",
+    "sort_order": -80
+  },
+  {
+    "id": "243e63f1-0fe7-4f8d-a6c8-e788e16bbf95",
+    "client_id": "e485ed9e-73d0-4bb3-a87b-f05c55e6d1a5",
+    "entry_date": "8/12/2026",
+    "hours": 0.1,
+    "description": "Update client via text",
+    "created_at": "2026-08-13T00:17:29.200159",
+    "sort_order": -30
+  },
+  {
+    "id": "250cd966-ad8c-41d4-9cd4-e936cb9955c6",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.2,
+    "description": "Met with attorney for co-defendant",
+    "created_at": "2026-08-22T06:00:19.850937",
+    "sort_order": -9.990234375
+  },
+  {
+    "id": "2538242a-c54e-4acb-be43-ee003d202263",
+    "client_id": "e485ed9e-73d0-4bb3-a87b-f05c55e6d1a5",
+    "entry_date": "8/5/2026",
+    "hours": 0.2,
+    "description": "Coordinate with client via text",
+    "created_at": "2026-08-13T00:15:02.160198",
+    "sort_order": -7.5
+  },
+  {
+    "id": "25441384-4c6f-4a0f-8f15-fb1457570840",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/4/2026",
+    "hours": 0.1,
+    "description": "Met with family",
+    "created_at": "2026-08-18T05:22:47.699456",
+    "sort_order": 8.75
+  },
+  {
+    "id": "258bec5e-7854-439a-804a-c01b53d08e5a",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/29/2026",
+    "hours": 0.5,
+    "description": "Zoom meeting with client, gather details for preliminary hearing, inform client about process",
+    "created_at": "2026-06-29T23:59:04.210339",
+    "sort_order": -20
+  },
+  {
+    "id": "26283435-fe4a-4aab-a73f-f94481467bca",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T00:51:03.958827",
+    "sort_order": -60
+  },
+  {
+    "id": "268b0978-8184-4a95-a2d2-29f954c35a0e",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "7/15/2026",
+    "hours": 0.3,
+    "description": "Client phone call",
+    "created_at": "2026-07-15T23:20:07.730398",
+    "sort_order": 50
+  },
+  {
+    "id": "26f2bb35-afd2-41c9-a29f-ca180bb74189",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/22/2026",
+    "hours": 0.2,
+    "description": "Completed & executed information agreement",
+    "created_at": "2026-07-20T22:19:58.916858",
+    "sort_order": -80
+  },
+  {
+    "id": "26ff2bb2-86ea-4a59-9a3b-dd5930419aee",
+    "client_id": "4293d91d-140f-46ea-9705-741cfbeb2b1a",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Looked up charges",
+    "created_at": "2026-08-22T03:25:34.725992",
+    "sort_order": 10
+  },
+  {
+    "id": "274b9980-622d-4d2b-8a5e-3b5cfa64fbc0",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/28/2026",
+    "hours": 0.4,
+    "description": "Reviewed affidavit 0.2 ; Reviewed criminal history 0.2 ; TOTAL: 0.4",
+    "created_at": "2026-07-28T22:32:00.403933",
+    "sort_order": -5
+  },
+  {
+    "id": "27a86634-c0fa-42c3-a76f-7f24b26abb2d",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Investigate Wilson County hold status",
+    "created_at": "2026-08-22T00:59:55.24368",
+    "sort_order": -80
+  },
+  {
+    "id": "27f28ddb-e1fb-4010-bb46-a5cbeae1edfc",
+    "client_id": "e485ed9e-73d0-4bb3-a87b-f05c55e6d1a5",
+    "entry_date": "8/12/2026",
+    "hours": 0.1,
+    "description": "Reviewed file",
+    "created_at": "2026-08-22T02:30:27.683034",
+    "sort_order": -25
+  },
+  {
+    "id": "297aeb1f-27bd-4066-85ab-c2839bc6af70",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/12/2026",
+    "hours": 0.3,
+    "description": "Prepared for preliminary hearing",
+    "created_at": "2026-08-18T05:42:28.417236",
+    "sort_order": -107.5
+  },
+  {
+    "id": "298dcd80-be40-4c80-b271-e326a17f85b8",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/29/2026",
+    "hours": 0.2,
+    "description": "Read; review 2 OOP's",
+    "created_at": "2026-07-20T23:43:22.891963",
+    "sort_order": -27.5
+  },
+  {
+    "id": "2a102aba-f744-4cbd-81d9-458f8a45ac3e",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Met, negotiated with ADA",
+    "created_at": "2026-08-22T05:59:19.8142",
+    "sort_order": -9.921875
+  },
+  {
+    "id": "2a491e13-cf76-45cf-bdc0-3fd65f56918e",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/28/2026",
+    "hours": 0.1,
+    "description": "Met with state",
+    "created_at": "2026-07-06T07:26:44.642904",
+    "sort_order": 225
+  },
+  {
+    "id": "2b3a6b8f-2b89-4da7-95d8-2e4e15ba3997",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T01:01:25.400823",
+    "sort_order": -120
+  },
+  {
+    "id": "2bfc7d72-8235-42c6-a688-fc7447835482",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/28/2026",
+    "hours": 0.3,
+    "description": "Investigate 6 pending charges",
+    "created_at": "2026-07-28T22:34:10.627057",
+    "sort_order": -17.5
+  },
+  {
+    "id": "2c5b19ab-7527-4e99-aa66-979c9ecec917",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.6,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 370
+  },
+  {
+    "id": "2cff9f7f-656e-4127-8a2a-ca7f3a016c69",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/6/2026",
+    "hours": 0.2,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-13T00:54:29.013083",
+    "sort_order": -58.75
+  },
+  {
+    "id": "2d4e6279-1b33-4079-a873-f774d474bc1d",
+    "client_id": "b05dea7a-c597-4e45-bd1e-feebe9de19f6",
+    "entry_date": "7/29/2026",
+    "hours": 0.5,
+    "description": "Reviewed (3) affidavits 0.3 ; Reviewed criminal history 0.2 ; TOTAL: 0.5",
+    "created_at": "2026-07-29T19:38:07.063604",
+    "sort_order": -10
+  },
+  {
+    "id": "2dd9caa0-7767-415b-a9f5-ca4222d4f4b4",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/22/2026",
+    "hours": 0.3,
+    "description": "Investigate CC/PV holds",
+    "created_at": "2026-07-21T21:44:56.471153",
+    "sort_order": -22.5
+  },
+  {
+    "id": "2ddad291-ca05-47c5-82dd-ffa365e1c1a3",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "7/22/2026",
+    "hours": 0.1,
+    "description": "Rescheduled appearance due to bad TBI background check",
+    "created_at": "2026-07-23T04:08:59.569279",
+    "sort_order": -170
+  },
+  {
+    "id": "2ee7e29a-cad3-458b-bd69-867aff9bf49b",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/13/2026",
+    "hours": 0.3,
+    "description": "Client zoom visit",
+    "created_at": "2026-08-18T05:51:58.405369",
+    "sort_order": 3.75
+  },
+  {
+    "id": "2f26e4b0-073c-4fc0-8405-be41de106ec8",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/21/2026",
+    "hours": 0.5,
+    "description": "Prepare for preliminary hearing",
+    "created_at": "2026-07-22T00:09:58.454596",
+    "sort_order": -55
+  },
+  {
+    "id": "2f561b75-e7f7-42a0-bde7-8db32485809e",
+    "client_id": "218e23ef-c09c-4ae1-b701-8bd672679e20",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Looked up charges",
+    "created_at": "2026-08-22T01:38:26.71051",
+    "sort_order": -15
+  },
+  {
+    "id": "2f884537-b1a8-4af0-9c24-ecb793cdb7c1",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.1,
+    "description": "Met with social worker",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 392.5
+  },
+  {
+    "id": "2fa09fa4-2369-4c44-ba12-e9a694b84dc2",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/11/2026",
+    "hours": 0.1,
+    "description": "Met with family",
+    "created_at": "2026-08-18T05:15:41.289283",
+    "sort_order": 2.5
+  },
+  {
+    "id": "307675ac-9dca-4119-9568-5c0af6691d62",
+    "client_id": "72901533-866e-4578-87c8-f31c7456f77f",
+    "entry_date": "7/24/2026",
+    "hours": 0.1,
+    "description": "Explain charges & upcoming court date",
+    "created_at": "2026-07-28T22:44:49.554065",
+    "sort_order": 5
+  },
+  {
+    "id": "31eeafac-dfec-499f-85f2-17515e178871",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/21/2026",
+    "hours": 0.1,
+    "description": "Reschedule appearance",
+    "created_at": "2026-07-20T15:13:24.544637",
+    "sort_order": 335
+  },
+  {
+    "id": "3234a694-5388-4102-94ac-8b72461922ba",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/10/2026",
+    "hours": 0.2,
+    "description": "Fill out plea agreement form",
+    "created_at": "2026-08-18T04:45:47.956847",
+    "sort_order": -99.6875
+  },
+  {
+    "id": "33340260-b461-4c66-ba5e-44f418bbe6e4",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Communicated with client's other attorney; agreed to take on all 7 cases",
+    "created_at": "2026-07-29T19:17:42.75375",
+    "sort_order": -30
+  },
+  {
+    "id": "33764d02-90b8-4e9f-bf6b-e2a8bf9b541a",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "7/22/2026",
+    "hours": 0.1,
+    "description": "Read, sign indictment",
+    "created_at": "2026-07-22T18:06:42.980971",
+    "sort_order": -160
+  },
+  {
+    "id": "33d91741-9ca8-4d50-b011-aa50d42d2fe9",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/12/2026",
+    "hours": 0.5,
+    "description": "Closed file",
+    "created_at": "2026-08-18T05:11:28.913879",
+    "sort_order": -185
+  },
+  {
+    "id": "34135c8c-f7a3-4f37-a1e4-14f614b20f63",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "6/9/2026",
+    "hours": 0.4,
+    "description": "First meeting, discussion with client on 6/9 court date",
+    "created_at": "2026-07-21T00:23:54.316081",
+    "sort_order": 80
+  },
+  {
+    "id": "35acbef5-0e57-4a0d-9cad-ed3cf5012ded",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "7/16/2026",
+    "hours": 0.2,
+    "description": "Client phone call re: booking process",
+    "created_at": "2026-07-20T14:44:05.504446",
+    "sort_order": 10
+  },
+  {
+    "id": "35bbf4be-6ae0-4fe1-8824-73cb65515f6e",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "6/1/2026",
+    "hours": 0.1,
+    "description": "Met with state",
+    "created_at": "2026-07-06T07:11:55.565131",
+    "sort_order": 125
+  },
+  {
+    "id": "35eee846-a2b8-4b8d-a10e-adb835c49560",
+    "client_id": "e485ed9e-73d0-4bb3-a87b-f05c55e6d1a5",
+    "entry_date": "8/11/2026",
+    "hours": 0.4,
+    "description": "Draft, send referral email to day reporting",
+    "created_at": "2026-08-11T19:00:38.914359",
+    "sort_order": -10
+  },
+  {
+    "id": "3609e3c4-83fc-4184-9631-5c116f8411aa",
+    "client_id": "c5e4b0ff-8b78-4bef-b8aa-05fd4eb66b3b",
+    "entry_date": "8/12/2026",
+    "hours": 0.3,
+    "description": "Reviewed affidavit 0.2 ; Reviewed criminal history 0.1 ; TOTAL: 0.3",
+    "created_at": "2026-08-18T05:30:20.709934",
+    "sort_order": 10
+  },
+  {
+    "id": "3678e79b-4da6-47ac-a9b6-203c4ac945f2",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/10/2026",
+    "hours": 0.2,
+    "description": "Draft, send emails to recovery court",
+    "created_at": "2026-08-18T04:29:21.188311",
+    "sort_order": -100
+  },
+  {
+    "id": "3684ff0a-1efd-41bf-ad72-a5b07514ddb2",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Investigate witness presence",
+    "created_at": "2026-08-18T15:24:59.2634",
+    "sort_order": -45
+  },
+  {
+    "id": "3687681d-8f44-47fe-9f47-f32e1478e10a",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "File representation notice with clerk",
+    "created_at": "2026-08-22T05:33:48.875892",
+    "sort_order": -20
+  },
+  {
+    "id": "368a6427-3ab4-4afe-90e6-4bcd49e2870d",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/5/2026",
+    "hours": 0.3,
+    "description": "Draft, send emails to recovery court",
+    "created_at": "2026-08-18T04:28:37.237818",
+    "sort_order": -90
+  },
+  {
+    "id": "368ccafa-2d35-4f6b-9a75-9ddc2df86e88",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/28/2026",
+    "hours": 0.1,
+    "description": "Draft, send email requesting client zoom visit",
+    "created_at": "2026-07-28T22:30:45.844931",
+    "sort_order": -10
+  },
+  {
+    "id": "3717e6b4-72d2-47d8-8862-2b6f54e3bfe6",
+    "client_id": "f053d0cb-dff8-42b6-9f4a-3be63308c660",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Discussion with ADA and judge re: dismissal",
+    "created_at": "2026-08-19T03:28:13.230223",
+    "sort_order": -40
+  },
+  {
+    "id": "375c4996-6f24-4060-8e35-fdc2041348fb",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Case dismissed; failure to prosecute",
+    "created_at": "2026-08-18T15:25:17.570937",
+    "sort_order": -60
+  },
+  {
+    "id": "37815ae7-a081-4019-9394-37d0e7736d94",
+    "client_id": "7eda0ec5-d437-4943-b887-7f3497135af5",
+    "entry_date": "7/24/2026",
+    "hours": 0.1,
+    "description": "Meet client & exchange contact info",
+    "created_at": "2026-07-28T22:45:19.761314",
+    "sort_order": 10
+  },
+  {
+    "id": "37966ab0-7110-4fb0-8c4c-342c102c0fb3",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "entry_date": "7/23/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-23T20:03:18.425518",
+    "sort_order": -50
+  },
+  {
+    "id": "37ec90de-e77b-440f-a682-ec4f5b0c4d71",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-18T05:38:50.644575",
+    "sort_order": -180
+  },
+  {
+    "id": "3a015704-9d29-4ad8-8182-16629899ced2",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "entry_date": "7/23/2026",
+    "hours": 0.3,
+    "description": "Research TCA 55-10-102 (leaving scene)",
+    "created_at": "2026-07-23T20:02:07.167316",
+    "sort_order": -30
+  },
+  {
+    "id": "3a6050bf-5a2d-4f25-a49d-2e7ff3ebf044",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/11/2026",
+    "hours": 0.1,
+    "description": "Motion to dismiss; continued request of state",
+    "created_at": "2026-08-18T05:16:11.362953",
+    "sort_order": 0.625
+  },
+  {
+    "id": "3b3e6517-5a17-4ecd-9933-e83d5a57127f",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "5/29/2026",
+    "hours": 0.3,
+    "description": "Client zoom visit",
+    "created_at": "2026-07-06T07:02:55.541472",
+    "sort_order": 157.5
+  },
+  {
+    "id": "3b5bb32d-76d2-4e0c-aaed-9af4278aabfe",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Met with ADA re: plan for more pending charges",
+    "created_at": "2026-08-22T05:38:41.540034",
+    "sort_order": -210
+  },
+  {
+    "id": "3beef856-0278-4c7a-b84c-018b75b430cc",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "entry_date": "7/23/2026",
+    "hours": 0.2,
+    "description": "Court wait time",
+    "created_at": "2026-07-23T20:04:48.408723",
+    "sort_order": -70
+  },
+  {
+    "id": "3dea35ee-535e-40e3-8e49-bd2054a7653e",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Met with client, exchanged contact info",
+    "created_at": "2026-08-22T01:30:21.099914",
+    "sort_order": -29.0625
+  },
+  {
+    "id": "3e1ad57d-839a-4b23-b90d-307361338330",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T03:20:45.991741",
+    "sort_order": -7.5
+  },
+  {
+    "id": "3e6508d6-a2c4-4161-a198-b761bd04b0e4",
+    "client_id": "218e23ef-c09c-4ae1-b701-8bd672679e20",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T01:38:26.71051",
+    "sort_order": -20
+  },
+  {
+    "id": "3eba740d-295d-45ce-8bd6-ec5a0a14c947",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/4/2026",
+    "hours": 0.1,
+    "description": "Obtain, execute probation cost waivers",
+    "created_at": "2026-08-22T01:59:59.119209",
+    "sort_order": -40
+  },
+  {
+    "id": "3f199b53-042f-41ee-bc3d-9d0b84c928eb",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/17/2026",
+    "hours": 0.4,
+    "description": "Investigate bond status, conduct multiple calls with bondsman",
+    "created_at": "2026-07-20T23:12:53.016121",
+    "sort_order": -25
+  },
+  {
+    "id": "3f47086d-1c60-4d50-ab1c-e062601bd639",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/24/2026",
+    "hours": 0.2,
+    "description": "Enter guilty plea",
+    "created_at": "2026-07-21T22:10:51.788058",
+    "sort_order": -100
+  },
+  {
+    "id": "3f647867-fb43-4ac6-873d-005b2f6a39b8",
+    "client_id": "f053d0cb-dff8-42b6-9f4a-3be63308c660",
+    "entry_date": "8/18/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-19T03:27:43.457852",
+    "sort_order": 0
+  },
+  {
+    "id": "4006cb80-7280-4260-a738-75085e74faf1",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.6,
+    "description": "Prepare for trial",
+    "created_at": "2026-08-14T04:03:30.145644",
+    "sort_order": 0.546875
+  },
+  {
+    "id": "40944ea7-8ef4-4790-954f-840dde36987b",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.2,
+    "description": "Research, investigate sentencing outcomes",
+    "created_at": "2026-08-18T05:38:17.217512",
+    "sort_order": -160
+  },
+  {
+    "id": "409535e1-7611-4e05-acb6-44fa6ca87dd4",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "7/20/2026",
+    "hours": 0.1,
+    "description": "Client texts re: booking",
+    "created_at": "2026-07-20T14:45:05.155926",
+    "sort_order": 0
+  },
+  {
+    "id": "4168fc23-fe81-4846-859b-966a25d96445",
+    "client_id": "94f81408-4a46-48ec-9ffb-1452a58b81a7",
+    "entry_date": "8/16/2026",
+    "hours": 0.3,
+    "description": "Reviewed (2) affidavits 0.2 ; Reviewed criminal history 0.1 ; TOTAL: 0.3",
+    "created_at": "2026-08-22T05:03:33.013715",
+    "sort_order": 5
+  },
+  {
+    "id": "41d1c523-6edc-43d9-aa59-c5b6c26d40a3",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Coordinate with clerk",
+    "created_at": "2026-08-22T01:45:24.267185",
+    "sort_order": 30
+  },
+  {
+    "id": "425d29dd-9716-487e-9846-87d21a4c18d1",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "7/24/2026",
+    "hours": 0.3,
+    "description": "Opened file",
+    "created_at": "2026-07-27T20:54:56.435403",
+    "sort_order": 0
+  },
+  {
+    "id": "428be74d-be7b-404b-8129-ea96ad28a690",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/3/2026",
+    "hours": 0.2,
+    "description": "Obtain, fill out, execute continuance order",
+    "created_at": "2026-08-22T02:09:09.496462",
+    "sort_order": -85
+  },
+  {
+    "id": "42dea543-93f1-418c-99b5-3a2145994c26",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/29/2026",
+    "hours": 0.4,
+    "description": "Prepare defense; research caselaw; elements",
+    "created_at": "2026-07-20T23:39:52.831365",
+    "sort_order": -25
+  },
+  {
+    "id": "438d13ea-65ec-48b8-9e5a-9e72858cf4dd",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/27/2026",
+    "hours": 0.5,
+    "description": "Prepare for trial",
+    "created_at": "2026-07-20T15:30:04.754229",
+    "sort_order": 252.5
+  },
+  {
+    "id": "4399e748-65ad-40dd-b3de-94d6d53e3d86",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "5/21/2026",
+    "hours": 0.5,
+    "description": "Open file",
+    "created_at": "2026-07-20T14:33:12.071986",
+    "sort_order": 90
+  },
+  {
+    "id": "4413c651-9fe5-4063-a123-41a937b7841b",
+    "client_id": "7eda0ec5-d437-4943-b887-7f3497135af5",
+    "entry_date": "7/24/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-26T23:37:29.903498",
+    "sort_order": 0
+  },
+  {
+    "id": "446310b2-f2f5-467a-8bd2-c24cff09e712",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/29/2026",
+    "hours": 0.2,
+    "description": "Look up information; fill out & submit recovery court referral form",
+    "created_at": "2026-07-29T19:03:05.619999",
+    "sort_order": -50
+  },
+  {
+    "id": "44f039e5-8dda-429c-8138-3a17e4e1cdaa",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Met with ADA, get offer",
+    "created_at": "2026-07-29T19:19:12.719511",
+    "sort_order": -50
+  },
+  {
+    "id": "45461685-b875-4558-84da-7ae9cd450fee",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/15/2026",
+    "hours": 0.9,
+    "description": "Research/Investigate Sumner County holds",
+    "created_at": "2026-06-15T23:58:22.601718",
+    "sort_order": 40
+  },
+  {
+    "id": "4589dce2-39cc-4859-abea-316fec451d6e",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "8/19/2026",
+    "hours": 0.4,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T05:28:32.408277",
+    "sort_order": -230
+  },
+  {
+    "id": "4593951b-aa11-4e80-b727-819677907c56",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/23/2026",
+    "hours": 0.4,
+    "description": "Client zoom visit",
+    "created_at": "2026-07-21T22:06:44.693066",
+    "sort_order": -50
+  },
+  {
+    "id": "46beb39d-9eed-4851-acdb-d168c7efe92f",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-18T05:37:17.28886",
+    "sort_order": -130
+  },
+  {
+    "id": "47088f91-76c2-401c-9de9-e97834921069",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "entry_date": "8/18/2026",
+    "hours": 0.6,
+    "description": "Prepared defense",
+    "created_at": "2026-08-19T05:05:04.754477",
+    "sort_order": -20
+  },
+  {
+    "id": "47235eed-5750-4840-a90f-bb444c3df589",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/26/2026",
+    "hours": 0.4,
+    "description": "Jail visit with client, explain offer",
+    "created_at": "2026-07-21T21:47:56.641526",
+    "sort_order": -37.5
+  },
+  {
+    "id": "472e049d-08d9-4ac2-915e-7d1143427a5c",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Review message from clerk re: ADA motion",
+    "created_at": "2026-08-22T01:46:39.789582",
+    "sort_order": -27.03125
+  },
+  {
+    "id": "47634eed-9bd1-4e28-a5e9-646cf3f3ac1a",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/9/2026",
+    "hours": 0.1,
+    "description": "Rescheduled appearance",
+    "created_at": "2026-07-20T15:48:44.907066",
+    "sort_order": 75
+  },
+  {
+    "id": "481cb74a-cc78-452f-a443-742d3a3501b8",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Text with family",
+    "created_at": "2026-08-22T05:18:18.357846",
+    "sort_order": -80
+  },
+  {
+    "id": "486cee67-b7e8-4ba0-b6d4-230f7e54dfc4",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/21/2026",
+    "hours": 0.4,
+    "description": "Jail visit with client",
+    "created_at": "2026-07-06T07:23:44.66421",
+    "sort_order": 330
+  },
+  {
+    "id": "4a9a99ea-85fc-447e-a0ed-cff7b24ccdf9",
+    "client_id": "f053d0cb-dff8-42b6-9f4a-3be63308c660",
+    "entry_date": "8/18/2026",
+    "hours": 0.5,
+    "description": "Closed file",
+    "created_at": "2026-08-22T05:16:48.84184",
+    "sort_order": -70
+  },
+  {
+    "id": "4ab3ea8f-0781-4388-8f68-abea0eb7db4e",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.2,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T06:03:19.862693",
+    "sort_order": -9.99984741210938
+  },
+  {
+    "id": "4ae32aab-a047-495a-9bb1-54e501ef6b9d",
+    "client_id": "218e23ef-c09c-4ae1-b701-8bd672679e20",
+    "entry_date": "8/3/2026",
+    "hours": 0.2,
+    "description": "Initial client meeting",
+    "created_at": "2026-08-22T01:38:26.71051",
+    "sort_order": -10
+  },
+  {
+    "id": "4b954b32-c75e-4491-be68-918a727796ea",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met, negotiated with ADA",
+    "created_at": "2026-08-22T02:59:38.789239",
+    "sort_order": 0.44921875
+  },
+  {
+    "id": "4cc5d43a-a70a-44cd-bee6-fb05cbbddc17",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/7/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-21T21:50:56.616073",
+    "sort_order": -90
+  },
+  {
+    "id": "4e70edd9-47cd-42ad-996f-ca9975f8857a",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/17/2026",
+    "hours": 0.6,
+    "description": "Review (3) affidavits 0.5; Review criminal history 0.1",
+    "created_at": "2026-07-20T16:28:24.64731",
+    "sort_order": -15
+  },
+  {
+    "id": "4e82545f-e805-48ed-8e63-83ef5828c434",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/17/2026",
+    "hours": 0.7,
+    "description": "Jail visit with client",
+    "created_at": "2026-07-20T16:36:14.808549",
+    "sort_order": -16.25
+  },
+  {
+    "id": "4ef3ebfe-ed26-446f-9bbf-701efb202f00",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T01:10:15.385809",
+    "sort_order": 0.3515625
+  },
+  {
+    "id": "4fd40617-205e-4cbc-a421-233ef4eae395",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/21/2026",
+    "hours": 0.5,
+    "description": "Open file",
+    "created_at": "2026-07-06T07:20:14.711807",
+    "sort_order": 350
+  },
+  {
+    "id": "5028b63d-302e-4d29-88cc-b5ff58cfd1a8",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Continuance hearing",
+    "created_at": "2026-08-22T02:10:09.555064",
+    "sort_order": -87.5
+  },
+  {
+    "id": "50392626-42e4-42a5-afe1-4400e7005df5",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/4/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-04T15:52:15.227793",
+    "sort_order": -10
+  },
+  {
+    "id": "50c40bca-9144-4fb2-bad9-4fef4e8d13f0",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Met with prosecuting officers",
+    "created_at": "2026-08-22T06:08:49.965261",
+    "sort_order": -9.99267578125
+  },
+  {
+    "id": "5108516c-1efe-40e8-b8c6-6138a40521a2",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/12/2026",
+    "hours": 0.2,
+    "description": "Retrieve PV case disposition for recovery court",
+    "created_at": "2026-08-18T04:52:47.987964",
+    "sort_order": -150
+  },
+  {
+    "id": "510ba4d5-75c8-4dc3-9a65-0715025b70fc",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "5/28/2026",
+    "hours": 0.9,
+    "description": "Draft, file bond reduction motion",
+    "created_at": "2026-07-06T06:38:56.054562",
+    "sort_order": 190
+  },
+  {
+    "id": "5120f798-431a-4e18-8908-fc5ea59bf03f",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/6/2026",
+    "hours": 0.1,
+    "description": "Coordinate with BCC and ADA",
+    "created_at": "2026-08-13T00:56:39.437423",
+    "sort_order": -110
+  },
+  {
+    "id": "5133bc8d-b4e9-4763-844f-47e7e98645fe",
+    "client_id": "7e9c578a-6ee2-45c3-9ac6-ce338fb95cab",
+    "entry_date": "8/10/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-18T05:02:17.394543",
+    "sort_order": -10
+  },
+  {
+    "id": "518a25d2-1f2f-461b-a5b3-32ac8bdca0b2",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/1/2026",
+    "hours": 0.1,
+    "description": "Draft email requesting zoom visit",
+    "created_at": "2026-07-21T00:47:23.960419",
+    "sort_order": -40
+  },
+  {
+    "id": "51a56bca-3086-4744-9f15-ac4d4c40ae13",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.3,
+    "description": "Conference room wait time",
+    "created_at": "2026-08-22T03:10:55.056488",
+    "sort_order": -17.4609375
+  },
+  {
+    "id": "51bfd3f1-92a2-4a08-85cb-20553fbf6fa3",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/6/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-13T00:51:29.512223",
+    "sort_order": -60
+  },
+  {
+    "id": "51d1dccc-9caf-4137-8b59-81c844ca7c26",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/17/2026",
+    "hours": 0.3,
+    "description": "Reviewed file",
+    "created_at": "2026-08-22T02:46:12.992542",
+    "sort_order": -30
+  },
+  {
+    "id": "520de6b4-8ccb-4826-994d-151432b018a6",
+    "client_id": "629e8757-dc16-4d71-a61c-779c3dc71523",
+    "entry_date": "8/16/2026",
+    "hours": 0.3,
+    "description": "Reviewed affidavits 0.2 ; Reviewed criminal history 0.1 ; TOTAL: 0.3",
+    "created_at": "2026-08-22T05:02:49.763022",
+    "sort_order": -15
+  },
+  {
+    "id": "52425325-7c04-4769-ae31-9f77c440eac4",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/20/2026",
+    "hours": 0.4,
+    "description": "Prepared defense",
+    "created_at": "2026-08-22T00:44:49.388712",
+    "sort_order": -20
+  },
+  {
+    "id": "538591d6-eeef-4b0d-ad27-b3030949db95",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "8/18/2026",
+    "hours": 0.2,
+    "description": "Draft, send email requesting client zoom visit",
+    "created_at": "2026-08-19T03:13:45.432293",
+    "sort_order": -90
+  },
+  {
+    "id": "53aa00d9-4917-4475-b728-7586879ec35d",
+    "client_id": "629e8757-dc16-4d71-a61c-779c3dc71523",
+    "entry_date": "8/14/2026",
+    "hours": 0.2,
+    "description": "Met with client",
+    "created_at": "2026-08-22T04:56:38.823006",
+    "sort_order": -5
+  },
+  {
+    "id": "53b0436a-8e78-48b6-bf56-f406034c7e23",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "entry_date": "8/14/2026",
+    "hours": 0.2,
+    "description": "Receive phone call from client; provide status update",
+    "created_at": "2026-08-22T03:13:05.474032",
+    "sort_order": -90
+  },
+  {
+    "id": "5549dd79-8c89-45a5-b59f-a7251e554ad4",
+    "client_id": "f053d0cb-dff8-42b6-9f4a-3be63308c660",
+    "entry_date": "8/18/2026",
+    "hours": 0.3,
+    "description": "Initial client meeting",
+    "created_at": "2026-08-18T22:54:27.801879",
+    "sort_order": -20
+  },
+  {
+    "id": "56188ff0-208d-49df-a468-73cde24fc6ac",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.2,
+    "description": "Met, negotiated with ADA",
+    "created_at": "2026-08-22T01:47:09.710592",
+    "sort_order": -27.890625
+  },
+  {
+    "id": "5625ada7-ceb3-4cd0-8d8a-92bbfd9b5f45",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "8/18/2026",
+    "hours": 0.3,
+    "description": "Client zoom visit",
+    "created_at": "2026-08-19T03:13:45.553446",
+    "sort_order": -100
+  },
+  {
+    "id": "563edcec-1d4b-402a-81bb-cdeb1ecb9ada",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "8/19/2026",
+    "hours": 0.1,
+    "description": "Explain client scheduling conflict to judge",
+    "created_at": "2026-08-22T05:29:02.579499",
+    "sort_order": -240
+  },
+  {
+    "id": "56a6a0e4-3112-4c4c-8880-fd6992142608",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.2,
+    "description": "Update client via text messages",
+    "created_at": "2026-08-22T01:47:39.645744",
+    "sort_order": -28.3203125
+  },
+  {
+    "id": "56b08bed-509a-4ff3-8771-a172d0cf73af",
+    "client_id": "1d777a6e-cb05-4a2d-a2a4-387dc2ea3e56",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Met with client & mother, exchanged contact info",
+    "created_at": "2026-08-22T05:42:09.873994",
+    "sort_order": -40
+  },
+  {
+    "id": "56e6b8a9-0165-4ead-8456-86b213f3c4f2",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/10/2026",
+    "hours": 0.5,
+    "description": "Jail visit with client; discuss plea offer, recovery court conditions",
+    "created_at": "2026-08-18T04:38:21.511176",
+    "sort_order": -99.375
+  },
+  {
+    "id": "5759a4b1-4102-4a60-9514-1ba992f9483f",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-29T19:01:46.565723",
+    "sort_order": -40
+  },
+  {
+    "id": "57e7c13f-1eae-4288-96d8-132fb9ca237c",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/5/2026",
+    "hours": 0.2,
+    "description": "Discuss scheduling issues with clerk",
+    "created_at": "2026-08-22T02:15:09.633747",
+    "sort_order": -92.5
+  },
+  {
+    "id": "57ff0122-697d-41bb-af60-a3e7724e6747",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "6/2/2026",
+    "hours": 0.1,
+    "description": "Attempt to call/text/email client",
+    "created_at": "2026-06-02T20:56:45.977237",
+    "sort_order": 90
+  },
+  {
+    "id": "580bd4a1-ddde-4669-b5c3-b29130d52930",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/3/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-04T16:30:24.506297",
+    "sort_order": 20
+  },
+  {
+    "id": "5811af1a-207c-41c9-8461-6e0925c2c369",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/10/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-18T04:37:51.725137",
+    "sort_order": -98.75
+  },
+  {
+    "id": "584f2fb1-208b-4ce2-ba3e-69246aabab5b",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/22/2026",
+    "hours": 0.2,
+    "description": "Met, negotiated with ADA",
+    "created_at": "2026-07-21T21:41:56.583194",
+    "sort_order": -19.375
+  },
+  {
+    "id": "588b350a-d50d-4f45-b844-afb47c5b7ab5",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-07-29T19:19:42.714063",
+    "sort_order": -45
+  },
+  {
+    "id": "5a13999c-4d6a-4a4c-85e4-dc799c336d22",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.2,
+    "description": "Met with social worker",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 405
+  },
+  {
+    "id": "5a5cf845-ba52-4dc8-a973-805cff746780",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Looked up charges",
+    "created_at": "2026-08-22T01:39:47.006978",
+    "sort_order": -15
+  },
+  {
+    "id": "5a6c7947-6618-4c77-b394-e38b6a6e8eb3",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.2,
+    "description": "Investigated Wilson county hold",
+    "created_at": "2026-08-22T05:56:43.051954",
+    "sort_order": -9.375
+  },
+  {
+    "id": "5a84646b-d027-4441-b106-7cc4b0349558",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/23/2026",
+    "hours": 0.3,
+    "description": "Investigate CC probation violation matter",
+    "created_at": "2026-07-21T22:07:44.720384",
+    "sort_order": -70
+  },
+  {
+    "id": "5b1d8878-ce82-4e09-a450-82ce47e56ed2",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/15/2026",
+    "hours": 0.2,
+    "description": "Draft; send emails regarding BWC viewing appt",
+    "created_at": "2026-07-20T15:57:54.775485",
+    "sort_order": 62.5
+  },
+  {
+    "id": "5b3277ed-ddce-4081-9a65-1d35e6fb7c7d",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "5/29/2026",
+    "hours": 0.5,
+    "description": "Open file",
+    "created_at": "2026-07-21T00:18:54.460259",
+    "sort_order": 110
+  },
+  {
+    "id": "5ba958e3-755d-460d-9094-9ba1af8a8c29",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/18/2026",
+    "hours": 0.5,
+    "description": "Open file",
+    "created_at": "2026-07-20T15:23:55.05948",
+    "sort_order": -10
+  },
+  {
+    "id": "5be37b48-fce8-4b61-a1a6-0fb8330250c2",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "5/31/2026",
+    "hours": 0.5,
+    "description": "Prepare for trial",
+    "created_at": "2026-07-06T07:05:55.768419",
+    "sort_order": 150
+  },
+  {
+    "id": "5c4e503c-c039-4aa1-bbcb-1a22f1bec150",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Receive phone call from client re: BCC intake, court dates",
+    "created_at": "2026-08-18T15:52:21.971797",
+    "sort_order": -120
+  },
+  {
+    "id": "5d611fd3-bbb7-44aa-a2dd-c1186103e253",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Coordinate with family via text per client's request",
+    "created_at": "2026-08-22T01:19:54.147993",
+    "sort_order": -140
+  },
+  {
+    "id": "5da91094-7c55-4bd4-b24c-d92e7a5fd559",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "5/22/2026",
+    "hours": 0.3,
+    "description": "Initial meeting and discussion with client",
+    "created_at": "2026-06-03T22:13:01.348792",
+    "sort_order": 80
+  },
+  {
+    "id": "5e5bf75b-49e0-45f4-8bed-45a65455cf28",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "5/22/2026",
+    "hours": 0.1,
+    "description": "Reschedule appearance",
+    "created_at": "2026-07-20T14:31:13.236802",
+    "sort_order": 72.5
+  },
+  {
+    "id": "5ebb1913-ff69-4188-b73b-327a488b3ae7",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "7/1/2026",
+    "hours": 0.1,
+    "description": "Dismissed",
+    "created_at": "2026-07-21T00:34:54.096896",
+    "sort_order": 30
+  },
+  {
+    "id": "5edd4328-c9e7-42c4-8a37-778c76af1947",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/17/2026",
+    "hours": 0.1,
+    "description": "Met with ADA re: plan for pending charges",
+    "created_at": "2026-08-22T05:13:26.606158",
+    "sort_order": -200
+  },
+  {
+    "id": "5f837083-8471-484b-a92b-147797b00c0a",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/3/2026",
+    "hours": 0.6,
+    "description": "Reviewed (4) new warrants",
+    "created_at": "2026-08-18T04:27:27.013597",
+    "sort_order": -80
+  },
+  {
+    "id": "5f8e2780-7aff-4c6d-9cb4-7914235546cb",
+    "client_id": "efa25bd0-8c02-44b0-a014-8845d9bef27a",
+    "entry_date": "7/24/2026",
+    "hours": 0.1,
+    "description": "Meet client; exchange contact info",
+    "created_at": "2026-07-28T22:38:19.643443",
+    "sort_order": 0
+  },
+  {
+    "id": "5fcb4d74-befd-4ad4-aa5b-c56cd724c5ca",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "7/22/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-23T04:09:29.356724",
+    "sort_order": -135
+  },
+  {
+    "id": "5fd7cf97-dabf-46b0-8e5f-111005f4a991",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/11/2026",
+    "hours": 0.1,
+    "description": "Exchange texts with family",
+    "created_at": "2026-08-18T05:24:47.476504",
+    "sort_order": 0.078125
+  },
+  {
+    "id": "600b4162-fe67-4129-840d-b93b509bccbd",
+    "client_id": "72901533-866e-4578-87c8-f31c7456f77f",
+    "entry_date": "7/27/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-28T22:43:49.870857",
+    "sort_order": 0
+  },
+  {
+    "id": "604fb118-80ae-44e5-a2a7-c4c35d99e989",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.1,
+    "description": "Negotiated with ADA",
+    "created_at": "2026-08-18T05:37:50.764488",
+    "sort_order": -150
+  },
+  {
+    "id": "614c3393-e69c-4af8-8fe3-e203c78b06a6",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/26/2026",
+    "hours": 0.1,
+    "description": "Met, negotiated with ADA",
+    "created_at": "2026-07-21T21:44:26.985463",
+    "sort_order": -35
+  },
+  {
+    "id": "617d9044-3ee7-4be9-bad4-53cc5852aaf0",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "entry_date": "7/23/2026",
+    "hours": 0.2,
+    "description": "Meet, discuss with client and family",
+    "created_at": "2026-07-23T20:02:48.313877",
+    "sort_order": -40
+  },
+  {
+    "id": "61a39521-c4e1-4eb4-ba4c-123d5725d7f0",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.3,
+    "description": "Research, investigate rules re sentencing between TN counties",
+    "created_at": "2026-08-22T01:01:25.223971",
+    "sort_order": -110
+  },
+  {
+    "id": "624fef6d-75fe-491a-ad96-ff5d9203f641",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/29/2026",
+    "hours": 0.2,
+    "description": "Updated file",
+    "created_at": "2026-07-29T20:01:47.359352",
+    "sort_order": -90
+  },
+  {
+    "id": "632e7df6-fc93-492f-b1d3-61daa0750ace",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.1,
+    "description": "Met, negotiated with ADA",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 395
+  },
+  {
+    "id": "63a05efd-3e00-4421-9083-133485ba4a28",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 420
+  },
+  {
+    "id": "63d263e7-97f0-46a5-8b15-14a34f9b675c",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T01:39:47.006978",
+    "sort_order": -28.75
+  },
+  {
+    "id": "63e4f127-a0e0-4c2e-b941-ab86c31bbe57",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/5/2026",
+    "hours": 0.6,
+    "description": "Prepared for trial",
+    "created_at": "2026-08-13T00:57:09.417959",
+    "sort_order": -57.5
+  },
+  {
+    "id": "643572e8-c78e-4b29-a2aa-2b08e4ce9e64",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Fill out plea agreement form",
+    "created_at": "2026-08-22T01:03:25.26272",
+    "sort_order": -170
+  },
+  {
+    "id": "6489333d-bc51-49ec-bb8a-831921e071c3",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 1.2,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T06:01:19.819002",
+    "sort_order": -9.998779296875
+  },
+  {
+    "id": "64d65c25-04c1-412a-a8cb-816cbea8c4c6",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "entry_date": "7/31/2026",
+    "hours": 0.2,
+    "description": "Phone call with warrants division",
+    "created_at": "2026-07-31T16:44:03.001276",
+    "sort_order": -30
+  },
+  {
+    "id": "6530ac38-f0df-4cea-8952-0aa7de95c6dd",
+    "client_id": "c5e4b0ff-8b78-4bef-b8aa-05fd4eb66b3b",
+    "entry_date": "8/12/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-18T05:30:50.671722",
+    "sort_order": -5
+  },
+  {
+    "id": "656caf90-0fa6-4acf-9803-c9bbd197f17c",
+    "client_id": "77c9d677-44a5-43b7-a9c7-2d5fab656885",
+    "entry_date": "8/16/2026",
+    "hours": 0.4,
+    "description": "Reviewed (4) affidavits 0.3 ; Reviewed criminal history 0.1 ; TOTAL: 0.4",
+    "created_at": "2026-08-22T05:02:18.268376",
+    "sort_order": -5
+  },
+  {
+    "id": "67e3fd5c-3c71-430b-b19f-06a653530bc3",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/8/2026",
+    "hours": 0.6,
+    "description": "Prepare defense",
+    "created_at": "2026-07-20T15:52:14.629335",
+    "sort_order": 77.5
+  },
+  {
+    "id": "68be3808-f32d-4019-ba15-dcfaeb50a81c",
+    "client_id": "218e23ef-c09c-4ae1-b701-8bd672679e20",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T01:38:26.71051",
+    "sort_order": -28.75
+  },
+  {
+    "id": "68e98969-bef4-459d-8795-1115310dd54a",
+    "client_id": "77c9d677-44a5-43b7-a9c7-2d5fab656885",
+    "entry_date": "8/14/2026",
+    "hours": 0.2,
+    "description": "Initial client meeting",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 30
+  },
+  {
+    "id": "69ed010d-563d-4ec5-990c-150a468b2377",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/10/2026",
+    "hours": 0.2,
+    "description": "Reviewed file",
+    "created_at": "2026-08-22T02:47:30.495809",
+    "sort_order": 5.46875
+  },
+  {
+    "id": "6adcd547-428c-4c25-8c7e-9dc044b0490c",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/20/2026",
+    "hours": 0.3,
+    "description": "Prepared for trial",
+    "created_at": "2026-08-22T00:45:18.815848",
+    "sort_order": -30
+  },
+  {
+    "id": "6afb4e40-97d7-49c3-b131-e784aae1d3f9",
+    "client_id": "7e9c578a-6ee2-45c3-9ac6-ce338fb95cab",
+    "entry_date": "8/10/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T02:37:57.853482",
+    "sort_order": -12.5
+  },
+  {
+    "id": "6b34df25-bd7e-40a2-b9d5-090bb848c95f",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Coordinate scheduling with clerk",
+    "created_at": "2026-08-22T01:43:54.721052",
+    "sort_order": -25.3125
+  },
+  {
+    "id": "6b8f14f7-a97a-417b-a026-1c8fdb7cc2c5",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/10/2026",
+    "hours": 0.2,
+    "description": "Retrieve, execute order for BWC review",
+    "created_at": "2026-08-22T00:54:50.560623",
+    "sort_order": 25
+  },
+  {
+    "id": "6c9a037e-99ec-4372-98bc-fabc02117242",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/28/2026",
+    "hours": 0.4,
+    "description": "Prepared defense",
+    "created_at": "2026-08-18T04:43:29.635321",
+    "sort_order": -25
+  },
+  {
+    "id": "6cde3644-67b0-4b27-915c-a00fa3e2c785",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/29/2026",
+    "hours": 0.2,
+    "description": "Read, respond to email from recovery court re: screening",
+    "created_at": "2026-07-29T19:53:29.253491",
+    "sort_order": -70
+  },
+  {
+    "id": "6ce2579b-3b92-4d7e-b1c0-00f58060415a",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/17/2026",
+    "hours": 0.5,
+    "description": "Client zoom visit",
+    "created_at": "2026-07-20T16:27:36.152055",
+    "sort_order": -20
+  },
+  {
+    "id": "6d1f1bf4-d136-4bde-8c33-e3073f1f7ae4",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.1,
+    "description": "Complete social worker referral form",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 410
+  },
+  {
+    "id": "6dc8bde4-0686-4b50-b017-e327c925f5df",
+    "client_id": "4a4b7785-f832-4d71-b788-12bbf648b64b",
+    "entry_date": "7/24/2026",
+    "hours": 0.1,
+    "description": "Meet client; exchange contact information",
+    "created_at": "2026-07-28T22:36:19.906911",
+    "sort_order": 0
+  },
+  {
+    "id": "6e09bdab-0ea6-4846-8b24-5defaab5da39",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "6/1/2026",
+    "hours": 0.2,
+    "description": "Jail visit with client; explain disposition",
+    "created_at": "2026-07-06T07:12:55.535267",
+    "sort_order": 110
+  },
+  {
+    "id": "6e8f5a50-0cba-4250-80e7-80644f17e301",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Met with family",
+    "created_at": "2026-08-18T15:25:47.15393",
+    "sort_order": -70
+  },
+  {
+    "id": "6fa11063-0eba-470c-bef2-9675f404156e",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/23/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client; discuss offer, evidence",
+    "created_at": "2026-07-20T23:29:52.835806",
+    "sort_order": -10
+  },
+  {
+    "id": "700ff4a6-33bd-4c5c-9172-98d649e6ae15",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "8/19/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T05:28:19.760369",
+    "sort_order": -220
+  },
+  {
+    "id": "7038e979-6663-45f7-b646-d27391de0665",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/29/2026",
+    "hours": 0.2,
+    "description": "Acquire, fill out, sign order for review of audio/visual materials",
+    "created_at": "2026-08-18T05:55:28.528141",
+    "sort_order": -85
+  },
+  {
+    "id": "707a044d-d31c-4bef-bd2f-fa229f160bc4",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.2,
+    "description": "Initial client meeting",
+    "created_at": "2026-08-22T01:39:47.006978",
+    "sort_order": -10
+  },
+  {
+    "id": "70ab2d51-76ac-4e62-8ded-f4ed4ba4df36",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/23/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-20T23:28:53.16272",
+    "sort_order": 10
+  },
+  {
+    "id": "7211abc8-3b80-4cf0-b512-55337d9c8338",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/12/2026",
+    "hours": 0.1,
+    "description": "PV transfer hearing",
+    "created_at": "2026-08-18T04:56:11.466269",
+    "sort_order": -180
+  },
+  {
+    "id": "72f274fe-25db-4227-98a0-ca6602be8ca5",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/17/2026",
+    "hours": 0.1,
+    "description": "Communicate with DA",
+    "created_at": "2026-07-20T16:29:36.453442",
+    "sort_order": -17.5
+  },
+  {
+    "id": "73654fc0-5987-419f-9169-6f3bfc577088",
+    "client_id": "7eda0ec5-d437-4943-b887-7f3497135af5",
+    "entry_date": "7/26/2026",
+    "hours": 0.4,
+    "description": "Reviewed, researched affidavit 0.3 ; Reviewed criminal history 0.1 ; TOTAL: 0.4",
+    "created_at": "2026-08-13T00:22:52.414727",
+    "sort_order": -10
+  },
+  {
+    "id": "73e4933e-1b52-4471-9ecf-949a4505747e",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.3,
+    "description": "Met with client",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 375
+  },
+  {
+    "id": "741e318d-c5dd-4e94-aef8-a40c05288074",
+    "client_id": "f053d0cb-dff8-42b6-9f4a-3be63308c660",
+    "entry_date": "8/18/2026",
+    "hours": 0.2,
+    "description": "Update client; explain likelihood of dismissal",
+    "created_at": "2026-08-19T03:29:13.336566",
+    "sort_order": -50
+  },
+  {
+    "id": "7490fb1e-f405-44c0-9a16-cdc534e6bcdb",
+    "client_id": "1d777a6e-cb05-4a2d-a2a4-387dc2ea3e56",
+    "entry_date": "8/20/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-22T05:40:09.355684",
+    "sort_order": 0
+  },
+  {
+    "id": "74bfd3ab-202f-4d17-8d84-0039b816b335",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Met with interpretor",
+    "created_at": "2026-08-22T00:51:33.546907",
+    "sort_order": -80
+  },
+  {
+    "id": "751c1b1d-812a-467e-86f7-befef39f1f1f",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-22T01:39:47.006978",
+    "sort_order": -29.375
+  },
+  {
+    "id": "7547e331-7df2-489a-a0ba-992c90832544",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "7/16/2026",
+    "hours": 0.2,
+    "description": "Meet; discuss with steering clear office",
+    "created_at": "2026-07-20T14:42:05.072361",
+    "sort_order": 30
+  },
+  {
+    "id": "75694f7a-de09-44c9-b68f-907f7856e2c3",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "7/24/2026",
+    "hours": 0.2,
+    "description": "Initial client meeting, discuss ability to appear",
+    "created_at": "2026-07-28T22:46:49.709267",
+    "sort_order": -10
+  },
+  {
+    "id": "75db7b81-50d0-4934-8109-76eeb86b9ab1",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T02:46:27.8337",
+    "sort_order": -55
+  },
+  {
+    "id": "76a751d1-dc09-4b40-8aa1-f080f53d01b2",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/29/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client, present offer, discuss exposure",
+    "created_at": "2026-07-29T19:58:29.864688",
+    "sort_order": -60
+  },
+  {
+    "id": "7702b531-b3c6-4e61-981a-7ade0d7bce0f",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/19/2026",
+    "hours": 0.5,
+    "description": "Initial jail visit with client",
+    "created_at": "2026-07-20T23:22:23.264132",
+    "sort_order": 35
+  },
+  {
+    "id": "78e4adda-eeb4-4d2b-9a0d-47b6a437e40e",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T00:50:02.43895",
+    "sort_order": -40
+  },
+  {
+    "id": "79f4c8eb-16b6-4d4f-ab44-3862c1ebd5be",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.2,
+    "description": "Plea attempted; unsuccessful",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 365
+  },
+  {
+    "id": "7ade71e7-0820-462f-9077-47dd5f3c7061",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.2,
+    "description": "Investigate PV matter",
+    "created_at": "2026-08-22T02:58:38.456169",
+    "sort_order": 0.4296875
+  },
+  {
+    "id": "7b32bb48-918c-494e-a29a-4ab271df384b",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/23/2026",
+    "hours": 0.1,
+    "description": "Draft, send email requesting zoom visit",
+    "created_at": "2026-07-21T22:05:44.830987",
+    "sort_order": -40
+  },
+  {
+    "id": "7bc7565e-ff0c-4f69-8213-74d2c3d1d347",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "entry_date": "8/19/2026",
+    "hours": 0.3,
+    "description": "Investigate custody status, investigate Sumner County's refusal to comply with transport order",
+    "created_at": "2026-08-22T05:27:18.041261",
+    "sort_order": -90
+  },
+  {
+    "id": "7bdd2993-dc44-410c-b764-52f7701d76b9",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/26/2026",
+    "hours": 1.6,
+    "description": "Watch BWC footage",
+    "created_at": "2026-07-20T23:36:22.885434",
+    "sort_order": -18.75
+  },
+  {
+    "id": "7be459da-04d2-4b16-9f3a-243d55e171ce",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/4/2026",
+    "hours": 0.2,
+    "description": "Court wait time",
+    "created_at": "2026-08-04T15:49:38.757",
+    "sort_order": 10
+  },
+  {
+    "id": "7cb1610f-a859-4255-85c2-1bed15ea8239",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.1,
+    "description": "Met with client",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 360
+  },
+  {
+    "id": "7d41dd79-8b49-4aa2-8da6-921a89b78891",
+    "client_id": "629e8757-dc16-4d71-a61c-779c3dc71523",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 20
+  },
+  {
+    "id": "7d482281-6c75-4d75-b5bb-6ae376505de7",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "7/24/2026",
+    "hours": 0.1,
+    "description": "Acquire shelter court docket placement",
+    "created_at": "2026-07-28T22:49:19.655874",
+    "sort_order": -30
+  },
+  {
+    "id": "7d816141-5b44-4dc3-882c-f896f2d47b1f",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "6/1/2026",
+    "hours": 0.5,
+    "description": "Close file",
+    "created_at": "2026-07-06T07:13:26.44123",
+    "sort_order": 100
+  },
+  {
+    "id": "7dd04c3b-b4ca-432c-a81f-d1c35ab5d43f",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/9/2026",
+    "hours": 0.5,
+    "description": "Jail visit with client",
+    "created_at": "2026-07-20T15:48:14.68965",
+    "sort_order": 70
+  },
+  {
+    "id": "7f488da4-e7e4-4595-a412-e38b6f24426d",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/22/2026",
+    "hours": 0.8,
+    "description": "Research; prepare defense",
+    "created_at": "2026-07-20T23:32:53.003277",
+    "sort_order": 22.5
+  },
+  {
+    "id": "7f830428-7bde-4261-a49f-ab60448b8244",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/25/2026",
+    "hours": 0.1,
+    "description": "Draft additional email requesting zoom visit",
+    "created_at": "2026-07-21T00:46:23.876352",
+    "sort_order": -25
+  },
+  {
+    "id": "7f8570a8-09aa-4be5-819f-631d0560d6a6",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/15/2026",
+    "hours": 0.4,
+    "description": "Research/Investigate local criminal court hold",
+    "created_at": "2026-06-16T00:01:25.809542",
+    "sort_order": 60
+  },
+  {
+    "id": "7fba3193-1309-45f5-9855-45ddbe8c6b07",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/13/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-22T02:52:58.1542",
+    "sort_order": 435
+  },
+  {
+    "id": "7fd1763c-6ba1-48ab-a72e-9df79f525104",
+    "client_id": "4293d91d-140f-46ea-9705-741cfbeb2b1a",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T03:25:34.725992",
+    "sort_order": -5
+  },
+  {
+    "id": "8013ca11-5f59-480d-9a6f-635e3fae1f95",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-18T05:39:17.212917",
+    "sort_order": -190
+  },
+  {
+    "id": "8057c9e4-2dd1-44df-b98e-de73e9a3ec58",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Met with clerk, rescheduled appearance",
+    "created_at": "2026-08-18T15:39:04.458328",
+    "sort_order": -30
+  },
+  {
+    "id": "809dada1-bd45-4421-b6ff-f85639f9c000",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "5/29/2026",
+    "hours": 0.1,
+    "description": "Draft, send email requesting client zoom visit",
+    "created_at": "2026-07-06T07:00:25.594868",
+    "sort_order": 160
+  },
+  {
+    "id": "81033e57-5ae8-4a8d-8fe6-3227cc717ebc",
+    "client_id": "218e23ef-c09c-4ae1-b701-8bd672679e20",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T01:38:26.71051",
+    "sort_order": -27.5
+  },
+  {
+    "id": "812f56ac-b9a5-472b-a285-fb1d7a3de8e1",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/17/2026",
+    "hours": 0.5,
+    "description": "Open file",
+    "created_at": "2026-07-20T16:10:14.772395",
+    "sort_order": -10
+  },
+  {
+    "id": "814092c4-6784-41dc-bb64-fd886d28864f",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/23/2026",
+    "hours": 0.2,
+    "description": "Discuss evidence; scheduling with ADA and witnesses",
+    "created_at": "2026-07-20T23:30:52.820665",
+    "sort_order": -12.5
+  },
+  {
+    "id": "81d00bb0-1caf-46a0-b6ed-b4e86699df4d",
+    "client_id": "77c9d677-44a5-43b7-a9c7-2d5fab656885",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 25
+  },
+  {
+    "id": "8240841f-5eb2-472c-aee1-0ffce12973f2",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/12/2026",
+    "hours": 0.2,
+    "description": "Phone call with spouse discussing charges; circumstances",
+    "created_at": "2026-07-20T15:50:54.812223",
+    "sort_order": 65
+  },
+  {
+    "id": "8323b78d-177e-4eed-9d99-ef463d37ca0b",
+    "client_id": "b05dea7a-c597-4e45-bd1e-feebe9de19f6",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-07-29T19:45:37.360682",
+    "sort_order": -50
+  },
+  {
+    "id": "8336c3b6-75be-4aad-9bd2-951c0ed0ce8d",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/1/2026",
+    "hours": 0.3,
+    "description": "Client zoom visit",
+    "created_at": "2026-07-21T00:47:53.780756",
+    "sort_order": -50
+  },
+  {
+    "id": "837661e0-2be5-49c6-89e1-3dbc18a50124",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/19/2026",
+    "hours": 0.6,
+    "description": "Prepared defense",
+    "created_at": "2026-08-22T05:53:43.006926",
+    "sort_order": -3.75
+  },
+  {
+    "id": "83fb5798-9b40-4704-8957-9ac0c06af15f",
+    "client_id": "c5e4b0ff-8b78-4bef-b8aa-05fd4eb66b3b",
+    "entry_date": "8/12/2026",
+    "hours": 0.3,
+    "description": "Initial client meeting",
+    "created_at": "2026-08-18T05:29:17.313228",
+    "sort_order": 0
+  },
+  {
+    "id": "842f9a82-2521-4c16-8c9c-58d92b5ecd4e",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "entry_date": "7/31/2026",
+    "hours": 0.1,
+    "description": "Retrieve contact info from clerk’s office",
+    "created_at": "2026-07-31T16:44:43.524501",
+    "sort_order": -60
+  },
+  {
+    "id": "84606b3a-e380-4b3d-8d51-52d94dc64371",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "5/27/2026",
+    "hours": 0.7,
+    "description": "Review (4) affidavits 0.6 ; Review criminal history 0.1 ; TOTAL 0.7",
+    "created_at": "2026-07-06T06:45:26.409965",
+    "sort_order": 260
+  },
+  {
+    "id": "84968c41-bfed-493a-986b-5adee282e9bb",
+    "client_id": "e485ed9e-73d0-4bb3-a87b-f05c55e6d1a5",
+    "entry_date": "8/11/2026",
+    "hours": 0.2,
+    "description": "Phone call with day reporting re: registration",
+    "created_at": "2026-08-11T19:01:08.645078",
+    "sort_order": -20
+  },
+  {
+    "id": "84a95fd7-2bd1-480d-8264-044b8cf83ae7",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/25/2026",
+    "hours": 0.2,
+    "description": "Arrange BWC viewing appt; obtain & sign form",
+    "created_at": "2026-07-20T23:34:53.041605",
+    "sort_order": -17.5
+  },
+  {
+    "id": "84e5751b-f1c6-4639-937c-3e59e40781d8",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/11/2026",
+    "hours": 0.2,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-18T05:18:47.3814",
+    "sort_order": 0.15625
+  },
+  {
+    "id": "84f41b50-bc5f-4f91-bfd8-c7f7b5bb5e2b",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "entry_date": "8/16/2026",
+    "hours": 1.2,
+    "description": "Reviewed (5) affidavits 0.7 ; Reviewed extensive criminal history 0.5 ; TOTAL: 1.2",
+    "created_at": "2026-08-22T03:20:31.300895",
+    "sort_order": -10
+  },
+  {
+    "id": "8522c519-729f-4309-a1b9-4e67025898be",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-18T05:37:17.20907",
+    "sort_order": -120
+  },
+  {
+    "id": "85c13bc9-5914-4806-8678-c3c84a5ef30f",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/30/2026",
+    "hours": 0.1,
+    "description": "Jail visit with client before preliminary hearing",
+    "created_at": "2026-07-20T23:38:52.920145",
+    "sort_order": -40
+  },
+  {
+    "id": "8616e61c-cead-40ef-8306-88d9a81fe55a",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/22/2026",
+    "hours": 0.1,
+    "description": "Met; negotiated with ADA",
+    "created_at": "2026-07-20T22:17:29.021946",
+    "sort_order": -60
+  },
+  {
+    "id": "8683cff2-8bf6-4a62-96a7-83f36b1279a4",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.5,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-22T05:54:22.263437",
+    "sort_order": -8.75
+  },
+  {
+    "id": "86d8dd59-44d4-4e96-900f-5f8b51ec2aa7",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/3/2026",
+    "hours": 1.2,
+    "description": "Review (3) affidavits 0.5 ; Review extensive criminal history 0.7",
+    "created_at": "2026-07-20T15:41:55.071556",
+    "sort_order": 85
+  },
+  {
+    "id": "8834ec19-b65d-4fb4-95d7-74df21fb251a",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/6/2026",
+    "hours": 0.4,
+    "description": "Review file",
+    "created_at": "2026-07-21T21:55:28.673343",
+    "sort_order": -85
+  },
+  {
+    "id": "885ad681-1a27-4f78-a413-7d43643d0f16",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Phone call with Wilson County Public Defender's office",
+    "created_at": "2026-08-22T01:00:54.71055",
+    "sort_order": -100
+  },
+  {
+    "id": "89028e05-6bfb-4b5a-822f-a5625a826358",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/10/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-18T05:50:58.639658",
+    "sort_order": 35
+  },
+  {
+    "id": "8954cd7c-0c23-4b14-a687-2c71e4a0c801",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "entry_date": "8/16/2026",
+    "hours": 0.3,
+    "description": "Reviewed affidavits from (2) new charges",
+    "created_at": "2026-08-22T03:24:35.67667",
+    "sort_order": -20
+  },
+  {
+    "id": "89d38c76-7a34-442a-8dea-4c83cf1288d3",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/22/2026",
+    "hours": 0.2,
+    "description": "Jail visit with client; clarified restitution",
+    "created_at": "2026-07-20T22:21:58.866205",
+    "sort_order": -72.5
+  },
+  {
+    "id": "89e51ee0-909a-4fec-b6de-27ad14e50119",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "7/16/2026",
+    "hours": 0.1,
+    "description": "Reschedule appearance",
+    "created_at": "2026-07-20T14:42:34.993991",
+    "sort_order": 20
+  },
+  {
+    "id": "8a1be8f2-f08a-4e67-badf-18fac325a81d",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/4/2026",
+    "hours": 0.2,
+    "description": "Fill out plea agreement form",
+    "created_at": "2026-08-04T16:26:51.099373",
+    "sort_order": -15
+  },
+  {
+    "id": "8a690b5d-5b86-48b8-bfa5-5ae7be1b51b5",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "entry_date": "7/31/2026",
+    "hours": 0.2,
+    "description": "Investigate custody status, new warrants",
+    "created_at": "2026-07-31T16:45:03.060519",
+    "sort_order": -25
+  },
+  {
+    "id": "8a88aa7f-f202-40c5-a369-b15a41d0fbe3",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/4/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-18T05:14:11.581308",
+    "sort_order": 10
+  },
+  {
+    "id": "8c38b216-8f2f-4be6-86a4-ed385f1bfd90",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/17/2026",
+    "hours": 0.1,
+    "description": "Draft; send email requesting zoom visit",
+    "created_at": "2026-07-20T16:31:36.251881",
+    "sort_order": -19.375
+  },
+  {
+    "id": "8c3d0624-1433-404a-98de-b9a93354f6ce",
+    "client_id": "19d8d350-199b-4248-af78-97948a6cb13a",
+    "entry_date": "7/24/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-26T23:29:50.734844",
+    "sort_order": 0
+  },
+  {
+    "id": "8c9c7b5f-f8c2-40bd-b002-84bd2dcf2a34",
+    "client_id": "f053d0cb-dff8-42b6-9f4a-3be63308c660",
+    "entry_date": "8/18/2026",
+    "hours": 0.3,
+    "description": "Reviewed affidavit 0.2 ; Reviewed criminal history 0.1 ; TOTAL: 0.3",
+    "created_at": "2026-08-18T22:54:57.965953",
+    "sort_order": -10
+  },
+  {
+    "id": "8cab32c4-b4fb-4f9b-9523-196f380fd62d",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "7/24/2026",
+    "hours": 0.3,
+    "description": "Met, negotiated with ADA regarding client circumstances, shelter court",
+    "created_at": "2026-07-28T22:48:19.567686",
+    "sort_order": -20
+  },
+  {
+    "id": "8d119f06-9e38-4c9e-bf4c-b5f17941ad7a",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/7/2026",
+    "hours": 0.3,
+    "description": "Presented information agreement to court",
+    "created_at": "2026-07-21T21:53:29.049131",
+    "sort_order": -130
+  },
+  {
+    "id": "8d1faf5a-66e6-48a6-a4a7-cc7477404511",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-22T01:01:54.708277",
+    "sort_order": -130
+  },
+  {
+    "id": "8d9fdd21-2c03-4d7a-9dc1-3175ebdc0d1e",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Met with DUI court",
+    "created_at": "2026-08-22T00:59:25.223105",
+    "sort_order": -60
+  },
+  {
+    "id": "8ed51e0f-4a04-41c8-9021-e454acde6e6a",
+    "client_id": "4293d91d-140f-46ea-9705-741cfbeb2b1a",
+    "entry_date": "8/16/2026",
+    "hours": 0.4,
+    "description": "Researched 39-16-603(b)1 / Evading Arrest by Motor Vehicle",
+    "created_at": "2026-08-22T03:31:40.142695",
+    "sort_order": -20
+  },
+  {
+    "id": "8ed526ae-ff60-40da-a7e9-2cb739162f8b",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T01:28:50.988505",
+    "sort_order": -28.75
+  },
+  {
+    "id": "8f5ea3c8-178e-4aff-bc63-e8089037b0e8",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/18/2026",
+    "hours": 0.7,
+    "description": "Review affidavit 0.2 ; Review extensive criminal history 0.5",
+    "created_at": "2026-07-20T15:25:54.771228",
+    "sort_order": -20
+  },
+  {
+    "id": "8fb47912-f964-435b-a307-d0c41cc3485c",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.2,
+    "description": "In person meeting with DUI court",
+    "created_at": "2026-08-22T03:07:54.884865",
+    "sort_order": -9.84375
+  },
+  {
+    "id": "8fe969c3-7466-44d4-b329-08879037a4d2",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/25/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-27T20:24:49.146701",
+    "sort_order": 0
+  },
+  {
+    "id": "900a161a-807d-4ab4-a6a0-c5199f7242fa",
+    "client_id": "ab56f58c-375f-4bac-8f69-144402acbaca",
+    "entry_date": "7/24/2026",
+    "hours": 0.1,
+    "description": "Meet client, exchange contact info",
+    "created_at": "2026-07-28T22:42:19.586169",
+    "sort_order": 10
+  },
+  {
+    "id": "90ee00d6-b7bc-459e-a6a5-977cc4dbdaf9",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "7/13/2026",
+    "hours": 0.2,
+    "description": "Update client on upcoming court date; steps via email",
+    "created_at": "2026-07-20T22:28:58.905125",
+    "sort_order": -110
+  },
+  {
+    "id": "91313fdf-3670-4c73-83de-04ae45b95b8c",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with client, exchanged contact info",
+    "created_at": "2026-08-22T03:22:31.407769",
+    "sort_order": -8.75
+  },
+  {
+    "id": "91e4ac0e-4dc2-4981-a164-baae9e7ce812",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/21/2026",
+    "hours": 0.4,
+    "description": "Prepare defense",
+    "created_at": "2026-07-21T21:39:18.067164",
+    "sort_order": -18.75
+  },
+  {
+    "id": "922d8ca6-d44a-4dae-a0b4-9996c1a86a84",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/18/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-21T22:03:59.223914",
+    "sort_order": -30
+  },
+  {
+    "id": "923183fa-1864-40ea-91dd-bd5d7e109107",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/10/2026",
+    "hours": 1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-18T04:44:47.981433",
+    "sort_order": -120
+  },
+  {
+    "id": "923b32be-f0c7-4680-8325-d9b21c252365",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Phone call with Wilson County clerk",
+    "created_at": "2026-08-22T01:00:25.307922",
+    "sort_order": -90
+  },
+  {
+    "id": "925e34c9-cea9-4911-a4d6-a9219b23a644",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/12/2026",
+    "hours": 0.1,
+    "description": "Coordinate with recovery court re: PV transfer",
+    "created_at": "2026-08-18T04:47:47.918294",
+    "sort_order": -140
+  },
+  {
+    "id": "92622650-2b4a-4b51-95cd-742eaf677ce4",
+    "client_id": "e485ed9e-73d0-4bb3-a87b-f05c55e6d1a5",
+    "entry_date": "7/23/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-26T23:02:44.889559",
+    "sort_order": 0
+  },
+  {
+    "id": "928c0906-cdf2-4a62-ae18-0664d88804c2",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/21/2026",
+    "hours": 0.2,
+    "description": "Email clerk re: missing warrants",
+    "created_at": "2026-07-06T07:24:44.83971",
+    "sort_order": 340
+  },
+  {
+    "id": "93377da6-7ce1-4a60-80f4-363a383ce4ba",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/13/2026",
+    "hours": 0.8,
+    "description": "Prepare defense",
+    "created_at": "2026-08-14T04:03:29.988743",
+    "sort_order": 0.9375
+  },
+  {
+    "id": "936b864f-fb92-4da5-8d8f-06ca5013a54a",
+    "client_id": "94f81408-4a46-48ec-9ffb-1452a58b81a7",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 27.5
+  },
+  {
+    "id": "93790454-e6a6-433d-8a44-efa35548bdb7",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/6/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-13T00:55:29.056444",
+    "sort_order": -100
+  },
+  {
+    "id": "94577dd1-0508-4402-a8b7-18e50a1359f7",
+    "client_id": "f053d0cb-dff8-42b6-9f4a-3be63308c660",
+    "entry_date": "8/18/2026",
+    "hours": 0.2,
+    "description": "Met, negotiated with ADA",
+    "created_at": "2026-08-19T03:27:43.349056",
+    "sort_order": -30
+  },
+  {
+    "id": "95650baa-bf5f-4ba3-aa50-dd25afa782a3",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/3/2026",
+    "hours": 0.2,
+    "description": "Phone call with client's CC attorney",
+    "created_at": "2026-07-21T21:57:58.663478",
+    "sort_order": -83.75
+  },
+  {
+    "id": "98983339-1e51-4ee3-a6a6-0d132abad95e",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Met with probation officer",
+    "created_at": "2026-08-22T00:52:03.653158",
+    "sort_order": -100
+  },
+  {
+    "id": "990ef737-de9b-4af6-92c2-9e62ec084957",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/6/2026",
+    "hours": 0.4,
+    "description": "Reviewed affidavit 0.2 ; Reviewed criminal history 0.2 ; TOTAL: 0.4",
+    "created_at": "2026-08-18T05:17:17.392446",
+    "sort_order": 7.5
+  },
+  {
+    "id": "99d418c3-a497-498c-8e57-a773c56a1589",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/12/2026",
+    "hours": 0.5,
+    "description": "Prepared defense",
+    "created_at": "2026-08-18T05:42:28.308801",
+    "sort_order": -105
+  },
+  {
+    "id": "99d94b5c-138a-4cdc-8792-6e4d10dee2ea",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "8/16/2026",
+    "hours": 0.1,
+    "description": "Exchange emails with client",
+    "created_at": "2026-08-16T17:14:00.55954",
+    "sort_order": -210
+  },
+  {
+    "id": "9b462cfb-a76e-44be-896a-fc25d49a83a7",
+    "client_id": "c5e4b0ff-8b78-4bef-b8aa-05fd4eb66b3b",
+    "entry_date": "8/12/2026",
+    "hours": 0.2,
+    "description": "Meet with client; exchange contact info",
+    "created_at": "2026-08-18T05:31:50.719345",
+    "sort_order": -30
+  },
+  {
+    "id": "9bec28cd-10bb-41d8-8715-98d86468279a",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.2,
+    "description": "Draft, send email requesting client zoom visit",
+    "created_at": "2026-08-18T05:40:28.179621",
+    "sort_order": -210
+  },
+  {
+    "id": "9c7b99ed-2f35-45ba-997b-ff5a62306e04",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "8/18/2026",
+    "hours": 0.2,
+    "description": "Draft, execute representation notice",
+    "created_at": "2026-08-18T17:42:58.492598",
+    "sort_order": -70
+  },
+  {
+    "id": "9cadb869-54c7-4bb3-91c4-c7ff26d971b3",
+    "client_id": "ab56f58c-375f-4bac-8f69-144402acbaca",
+    "entry_date": "7/25/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-27T00:05:07.347661",
+    "sort_order": 0
+  },
+  {
+    "id": "9d92a6b4-8ece-4d35-8e0c-45724f6ec077",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with prosecuting officer",
+    "created_at": "2026-08-22T03:04:35.573778",
+    "sort_order": 0.33203125
+  },
+  {
+    "id": "9d9eda75-2275-46da-861e-d4cc38fe48f0",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/8/2026",
+    "hours": 0.5,
+    "description": "Close file",
+    "created_at": "2026-07-21T21:58:58.749196",
+    "sort_order": -140
+  },
+  {
+    "id": "9e334f08-8ca7-46fa-af22-5a2ee84fb11c",
+    "client_id": "b05dea7a-c597-4e45-bd1e-feebe9de19f6",
+    "entry_date": "7/29/2026",
+    "hours": 0.2,
+    "description": "Present, discuss offer with client",
+    "created_at": "2026-07-29T19:45:37.205586",
+    "sort_order": -40
+  },
+  {
+    "id": "9e63f899-ff4a-41ec-8f8b-6e13e0d97efe",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.6,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-22T00:51:33.627776",
+    "sort_order": -90
+  },
+  {
+    "id": "9eb5ee99-c563-4ab7-b07c-db0055549c8b",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/28/2026",
+    "hours": 0.2,
+    "description": "Draft, send email requesting client zoom visit",
+    "created_at": "2026-07-28T22:32:40.642495",
+    "sort_order": -10
+  },
+  {
+    "id": "9effc84f-5c27-4477-8b53-5072053a8d2b",
+    "client_id": "218e23ef-c09c-4ae1-b701-8bd672679e20",
+    "entry_date": "8/3/2026",
+    "hours": 0.4,
+    "description": "Reviewed affidavit 0.2 ; Reviewed criminal history 0.2 ; TOTAL: .4",
+    "created_at": "2026-08-22T01:38:26.71051",
+    "sort_order": -30
+  },
+  {
+    "id": "9f7ad881-77db-40cc-8116-f0013f294738",
+    "client_id": "629e8757-dc16-4d71-a61c-779c3dc71523",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 21.25
+  },
+  {
+    "id": "a0ca8c5d-74e6-4299-be08-44c231d14fa5",
+    "client_id": "f912da22-cfef-40d2-8327-621e94bce8a8",
+    "entry_date": "8/18/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-19T03:41:33.458834",
+    "sort_order": 0
+  },
+  {
+    "id": "a0da3f63-617d-4d5c-bb2a-62af9bf21ff8",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "entry_date": "8/19/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T05:25:54.858283",
+    "sort_order": -80
+  },
+  {
+    "id": "a0f8b672-a384-471c-a7f0-10e5cb60cf0d",
+    "client_id": "1d777a6e-cb05-4a2d-a2a4-387dc2ea3e56",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Looked up charges",
+    "created_at": "2026-08-22T05:40:39.318586",
+    "sort_order": -10
+  },
+  {
+    "id": "a143bf6b-5831-4047-a6ed-23336b00dea3",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/4/2026",
+    "hours": 0.1,
+    "description": "Met, negotiated with ADA",
+    "created_at": "2026-08-04T15:49:39.137835",
+    "sort_order": 5
+  },
+  {
+    "id": "a17fa5e8-fd5a-47bf-87e5-94c0fa13407d",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/6/2026",
+    "hours": 0.6,
+    "description": "Prepared defense",
+    "created_at": "2026-08-18T05:26:17.337289",
+    "sort_order": 5.9375
+  },
+  {
+    "id": "a21fcd6b-93b2-4090-ab2c-6162d4ac8db4",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "6/1/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-21T00:20:54.537013",
+    "sort_order": 100
+  },
+  {
+    "id": "a36899f4-5275-44ed-b53d-83a6c693cdea",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/18/2026",
+    "hours": 0.2,
+    "description": "Draft, send email requesting client zoom visit",
+    "created_at": "2026-08-19T03:11:45.458811",
+    "sort_order": -140
+  },
+  {
+    "id": "a539547e-bc8b-423b-a54d-a0aefd7847db",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/6/2026",
+    "hours": 0.2,
+    "description": "Phone call with Behavioral Care Center re: Availability",
+    "created_at": "2026-08-13T00:54:09.742944",
+    "sort_order": -70
+  },
+  {
+    "id": "a5a90067-8c65-4fb5-ab0c-34c78de56354",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/29/2026",
+    "hours": 1,
+    "description": "Prepare for preliminary hearing; review file",
+    "created_at": "2026-07-20T23:36:52.738653",
+    "sort_order": -30
+  },
+  {
+    "id": "a706a3bb-20da-41bd-945c-4d41308e2457",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.1,
+    "description": "Consult with ADA & prosecuting officer",
+    "created_at": "2026-08-18T05:37:50.648739",
+    "sort_order": -140
+  },
+  {
+    "id": "a869cba4-7b84-4548-838b-5f0544f6e7c8",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "6/29/2026",
+    "hours": 0.4,
+    "description": "Review file",
+    "created_at": "2026-07-21T00:29:24.010021",
+    "sort_order": 62.5
+  },
+  {
+    "id": "a8dd9bb3-f1b1-4bcb-8677-8d634de5876d",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/8/2026",
+    "hours": 0.9,
+    "description": "Prepare for Preliminary hearing",
+    "created_at": "2026-06-15T23:58:52.419826",
+    "sort_order": 76.25
+  },
+  {
+    "id": "a967e77b-5452-4752-894a-8e6cb5e404a3",
+    "client_id": "629e8757-dc16-4d71-a61c-779c3dc71523",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Looked up charges",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 22.5
+  },
+  {
+    "id": "a9964c1c-cd78-4458-bd12-5b7705f747eb",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.3,
+    "description": "Investigate, research client sentencing exposure",
+    "created_at": "2026-08-22T05:57:49.962466",
+    "sort_order": -9.6875
+  },
+  {
+    "id": "a9d0c623-168f-4d42-84ab-6419858257eb",
+    "client_id": "72901533-866e-4578-87c8-f31c7456f77f",
+    "entry_date": "7/24/2026",
+    "hours": 0.1,
+    "description": "Meet client & exchange contact info",
+    "created_at": "2026-07-28T22:44:19.706027",
+    "sort_order": 10
+  },
+  {
+    "id": "a9fd7f02-a76f-4445-9c79-8776e1702f96",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/5/2026",
+    "hours": 0.7,
+    "description": "Reviewed (5) new affidavits",
+    "created_at": "2026-08-13T00:52:09.286477",
+    "sort_order": -55
+  },
+  {
+    "id": "aac59d03-da17-424f-92bf-13754c9d173b",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.2,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-22T03:11:33.268798",
+    "sort_order": -18.73046875
+  },
+  {
+    "id": "ab2cc094-011a-44bd-b86b-452ebe1e577c",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/11/2026",
+    "hours": 0.4,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-18T05:15:41.390306",
+    "sort_order": 1.25
+  },
+  {
+    "id": "abac421b-6c49-49b5-aad9-67018761a8a1",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "entry_date": "8/19/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T05:24:47.987231",
+    "sort_order": -40
+  },
+  {
+    "id": "abd1fac9-5ec7-43fb-9869-d5123ca7e965",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.2,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-22T06:02:49.893972",
+    "sort_order": -9.99969482421875
+  },
+  {
+    "id": "ac6b9e28-9277-4b45-845c-81a156036928",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/12/2026",
+    "hours": 0.1,
+    "description": "Review, sign final recovery court PV transfer order",
+    "created_at": "2026-08-18T04:54:11.683455",
+    "sort_order": -160
+  },
+  {
+    "id": "acc137e2-683f-4b9c-8571-bb43f4f2aa11",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "7/27/2026",
+    "hours": 0.3,
+    "description": "Investigate, research TBI background check",
+    "created_at": "2026-08-13T00:08:11.732491",
+    "sort_order": -180
+  },
+  {
+    "id": "ace3bd7d-e435-4423-939f-4ff78f3539e2",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.4,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 415
+  },
+  {
+    "id": "ad5f2b82-384e-48b3-8ae9-c3efa7643f28",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.2,
+    "description": "Client zoom visit",
+    "created_at": "2026-08-18T05:40:58.191144",
+    "sort_order": -220
+  },
+  {
+    "id": "adb4008e-4738-49f2-8fc6-ebfa24bcce56",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 380
+  },
+  {
+    "id": "adde8c33-b35b-436e-8b4d-a24bda981f45",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/18/2026",
+    "hours": 0.2,
+    "description": "Client zoom visit",
+    "created_at": "2026-08-19T03:12:15.65243",
+    "sort_order": -150
+  },
+  {
+    "id": "ae1a0f80-6609-447e-b9dd-3261c0bbd37c",
+    "client_id": "4a4b7785-f832-4d71-b788-12bbf648b64b",
+    "entry_date": "7/28/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-28T22:36:49.519751",
+    "sort_order": -10
+  },
+  {
+    "id": "ae1c5b11-95a9-4a7f-9b07-d0279f0fc88d",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/17/2026",
+    "hours": 0.2,
+    "description": "Met with family services",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 390
+  },
+  {
+    "id": "ae5b4a67-b897-4c75-a333-79f71f6c76d9",
+    "client_id": "7e9c578a-6ee2-45c3-9ac6-ce338fb95cab",
+    "entry_date": "8/18/2026",
+    "hours": 0.2,
+    "description": "Phone call with narcotics agent connected by client",
+    "created_at": "2026-08-18T15:50:21.630256",
+    "sort_order": -40
+  },
+  {
+    "id": "aefc8cc5-a339-49b0-85cb-190e654dfbf7",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/16/2026",
+    "hours": 0.1,
+    "description": "Dismissed; failure to prosecute",
+    "created_at": "2026-07-20T16:02:24.676661",
+    "sort_order": 13.125
+  },
+  {
+    "id": "b0a5eb1e-9ed6-419e-9a4a-d80c3d7db4c5",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/18/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-20T23:23:22.846804",
+    "sort_order": 37.5
+  },
+  {
+    "id": "b0ae41a3-e371-468d-9ed5-d1f773fd8e2a",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/26/2026",
+    "hours": 0.5,
+    "description": "Prepare defense",
+    "created_at": "2026-07-06T07:26:14.906883",
+    "sort_order": 280
+  },
+  {
+    "id": "b124d296-ff3b-4bd1-a714-bbbd6f2277f3",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/22/2026",
+    "hours": 0.2,
+    "description": "Presented information agreement to court; requested ROR",
+    "created_at": "2026-07-20T22:22:58.853418",
+    "sort_order": -90
+  },
+  {
+    "id": "b1f3e831-bf34-45a8-a53f-6241e48ce4a6",
+    "client_id": "ab56f58c-375f-4bac-8f69-144402acbaca",
+    "entry_date": "7/24/2026",
+    "hours": 0.1,
+    "description": "Explain process & upcoming court date to client",
+    "created_at": "2026-07-28T22:42:49.550197",
+    "sort_order": 5
+  },
+  {
+    "id": "b1f859c2-4c39-41ed-95bb-590f8ef3d71c",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "entry_date": "8/3/2026",
+    "hours": 0.2,
+    "description": "Met with client",
+    "created_at": "2026-08-22T01:28:45.041441",
+    "sort_order": -25
+  },
+  {
+    "id": "b2748187-54b2-480b-9e0b-a4d1f3c0b0e9",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "entry_date": "7/23/2026",
+    "hours": 0.2,
+    "description": "Initial client meeting",
+    "created_at": "2026-07-23T16:21:05.029682",
+    "sort_order": -10
+  },
+  {
+    "id": "b3d3ae10-555c-401f-8d50-70cb739bea8b",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/26/2026",
+    "hours": 0.2,
+    "description": "Update spouse on status via text",
+    "created_at": "2026-07-21T21:54:29.192362",
+    "sort_order": -38.75
+  },
+  {
+    "id": "b3f2d239-37f1-4792-8ee6-b18d5fd45b3a",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/22/2026",
+    "hours": 0.4,
+    "description": "Jail visit with client; explain diversion & information agreement",
+    "created_at": "2026-07-20T22:18:59.025567",
+    "sort_order": -62.5
+  },
+  {
+    "id": "b416078e-e641-46d8-8077-7111ea1e6228",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/3/2026",
+    "hours": 0.4,
+    "description": "Draft, send email coordinating with client's CC attorney",
+    "created_at": "2026-07-21T21:57:18.260524",
+    "sort_order": -82.5
+  },
+  {
+    "id": "b51ddd2d-4026-48a2-8361-b2f942c8e0ca",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T00:58:25.255414",
+    "sort_order": 0.3125
+  },
+  {
+    "id": "b5aa09b2-eaca-4524-abb3-8d181ce59de4",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "entry_date": "8/3/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-22T01:27:15.430633",
+    "sort_order": -29.375
+  },
+  {
+    "id": "b5d858bb-e3d5-4492-a8c7-cdc2a373f7a4",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/11/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-18T05:15:11.465547",
+    "sort_order": 5
+  },
+  {
+    "id": "b5f2bd28-0a7a-4611-b03f-a0fa61170ab6",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/17/2026",
+    "hours": 0.1,
+    "description": "*************************************  GETTING NEW INDIGENCY AFFIDAVIT FOR 14 NEW THEFT CHARGES  *************************************",
+    "created_at": "2026-08-18T05:00:41.32769",
+    "sort_order": -190
+  },
+  {
+    "id": "b60ff1a5-49a8-4148-8781-337f38812526",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T01:27:45.032491",
+    "sort_order": -20
+  },
+  {
+    "id": "b660a9d7-7c43-44e9-bbb9-5e5b40afa184",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/21/2026",
+    "hours": 0.6,
+    "description": "Prepare defense",
+    "created_at": "2026-07-20T22:14:58.969008",
+    "sort_order": -50
+  },
+  {
+    "id": "b7bc41b4-12f0-4fe2-b38e-fc59884b4364",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-22T00:52:33.55063",
+    "sort_order": -120
+  },
+  {
+    "id": "b7fda374-c47a-4bb4-8408-b0422c58deb0",
+    "client_id": "c5e4b0ff-8b78-4bef-b8aa-05fd4eb66b3b",
+    "entry_date": "8/12/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-18T05:31:20.696218",
+    "sort_order": -20
+  },
+  {
+    "id": "b962871e-2d45-47fa-b73e-d060122ba743",
+    "client_id": "1d777a6e-cb05-4a2d-a2a4-387dc2ea3e56",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T05:41:39.849971",
+    "sort_order": -30
+  },
+  {
+    "id": "b9871677-ffe4-47e4-a541-423f5ba4b9a7",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/13/2026",
+    "hours": 0.4,
+    "description": "Reviewed affidavit 0.2 ; Reviewed criminal history 0.2 ; TOTAL: 0.4",
+    "created_at": "2026-08-18T05:58:41.223899",
+    "sort_order": 1.25
+  },
+  {
+    "id": "bb172dc7-7bfb-411e-96eb-a476901409e5",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/4/2026",
+    "hours": 0.6,
+    "description": "Reviewed 3 affidavits 0.3 ; Reviewed extensive criminal history 0.3 ; TOTAL:",
+    "created_at": "2026-08-22T01:58:58.954756",
+    "sort_order": 15
+  },
+  {
+    "id": "bb760878-24c6-4d8e-92f0-a03ef1b2e80b",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/18/2026",
+    "hours": 0.2,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-18T15:24:47.073961",
+    "sort_order": -50
+  },
+  {
+    "id": "bd4de2af-11f0-4c02-bc28-a6047a74b067",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/17/2026",
+    "hours": 0.5,
+    "description": "Prepared for preliminary hearing",
+    "created_at": "2026-08-18T05:26:17.438283",
+    "sort_order": -40
+  },
+  {
+    "id": "be07408a-3b5a-4c59-a795-192ac6fe1819",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "5/22/2026",
+    "hours": 0.2,
+    "description": "Discuss with DA re: immigration status and driver license eligibility",
+    "created_at": "2026-06-03T22:15:31.466727",
+    "sort_order": 75
+  },
+  {
+    "id": "be0b196e-9c58-4d02-84fb-3e8c64cc3ee7",
+    "client_id": "619c0adb-c89e-4714-9fb8-f5e6fec78784",
+    "entry_date": "8/18/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-19T03:46:26.137839",
+    "sort_order": 0
+  },
+  {
+    "id": "be3e0a5a-e18a-4cc4-8343-f759d9d7f373",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Investigate PV holds, citizenship status",
+    "created_at": "2026-08-22T00:51:03.818473",
+    "sort_order": -50
+  },
+  {
+    "id": "bea8ebcf-1a47-4953-a2fd-f898dda86f2a",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/16/2026",
+    "hours": 0.2,
+    "description": "Jail visit with client re: witness presence",
+    "created_at": "2026-07-20T16:01:14.531583",
+    "sort_order": 16.25
+  },
+  {
+    "id": "bf408795-9f81-4a3b-a094-cbd7fbcd6bd6",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/10/2026",
+    "hours": 0.2,
+    "description": "Guilty plea taken by judge",
+    "created_at": "2026-08-18T04:46:17.169437",
+    "sort_order": -130
+  },
+  {
+    "id": "bf761d05-aaf2-404d-8ca9-d42f54b1c4e7",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "8/10/2026",
+    "hours": 0.1,
+    "description": "Met with ADA re: TBI background check",
+    "created_at": "2026-08-13T00:08:41.537847",
+    "sort_order": -190
+  },
+  {
+    "id": "bfc14fdc-1cbe-4a28-a980-30fedef4472e",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T01:43:54.797439",
+    "sort_order": -21.875
+  },
+  {
+    "id": "bfd0c77f-08ac-4a68-85ac-598901b13d35",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "entry_date": "8/19/2026",
+    "hours": 0.3,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T05:24:54.848362",
+    "sort_order": -60
+  },
+  {
+    "id": "bfd6dc13-0581-49f1-9a79-fbbfbcc1f762",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/15/2026",
+    "hours": 0.2,
+    "description": "Phone call with spouse re: employer letter",
+    "created_at": "2026-06-16T18:55:55.865659",
+    "sort_order": 32.5
+  },
+  {
+    "id": "c0d6aab4-82bc-4b61-af42-90ea92e03374",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-07-29T19:52:06.875946",
+    "sort_order": -60
+  },
+  {
+    "id": "c156740b-d21a-4727-ac7a-226568f833b8",
+    "client_id": "e485ed9e-73d0-4bb3-a87b-f05c55e6d1a5",
+    "entry_date": "7/26/2026",
+    "hours": 0.3,
+    "description": "Reviewed affidavit 0.2 ; Reviewed criminal history 0.1 ; TOTAL: 0.3",
+    "created_at": "2026-08-13T00:13:31.288522",
+    "sort_order": -5
+  },
+  {
+    "id": "c2a6a00f-3cb2-42a7-a214-90452b5f2343",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/4/2026",
+    "hours": 1.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-04T15:52:15.951095",
+    "sort_order": -20
+  },
+  {
+    "id": "c3fa659a-f10e-447d-ac36-881aa205461b",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Looked up charges",
+    "created_at": "2026-08-22T03:21:31.319962",
+    "sort_order": 10
+  },
+  {
+    "id": "c58a2b95-d8e7-472d-a833-cd71376e6fdb",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.2,
+    "description": "Bound over on waivers",
+    "created_at": "2026-08-22T06:06:50.001541",
+    "sort_order": -9.99988555908203
+  },
+  {
+    "id": "c5a8d2ec-99ac-45d5-bf90-5b1e8bdf862c",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/21/2026",
+    "hours": 1,
+    "description": "Review (2) affidavits 0.4 ; Review extensive criminal history 0.6 ; TOTAL 1",
+    "created_at": "2026-07-06T07:22:44.875928",
+    "sort_order": 345
+  },
+  {
+    "id": "c66e1b6c-1601-4e57-b1ad-9f7aebf187f6",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "entry_date": "7/23/2026",
+    "hours": 0.1,
+    "description": "Read, analyze affidavit",
+    "created_at": "2026-07-23T20:01:07.081807",
+    "sort_order": -20
+  },
+  {
+    "id": "c687f951-8a0e-455a-a283-ec47111d5bbf",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/22/2026",
+    "hours": 0.1,
+    "description": "Draft email requesting zoom visit",
+    "created_at": "2026-07-21T00:44:54.261612",
+    "sort_order": -20
+  },
+  {
+    "id": "c6d501b3-6ae7-4650-8d3c-9ece20586045",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/28/2026",
+    "hours": 0.4,
+    "description": "Reviewed affidavit 0.1 ; Reviewed criminal history 0.3 ; TOTAL: 0.4",
+    "created_at": "2026-07-28T22:33:40.955459",
+    "sort_order": -15
+  },
+  {
+    "id": "c6e00acd-a5e9-4b30-9ece-ce74e8c70dd5",
+    "client_id": "4a4b7785-f832-4d71-b788-12bbf648b64b",
+    "entry_date": "7/25/2026",
+    "hours": 0.5,
+    "description": "Reviewed affidavit 0.2 ; Reviewed criminal history 0.3 ; TOTAL: 0.5",
+    "created_at": "2026-08-13T00:45:36.354865",
+    "sort_order": -5
+  },
+  {
+    "id": "c7959388-f0f9-45da-bcce-d25b527db0b4",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/17/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-21T21:36:51.269364",
+    "sort_order": -15
+  },
+  {
+    "id": "c795b661-9712-4cfc-a6ee-7cd7bf5ca41a",
+    "client_id": "7e9c578a-6ee2-45c3-9ac6-ce338fb95cab",
+    "entry_date": "8/17/2026",
+    "hours": 0.1,
+    "description": "Exchange texts with client",
+    "created_at": "2026-08-18T05:03:31.357667",
+    "sort_order": -20
+  },
+  {
+    "id": "c830bc16-5871-45bd-addc-df17915dd5ea",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/29/2026",
+    "hours": 0.3,
+    "description": "Research, investigate treatment programs",
+    "created_at": "2026-08-18T05:08:59.004554",
+    "sort_order": -45
+  },
+  {
+    "id": "c8c4bf13-6196-4db7-b18b-85e2a728368f",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/30/2026",
+    "hours": 0.8,
+    "description": "Conduct preliminary hearing",
+    "created_at": "2026-07-20T23:38:53.072722",
+    "sort_order": -50
+  },
+  {
+    "id": "c9d0b020-fffd-4452-b9fa-d8d06f532238",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "6/29/2026",
+    "hours": 0.1,
+    "description": "Text, email court date reminders to client",
+    "created_at": "2026-07-21T00:35:53.839507",
+    "sort_order": 35
+  },
+  {
+    "id": "ca36dd64-945d-4cb4-9bad-cb8e71eea9f7",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/10/2026",
+    "hours": 0.2,
+    "description": "Exchange texts with family re: tomorrow's court date",
+    "created_at": "2026-08-18T05:23:47.397184",
+    "sort_order": 5.625
+  },
+  {
+    "id": "cb8442cf-9a2a-4cfa-b3ba-9a2a5363d461",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/12/2026",
+    "hours": 0.2,
+    "description": "Met with probation officer",
+    "created_at": "2026-08-18T04:56:41.223211",
+    "sort_order": -155
+  },
+  {
+    "id": "cbcef602-e38c-49bc-80d7-015f5451e635",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/22/2026",
+    "hours": 0.2,
+    "description": "Text, meet with spouse concerning bond",
+    "created_at": "2026-07-21T21:46:18.299193",
+    "sort_order": -19.6875
+  },
+  {
+    "id": "cc194be0-1dba-433f-be23-5b06043be5ad",
+    "client_id": "94f81408-4a46-48ec-9ffb-1452a58b81a7",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 21.25
+  },
+  {
+    "id": "cc4ef03b-e70a-4a1b-bb3e-470756c2de0f",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "6/17/2026",
+    "hours": 0.5,
+    "description": "Open file",
+    "created_at": "2026-07-21T00:43:54.043419",
+    "sort_order": -10
+  },
+  {
+    "id": "cc523667-0328-4ff7-b976-d32d1c70d7ab",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "entry_date": "8/15/2026",
+    "hours": 0.3,
+    "description": "Reviewed affidavit 0.2 ; Reviewed criminal history 0.1 ; TOTAL: 0.3",
+    "created_at": "2026-08-19T05:04:34.731073",
+    "sort_order": -10
+  },
+  {
+    "id": "cdbc0800-40c5-4f04-990f-be827b2e2db5",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "7/21/2026",
+    "hours": 0.2,
+    "description": "Explain plea process, other details by phone",
+    "created_at": "2026-07-21T16:30:46.883164",
+    "sort_order": -130
+  },
+  {
+    "id": "ce42c3f6-1fb8-4b7c-ac78-ca73b38ccdda",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "entry_date": "7/16/2026",
+    "hours": 0.2,
+    "description": "Handle unbooked charges; coordinate with booking office",
+    "created_at": "2026-07-20T14:40:42.184617",
+    "sort_order": 40
+  },
+  {
+    "id": "ce9545d3-ab56-46fd-99eb-2df525996186",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Met with attorney for co-defendant",
+    "created_at": "2026-08-22T06:00:49.939766",
+    "sort_order": -9.99755859375
+  },
+  {
+    "id": "cfb17956-79d4-4664-8d8a-cb6acaf1ab7a",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Search for interpreter",
+    "created_at": "2026-08-22T00:51:33.454671",
+    "sort_order": -70
+  },
+  {
+    "id": "d034baec-bda4-4bb4-8b80-d132c70e9634",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Met with DUI court",
+    "created_at": "2026-08-22T01:02:25.787936",
+    "sort_order": -140
+  },
+  {
+    "id": "d0c11314-81f4-4b8e-91fe-0066d9ec26b5",
+    "client_id": "77c9d677-44a5-43b7-a9c7-2d5fab656885",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 20
+  },
+  {
+    "id": "d0f21684-8e01-42f5-b1fa-63bf22dc907a",
+    "client_id": "f053d0cb-dff8-42b6-9f4a-3be63308c660",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Dismissed",
+    "created_at": "2026-08-19T03:29:13.417649",
+    "sort_order": -60
+  },
+  {
+    "id": "d1342454-944e-4956-b66a-4270651a48fd",
+    "client_id": "7e9c578a-6ee2-45c3-9ac6-ce338fb95cab",
+    "entry_date": "8/10/2026",
+    "hours": 0.2,
+    "description": "Initial client meeting, exchange contact info",
+    "created_at": "2026-08-18T05:01:41.18841",
+    "sort_order": 0
+  },
+  {
+    "id": "d2072eac-175b-4e4c-b6bb-8dfbad206ea2",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/16/2026",
+    "hours": 0.5,
+    "description": "Close file",
+    "created_at": "2026-07-20T16:06:45.778076",
+    "sort_order": 3.125
+  },
+  {
+    "id": "d2789858-bc66-446a-b68a-2a695ff55d39",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/4/2026",
+    "hours": 0.1,
+    "description": "Rescheduled appearance",
+    "created_at": "2026-06-09T04:38:48.903143",
+    "sort_order": 80
+  },
+  {
+    "id": "d2d619ae-7951-4af7-ac4a-e72397652536",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "5/29/2026",
+    "hours": 0.7,
+    "description": "Review warrant 0.2; extensive criminal history 0.5",
+    "created_at": "2026-07-21T00:26:54.005101",
+    "sort_order": 105
+  },
+  {
+    "id": "d34e5637-97e5-46f4-94a2-7622113f5526",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/11/2026",
+    "hours": 0.7,
+    "description": "Investigate ICE detainer implications, research federal statutes",
+    "created_at": "2026-08-22T02:44:53.378484",
+    "sort_order": 0.0390625
+  },
+  {
+    "id": "d358bbde-007f-4423-b740-0f0d48e37ed9",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/17/2026",
+    "hours": 0.4,
+    "description": "Reviewed affidavit 0.3 ; Reviewed criminal history 0.1 ; TOTAL: 0.4",
+    "created_at": "2026-08-22T00:43:57.324013",
+    "sort_order": -10
+  },
+  {
+    "id": "d3bbb1dd-a73d-439a-82cc-f6d0ed5b7abd",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "7/24/2026",
+    "hours": 0.2,
+    "description": "Meet with client; explain shelter court & shelter court date",
+    "created_at": "2026-07-28T22:49:49.593429",
+    "sort_order": -40
+  },
+  {
+    "id": "d59cf974-e432-4d29-ada6-f0d63c236cf6",
+    "client_id": "7e9c578a-6ee2-45c3-9ac6-ce338fb95cab",
+    "entry_date": "8/18/2026",
+    "hours": 0.4,
+    "description": "Phone call with client",
+    "created_at": "2026-08-18T15:49:51.653573",
+    "sort_order": -30
+  },
+  {
+    "id": "d60bbaea-b1a3-4816-aaa8-fab7366c5db9",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/5/2026",
+    "hours": 0.1,
+    "description": "Update recovery court via email",
+    "created_at": "2026-08-22T02:16:09.596738",
+    "sort_order": -96.875
+  },
+  {
+    "id": "d7158faf-86bd-4191-ab8c-d353baefa410",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "entry_date": "8/14/2026",
+    "hours": 0.3,
+    "description": "Initial client meeting",
+    "created_at": "2026-08-22T03:18:30.901501",
+    "sort_order": 0
+  },
+  {
+    "id": "d8025d95-d965-47fd-8737-9abdf32ea21e",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "7/22/2026",
+    "hours": 0.3,
+    "description": "Read; fill out plea agreement form",
+    "created_at": "2026-07-22T18:02:46.643442",
+    "sort_order": -140
+  },
+  {
+    "id": "d8594afa-1425-4cb7-b21a-51f86e621a51",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/20/2026",
+    "hours": 0.2,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T05:39:14.775196",
+    "sort_order": -205
+  },
+  {
+    "id": "d9181287-518b-4206-b87e-053b4dc2f1d3",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/19/2026",
+    "hours": 0.7,
+    "description": "Reviewed (4) affidavits 0.5 ; Reviewed criminal history 0.2 ; TOTAL: 0.7",
+    "created_at": "2026-08-22T05:52:50.063341",
+    "sort_order": -2.5
+  },
+  {
+    "id": "d931c334-c5c5-4283-b454-cd7391f14868",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.2,
+    "description": "Courtroom wait time; moved to 3A docket",
+    "created_at": "2026-08-22T05:55:43.282329",
+    "sort_order": -4.375
+  },
+  {
+    "id": "daac13cb-8eb3-4ed1-a980-85386d3ed9c4",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/22/2026",
+    "hours": 0.4,
+    "description": "Research issue, respond to clerk's email regarding outstanding bond surrender",
+    "created_at": "2026-07-20T22:27:29.111096",
+    "sort_order": -100
+  },
+  {
+    "id": "dae4cd28-f4c0-4d81-b1a4-02fe5c9d7d64",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/11/2026",
+    "hours": 0.3,
+    "description": "Conference booth wait time",
+    "created_at": "2026-08-18T05:20:47.538407",
+    "sort_order": 0.234375
+  },
+  {
+    "id": "db342a39-58bf-4e12-aec9-14c061bd40ef",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/11/2026",
+    "hours": 0.2,
+    "description": "Inquire into availability/client's eligibility for Men of Valor program",
+    "created_at": "2026-08-11T19:47:41.138608",
+    "sort_order": -100
+  },
+  {
+    "id": "dc327571-a37f-4551-b029-d9ec967158f1",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Review, execute DUI court order",
+    "created_at": "2026-08-22T01:02:54.713733",
+    "sort_order": -160
+  },
+  {
+    "id": "dc4666d2-f181-46a6-89a7-00b4d7b45342",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "entry_date": "8/3/2026",
+    "hours": 0.6,
+    "description": "Reviewed (4) affidavits 0.5 ; Reviewed criminal history 0.1 ; TOTAL: .6",
+    "created_at": "2026-08-22T01:28:14.919809",
+    "sort_order": -30
+  },
+  {
+    "id": "dd115a2f-6ef3-46e7-826b-aa1826b29995",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T06:00:27.258357",
+    "sort_order": -9.9951171875
+  },
+  {
+    "id": "dda7daf2-4628-4342-ab89-a23a6d88b08c",
+    "client_id": "4293d91d-140f-46ea-9705-741cfbeb2b1a",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T03:25:34.725992",
+    "sort_order": -7.5
+  },
+  {
+    "id": "ddd07341-ab30-4a43-8f83-71a7f62fe108",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T00:59:25.347311",
+    "sort_order": -70
+  },
+  {
+    "id": "dde91425-2bfc-4f65-9386-039bc15e6310",
+    "client_id": "1d777a6e-cb05-4a2d-a2a4-387dc2ea3e56",
+    "entry_date": "8/20/2026",
+    "hours": 0.3,
+    "description": "Initial client meeting, read affidavits together, discussed details",
+    "created_at": "2026-08-22T05:40:55.107844",
+    "sort_order": -20
+  },
+  {
+    "id": "de561c29-cc8a-4588-8251-dff8cc487727",
+    "client_id": "4293d91d-140f-46ea-9705-741cfbeb2b1a",
+    "entry_date": "8/14/2026",
+    "hours": 0.2,
+    "description": "Initial client meeting",
+    "created_at": "2026-08-22T03:25:34.725992",
+    "sort_order": 20
+  },
+  {
+    "id": "debd67a3-c1ae-4604-8de1-ea61bc596e34",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "7/22/2026",
+    "hours": 0.2,
+    "description": "Courtroom wait time",
+    "created_at": "2026-07-22T18:02:46.849897",
+    "sort_order": -150
+  },
+  {
+    "id": "def0217d-3a52-442d-9abd-c2145abf9cef",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/6/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client, convey offer",
+    "created_at": "2026-08-13T00:55:09.368771",
+    "sort_order": -90
+  },
+  {
+    "id": "def781aa-f61b-4767-804e-332a6b224af6",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "8/19/2026",
+    "hours": 0.2,
+    "description": "Retrieve case files from clerk to be mailed to client",
+    "created_at": "2026-08-22T05:31:32.578263",
+    "sort_order": -110
+  },
+  {
+    "id": "df0e74a2-c742-4609-a074-6a95a44677ea",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/4/2026",
+    "hours": 0.5,
+    "description": "Conference room wait time",
+    "created_at": "2026-08-04T15:47:38.305762",
+    "sort_order": 0
+  },
+  {
+    "id": "df53f5ca-6809-4ab5-aac9-67e4c811c832",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/24/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client",
+    "created_at": "2026-07-28T16:41:13.535",
+    "sort_order": 10
+  },
+  {
+    "id": "df6174e2-10b0-439b-8a24-02bcb8791320",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "entry_date": "7/31/2026",
+    "hours": 0.3,
+    "description": "Courtroom wait time",
+    "created_at": "2026-07-31T16:43:33.049967",
+    "sort_order": -20
+  },
+  {
+    "id": "e0061ad1-4ffe-470b-97db-142b8d7a81ac",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T03:08:54.783542",
+    "sort_order": -25
+  },
+  {
+    "id": "e3242f18-d40a-4e62-8f07-bb4779eb4b61",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "entry_date": "7/23/2026",
+    "hours": 0.5,
+    "description": "Open file",
+    "created_at": "2026-07-24T04:45:24.566787",
+    "sort_order": 0
+  },
+  {
+    "id": "e3d829ea-d6d2-4c6a-af52-cd4cca64d50a",
+    "client_id": "218e23ef-c09c-4ae1-b701-8bd672679e20",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Met with client, exchanged contact info",
+    "created_at": "2026-08-22T01:38:26.71051",
+    "sort_order": -29.0625
+  },
+  {
+    "id": "e4569296-0497-4338-aaa6-6e378d6ecd45",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/5/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T02:22:28.091795",
+    "sort_order": -89.375
+  },
+  {
+    "id": "e4c7952b-99c1-46f3-997a-032f5757b2ae",
+    "client_id": "4293d91d-140f-46ea-9705-741cfbeb2b1a",
+    "entry_date": "8/16/2026",
+    "hours": 0.3,
+    "description": "Reviewed affidavit 0.2 ; Reviewed criminal history 0.1 ; TOTAL: 0.3",
+    "created_at": "2026-08-22T03:25:34.725992",
+    "sort_order": -10
+  },
+  {
+    "id": "e4ed3803-1d5c-4718-97e9-1e2e2230927a",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "entry_date": "7/2/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-21T21:48:56.495058",
+    "sort_order": -60
+  },
+  {
+    "id": "e4fd35bf-95c2-4b6f-8df6-dd421c88dcb2",
+    "client_id": "efa25bd0-8c02-44b0-a014-8845d9bef27a",
+    "entry_date": "7/27/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-28T22:40:19.916539",
+    "sort_order": -20
+  },
+  {
+    "id": "e55549df-74e6-4629-968f-29e6d49fb610",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-08-22T05:53:43.099503",
+    "sort_order": -7.5
+  },
+  {
+    "id": "e5d83459-74e7-4bb9-93d6-801fe1ae6e73",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/5/2026",
+    "hours": 0.2,
+    "description": "Reset all open cases to 8/10 for recovery court acceptance",
+    "created_at": "2026-08-18T04:34:13.039645",
+    "sort_order": -95
+  },
+  {
+    "id": "e6cf0014-7840-4bb5-bdf1-18aa1e07b44b",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "entry_date": "8/17/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-22T00:42:27.440018",
+    "sort_order": 0
+  },
+  {
+    "id": "e7791422-f1f0-4c89-ad91-3d7575d1fac9",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/10/2026",
+    "hours": 0.1,
+    "description": "Met with recovery court officers",
+    "created_at": "2026-08-18T04:41:48.439975",
+    "sort_order": -110
+  },
+  {
+    "id": "e7faa7aa-72a0-48fd-97ba-b52629bbacaf",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/18/2026",
+    "hours": 0.2,
+    "description": "Draft, send email to BCC re: client’s intake",
+    "created_at": "2026-08-18T16:13:08.203149",
+    "sort_order": -130
+  },
+  {
+    "id": "e841bbc6-f2c7-463c-9d67-4d7c9117ad74",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "entry_date": "7/23/2026",
+    "hours": 0.1,
+    "description": "Update client",
+    "created_at": "2026-07-23T20:04:06.871164",
+    "sort_order": -60
+  },
+  {
+    "id": "e8a75402-ba2a-4431-87b1-441ba9677c65",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.3,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-18T05:38:17.290164",
+    "sort_order": -170
+  },
+  {
+    "id": "e8d96886-8fb3-4795-866d-206bd5b6a223",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "entry_date": "8/19/2026",
+    "hours": 0.1,
+    "description": "Ensure client was sent to BCC",
+    "created_at": "2026-08-22T02:32:01.74568",
+    "sort_order": -160
+  },
+  {
+    "id": "e911899d-c4ff-449d-91df-0ad48527ba19",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "entry_date": "8/15/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-19T05:03:49.495704",
+    "sort_order": 0
+  },
+  {
+    "id": "e99b1763-99f6-413c-9b82-69a9d7c8890b",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/28/2026",
+    "hours": 0.2,
+    "description": "Plea taken by judge",
+    "created_at": "2026-07-06T07:29:14.73778",
+    "sort_order": 210
+  },
+  {
+    "id": "e9fa4357-56f9-47ea-b738-e3be04aa8a34",
+    "client_id": "7e9c578a-6ee2-45c3-9ac6-ce338fb95cab",
+    "entry_date": "8/10/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T02:39:18.559313",
+    "sort_order": -17.5
+  },
+  {
+    "id": "ea07815e-b36e-4392-b6f6-30194881f9d3",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/18/2026",
+    "hours": 0.1,
+    "description": "Retrieve warrant for SCE329135 from clerk",
+    "created_at": "2026-08-18T15:29:47.174087",
+    "sort_order": 0
+  },
+  {
+    "id": "ea571475-774d-49c6-a1a3-131d0041ee3a",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "5/28/2026",
+    "hours": 0.3,
+    "description": "Draft, send email to state re: bond motion",
+    "created_at": "2026-07-06T06:58:55.72803",
+    "sort_order": 200
+  },
+  {
+    "id": "ea641e9e-7dd3-4e94-9682-e5a03885976b",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "entry_date": "8/20/2026",
+    "hours": 0.5,
+    "description": "Prepared for preliminary hearing",
+    "created_at": "2026-08-22T05:59:49.833977",
+    "sort_order": -9.9609375
+  },
+  {
+    "id": "ea689934-fe3b-48af-aa78-17103c3e7df9",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "8/19/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-08-22T05:29:49.843393",
+    "sort_order": -270
+  },
+  {
+    "id": "eb572661-d996-44b8-ac98-292f284d1842",
+    "client_id": "19d8d350-199b-4248-af78-97948a6cb13a",
+    "entry_date": "7/26/2026",
+    "hours": 0.6,
+    "description": "Reviewed (3) affidavits 0.5 ; Reviewed criminal history 0.1 ; TOTAL: 0.6",
+    "created_at": "2026-08-13T00:20:29.9301",
+    "sort_order": -20
+  },
+  {
+    "id": "eb88be32-f4e2-43bc-9ca2-1097662ac2c4",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "entry_date": "8/4/2026",
+    "hours": 0.2,
+    "description": "Plea taken by judge",
+    "created_at": "2026-08-22T01:53:54.731078",
+    "sort_order": -30
+  },
+  {
+    "id": "ec7adc10-cbe2-4bde-abbb-6fd8b73f8164",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/17/2026",
+    "hours": 0.2,
+    "description": "Coordinate with family re: Court date, contacting an immigration attorney",
+    "created_at": "2026-08-17T19:55:44.336026",
+    "sort_order": -20
+  },
+  {
+    "id": "eda38836-62eb-462c-a92e-012c8a6ee8d0",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/10/2026",
+    "hours": 0.1,
+    "description": "Review, sign recovery court transfer order",
+    "created_at": "2026-08-18T04:54:41.193188",
+    "sort_order": -115
+  },
+  {
+    "id": "edbc5d5a-5fe5-4bab-a743-00d372ebe94a",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.9,
+    "description": "Review BWC from incident",
+    "created_at": "2026-08-19T03:17:42.16064",
+    "sort_order": 0.625
+  },
+  {
+    "id": "ede11210-da95-4b57-a252-06b8ad3cfb5a",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/29/2026",
+    "hours": 0.8,
+    "description": "Reviewed 6 new affidavits",
+    "created_at": "2026-07-29T19:18:42.85362",
+    "sort_order": -40
+  },
+  {
+    "id": "eece8408-f46e-4ccf-ab2b-e35795139b3e",
+    "client_id": "7e9c578a-6ee2-45c3-9ac6-ce338fb95cab",
+    "entry_date": "8/10/2026",
+    "hours": 1.8,
+    "description": "Reviewed (10) affidavits 1.1 ; Reviewed extensive criminal history 0.7 ; TOTAL: 1.8",
+    "created_at": "2026-08-18T05:06:13.865612",
+    "sort_order": -18.75
+  },
+  {
+    "id": "ef0196a2-948a-42b8-9a7d-33fdb9ab4758",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "6/22/2026",
+    "hours": 0.1,
+    "description": "Negotiated with ADA re: restitution",
+    "created_at": "2026-07-20T22:20:59.3985",
+    "sort_order": -65
+  },
+  {
+    "id": "efa65a33-2d88-492b-a987-bc019c5a7e7a",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "5/29/2026",
+    "hours": 0.2,
+    "description": "Draft, send email requesting client medical check",
+    "created_at": "2026-07-06T07:03:55.922262",
+    "sort_order": 156.25
+  },
+  {
+    "id": "efd73e09-a31c-4186-b9dd-aae23646ba00",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.3,
+    "description": "Fill out, submit DUI court referral",
+    "created_at": "2026-08-22T03:08:34.809381",
+    "sort_order": -14.921875
+  },
+  {
+    "id": "f133b0f4-5659-4f91-b012-4fa8f6669ebd",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "entry_date": "8/3/2026",
+    "hours": 0.1,
+    "description": "Looked up charges",
+    "created_at": "2026-08-22T01:29:45.058526",
+    "sort_order": -15
+  },
+  {
+    "id": "f2a08864-1b81-4281-abc4-d91851fcba1e",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "entry_date": "8/16/2026",
+    "hours": 0.4,
+    "description": "Reviewed (2) affidavits 0.3 ; Reviewed criminal history 0.1 ; TOTAL: 0.4",
+    "created_at": "2026-08-22T03:16:05.115231",
+    "sort_order": 425
+  },
+  {
+    "id": "f2c220a5-74a4-40e8-b9f2-86534fadd5e9",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.2,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T00:58:56.680701",
+    "sort_order": -50
+  },
+  {
+    "id": "f34774c7-449a-437b-9bde-a6794f4b4477",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "entry_date": "5/28/2026",
+    "hours": 0.4,
+    "description": "Meet, explain plea offer",
+    "created_at": "2026-07-06T07:28:14.681237",
+    "sort_order": 220
+  },
+  {
+    "id": "f3ffbefb-9b6e-4fa6-8633-20a43733a451",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "entry_date": "7/23/2026",
+    "hours": 0.1,
+    "description": "Dismissal requested; Continuance granted",
+    "created_at": "2026-07-23T20:05:18.451587",
+    "sort_order": -80
+  },
+  {
+    "id": "f40eacc2-4cc6-4cc6-96e9-d0ac322fd887",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "entry_date": "5/27/2026",
+    "hours": 0.4,
+    "description": "Jail visit with client",
+    "created_at": "2026-06-02T19:52:16.082731",
+    "sort_order": 250
+  },
+  {
+    "id": "f479af20-96dc-407d-83f2-2788dd2e69f0",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "entry_date": "6/29/2026",
+    "hours": 1.4,
+    "description": "Prepare for preliminary hearing",
+    "created_at": "2026-07-21T00:32:53.974189",
+    "sort_order": 40
+  },
+  {
+    "id": "f4bf838a-aa5e-40e7-a349-e0dc8a0caa70",
+    "client_id": "4293d91d-140f-46ea-9705-741cfbeb2b1a",
+    "entry_date": "8/14/2026",
+    "hours": 0.1,
+    "description": "Met with client, exchanged contact info",
+    "created_at": "2026-08-22T03:25:34.725992",
+    "sort_order": -8.75
+  },
+  {
+    "id": "f68bf15e-c830-4c2c-9136-af0967bae666",
+    "client_id": "94f81408-4a46-48ec-9ffb-1452a58b81a7",
+    "entry_date": "8/14/2026",
+    "hours": 0.3,
+    "description": "Met with client, discussed incident, exchanged contact info",
+    "created_at": "2026-08-22T03:35:24.11594",
+    "sort_order": 15
+  },
+  {
+    "id": "f73a56b8-6d47-495d-94be-884ff1eb780a",
+    "client_id": "1d777a6e-cb05-4a2d-a2a4-387dc2ea3e56",
+    "entry_date": "8/20/2026",
+    "hours": 0.1,
+    "description": "Reviewed criminal history",
+    "created_at": "2026-08-22T05:41:39.395264",
+    "sort_order": -15
+  },
+  {
+    "id": "f7ac8caf-1b19-4a53-804f-bce6474a31d6",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.3,
+    "description": "Review field sobriety caselaw",
+    "created_at": "2026-08-22T01:09:24.094924",
+    "sort_order": 0.5859375
+  },
+  {
+    "id": "f820bae8-f8f8-4b53-8435-d58c98fb613f",
+    "client_id": "218e23ef-c09c-4ae1-b701-8bd672679e20",
+    "entry_date": "8/3/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-08-22T01:38:26.71051",
+    "sort_order": -29.375
+  },
+  {
+    "id": "f86d1ee3-b8dd-449f-96d9-36c7c4a3e60c",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/24/2026",
+    "hours": 0.5,
+    "description": "Opened file",
+    "created_at": "2026-07-27T00:14:03.92369",
+    "sort_order": 0
+  },
+  {
+    "id": "f88df30e-aeac-4b76-a4cb-7baf85a50ab0",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "entry_date": "6/23/2026",
+    "hours": 0.2,
+    "description": "Obtain OOP copies from clerk",
+    "created_at": "2026-07-20T23:44:22.891728",
+    "sort_order": -16.25
+  },
+  {
+    "id": "f9b78db1-4871-4ea3-a70d-6a74003cc4b7",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/24/2026",
+    "hours": 0.5,
+    "description": "Close file",
+    "created_at": "2026-07-21T22:10:52.08498",
+    "sort_order": -110
+  },
+  {
+    "id": "f9bb62c0-98b3-4926-bc3b-165fdfaab29b",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-07-29T19:01:16.430412",
+    "sort_order": -30
+  },
+  {
+    "id": "fa1b658e-5fe3-4956-87e6-a40f9db577a7",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "entry_date": "8/10/2026",
+    "hours": 0.2,
+    "description": "Draft, send email to client",
+    "created_at": "2026-08-13T00:09:41.845815",
+    "sort_order": -200
+  },
+  {
+    "id": "fb4bdec9-4242-45bd-8c4e-15f4e2dc1ea9",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "entry_date": "6/23/2026",
+    "hours": 0.4,
+    "description": "Prepare defense",
+    "created_at": "2026-07-21T22:07:14.645206",
+    "sort_order": -60
+  },
+  {
+    "id": "fb514497-4314-4084-9e18-e0e5d3bc3f5c",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-07-29T19:59:00.542441",
+    "sort_order": -80
+  },
+  {
+    "id": "fb7810c2-aa48-4a53-8c5a-14b55eaf6b72",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/14/2026",
+    "hours": 0.4,
+    "description": "Jail visit with client",
+    "created_at": "2026-08-22T01:10:14.938163",
+    "sort_order": 0.390625
+  },
+  {
+    "id": "fba794d5-e49a-4481-8c7e-419ef527dd76",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "entry_date": "8/3/2026",
+    "hours": 0.2,
+    "description": "Continuance motion hearing",
+    "created_at": "2026-08-22T01:49:09.620008",
+    "sort_order": -28.642578125
+  },
+  {
+    "id": "fbabb2bb-09ea-44d8-a21c-bb68e9cb7495",
+    "client_id": "72901533-866e-4578-87c8-f31c7456f77f",
+    "entry_date": "7/27/2026",
+    "hours": 0.3,
+    "description": "Reviewed citation 0.2 ; Reviewed criminal history 0.1 ; TOTAL: 0.3",
+    "created_at": "2026-08-13T00:31:10.957065",
+    "sort_order": -10
+  },
+  {
+    "id": "fc563c47-3f7a-4325-a641-b31100631f4b",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "entry_date": "7/31/2026",
+    "hours": 0.1,
+    "description": "Rescheduled Appearance",
+    "created_at": "2026-07-31T16:44:13.514775",
+    "sort_order": -50
+  },
+  {
+    "id": "fcec2a31-7373-4a6d-8232-1f8f4c496f24",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "entry_date": "6/9/2026",
+    "hours": 0.2,
+    "description": "Court wait time",
+    "created_at": "2026-07-22T22:51:54.089541",
+    "sort_order": 75.625
+  },
+  {
+    "id": "fd59b460-cca2-4822-96c7-a849cffd77ba",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "entry_date": "8/11/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T02:41:57.701591",
+    "sort_order": 5.3125
+  },
+  {
+    "id": "fdafd0ff-2fa8-4611-9b0e-3ac02d60c574",
+    "client_id": "b05dea7a-c597-4e45-bd1e-feebe9de19f6",
+    "entry_date": "7/29/2026",
+    "hours": 0.1,
+    "description": "Met with ADA",
+    "created_at": "2026-07-29T19:40:37.070854",
+    "sort_order": -30
+  },
+  {
+    "id": "fe270622-8e92-419f-982c-b29692b8bcd0",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "entry_date": "8/13/2026",
+    "hours": 0.1,
+    "description": "Met, negotiated with ADA",
+    "created_at": "2026-08-18T05:39:51.339948",
+    "sort_order": -200
+  },
+  {
+    "id": "fe2988ac-17a0-4811-b6a9-85af25dd2a10",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "entry_date": "8/21/2026",
+    "hours": 0.3,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-22T01:03:25.375135",
+    "sort_order": -180
+  },
+  {
+    "id": "fe4ab6b1-a8f5-4032-8bfc-3fef09c8bddc",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "entry_date": "8/12/2026",
+    "hours": 0.1,
+    "description": "Courtroom wait time",
+    "created_at": "2026-08-18T04:55:41.243053",
+    "sort_order": -170
+  }
+]
