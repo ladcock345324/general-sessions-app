@@ -195,6 +195,61 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
+### Closed-Section Order Frozen Per Mount + Scroll-Restore Back Bug Fixed (2026-09-03)
+
+Two changes: one behaviour change, one bug in what shipped the day before. **No schema change, no Dexie version bump, no data change.**
+
+#### 1. The Closed section no longer re-sorts under the user's finger
+
+Tapping a client's indigent circle in the client list stamps `last_modified_at` and can change the colour tier, and `sortClosed` recomputed live — so the row the user had just tapped leapt to a new position mid-tap. **The order is now frozen for as long as the list view is mounted.**
+
+- **The dot still recolours instantly.** Only the row's POSITION is frozen. Rows still render from live data (`toRowProps` runs after the sort, on the live client objects), so the visual feedback is untouched.
+- **Mount-scoped, not session-scoped** — deliberately. The row takes its correct new position the next time the list is *loaded*, which covers both a page refresh and returning from a client file.
+- `useFrozenClosedOrder` snapshots `{ tier, modified }` per client id **the first time the query actually resolves**, gated on `!loading` rather than on the list being non-empty — `useLiveQuery` returns `undefined` on the first render, and snapshotting then would freeze an empty Map that never fills.
+- **`sortClosed(clients, frozen)` reads the snapshot when a client is in it and falls back to live values when not**, so a newly-closed client sorts into place normally instead of being dropped or pinned to an end. A client leaving the section just falls out; the stale entry is never consulted again and needs no cleanup.
+- **Scoped to the Closed section.** `sortActive` and the "Sorting by:" toggle are untouched.
+
+⚠️ **The snapshot is held in state, not a ref, and set during render.** A `useRef` written during render trips `react-hooks/refs` (2 errors — measured, not guessed); a `useEffect` trips `react-hooks/set-state-in-effect` *and* would set the value without scheduling a render, so the first sort would use live values with nothing to correct it; a `useMemo` keyed only on `resolved` raises an `exhaustive-deps` warning. **Setting state during render — React's "adjust state while rendering" pattern, the same one `CaseView`'s `PvField` uses — is the only one of the four that lints clean**, and it re-renders before commit, so the first painted order is already the frozen one.
+
+> ✅ **Confirmed, not assumed: ClientList really does remount on navigate-away-and-back.** `<Routes>` in `App.jsx` is flat — no layout route, no `<Outlet>`, no `key`, and `RequireAuth` is a pass-through — so `/` → `/client/:id` swaps `<ClientList/>` for `<ClientFile/>` at the same tree position, and React unmounts the subtree rather than preserving it. **The scroll bug below is the behavioural proof**: its entire symptom came from this component's effect *cleanup* running on that navigation, and a cleanup only runs on unmount. So the mount-scoped ref/state genuinely resets on Back, and no other trigger is needed.
+
+#### 2. Scroll restoration failed on Back while working on refresh — **cause (a): the saved value was clobbered during navigation**
+
+**It was (a), not (b), and the refresh/Back asymmetry is what proves it.**
+
+The old save side had an unconditional final write in its effect cleanup:
+
+```js
+return () => {
+  clearTimeout(timer)                    // drops the pending good write
+  window.removeEventListener('scroll', onScroll)
+  window.removeEventListener('pagehide', save)
+  save()                                 // ← re-reads window.scrollY DURING TEARDOWN
+}
+```
+
+**The elimination argument.** Between the last good throttled write and the next mount, only three things could write: the throttled timer (cancelled by `clearTimeout` on the line above), the `pagehide` handler (does not fire on an SPA route change), and this `save()`. So `save()` is the only writer in that window — and it re-read `window.scrollY` at a moment when React had already committed the route swap and the incoming ClientFile was rendering its short "Loading…" branch. A document that short forces `scrollY` to clamp to ~0, so `save()` faithfully stored **0** over the good value.
+
+**Why refresh was unaffected, which is the diagnostic the user identified:** a reload never unmounts the component, so the cleanup never runs. `pagehide` fires while the document is still full height and still scrolled, storing a correct value. Refresh working therefore proved the storage and restore paths were sound and localised the fault to the navigation path exactly as suspected.
+
+**(b) was not the cause, and was checked rather than assumed.** `restoredRef` is `useRef(false)` — created per mount, and ClientList genuinely remounts (see above), so it did reset and the restore *did* run on Back. It simply read `0`, hit the `if (!saved) return` guard, and correctly did nothing. **The (b) hazard is real but was latent**, masked by (a): with a good value now stored, the restore does run on remount into a document whose rows are still arriving. So the retry hardening below is no longer hypothetical.
+
+**The fixes:**
+
+- ✅ **Synchronous capture at the moment of leaving.** Both client rows now go through `openClient()`, which persists `window.scrollY` immediately *before* `navigate()`. The list is still mounted and full height at that instant, so the value is correct by construction and cannot be raced by a trailing timer.
+- ✅ **Nothing can write after the list is gone.** `lastYRef` records the last position observed *while mounted*, updated synchronously on every scroll event; the throttle and the unmount flush both persist **that**, never a fresh `window.scrollY`. The cleanup flushes **only if a throttled write was still pending** — otherwise the latest position is already stored and storage is not touched at all. `pagehide` is the one remaining place that reads live `scrollY`, which is correct there because the document is still intact.
+- ✅ **`0` is never written as a teardown artifact.** A genuine user scroll to the top still stores `0` and still works; what is gone is the path that produced a `0` nobody asked for. All writes funnel through one `persistScroll()` so there is a single line to audit.
+- ✅ **The restore retries across frames instead of firing once.** On a remount the rows stream in from Dexie, so the document can still be one viewport tall when the layout effect runs — a single `scrollTo` would be clamped to 0 and never corrected. It now re-applies for up to `MAX_RESTORE_FRAMES` (10, ≈160ms) until the position lands within `SCROLL_TOLERANCE` (2px), and stops early once it lands.
+
+**New module `src/scrollRestore.js`** holds everything that makes a decision — `scrollRestoreStep()`, `maxScrollableY()`, `isTargetReachable()`, `shouldPersistScroll()` — so the logic is testable without a browser and the effect stays a thin shell. `scrollRestoreStep` returns a `reason` alongside its action, keeping `document-still-growing` distinguishable from `scroll-did-not-take`, which are very different problems if this ever needs debugging again.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` at **20 errors, 0 warnings** — unchanged baseline; a first attempt using a render-written ref hit 22 and was **replaced rather than suppressed**.
+
+- **27 assertions** on the scroll logic, imported directly from the shipped module — including the exact bug scenario (a saved target of 3000 against a one-viewport document clamping to 0 → `retry`, not `done`), a simulated remount where the document grows over four frames and the restore lands on the target, a permanently-short document terminating within the frame budget instead of looping, the fractional-offset tolerance case, and `shouldPersistScroll` accepting a genuine `0` while rejecting negative/NaN/Infinity.
+- **25 assertions** on the frozen order, run against the `sortClosed` region **extracted verbatim and line-by-line verified against the source**: the row not moving when a tap changes tier *and* timestamp together, staying put across all five colours of the cycle, a gold row not launching to the top, the *next* mount picking up the new positions, newcomers sorting in by live values in the right tier, a removed client falling out harmlessly, and wholesale churn of every client's colour and timestamp leaving a frozen list identical across 200 shuffles.
+
+⚠️ **Not verified on production** — all on-device checking is the user's.
+
 ### New Cases Inherit Their Client's Closed State (2026-09-02, second batch)
 
 Closes item 3(d) from the batch below, which was flagged and deliberately left unbuilt pending a decision. **No schema change, no Dexie version bump, no data change** — `cases.status` already exists and is not indexed.
@@ -1409,7 +1464,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Fetches all clients from Supabase via `useClients` hook
 - Two sections: **Active** (`relieved_closed = false`) and **Closed** (`relieved_closed = true`) — header text rendered as "CLOSED" via CSS `text-transform: uppercase`
 - **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — `sortClosed()` takes no mode argument. As of **2026-09-02** it sorts by **indigent-colour tier** (red/orange/green → purple → gold), then `last_modified_at` DESC within each tier, then last name / first name; it no longer uses `closed_at`. See the 2026-09-02 entry.
-- **Scroll position is restored** on the client list (2026-09-02) — both on returning from a client file and across a full page reload, via `sessionStorage`. The client list is the only page that does this.
+- ⚠️ **The Closed section's ORDER is frozen while the view is mounted (2026-09-03)** so that tapping an indigent circle doesn't make the row jump out from under the user's finger. **The dot still recolours instantly — only the position is held.** The row takes its new position on the next load of the list, which includes both a refresh and returning from a client file (ClientList remounts on that path). A client not in the snapshot — newly closed, newly synced — falls back to live values and sorts in normally. Active-section ordering is unaffected.
+- **Scroll position is restored** on the client list (2026-09-02) — both on returning from a client file and across a full page reload, via `sessionStorage`. The client list is the only page that does this. ⚠️ **The Back path was broken on arrival and fixed 2026-09-03**: the effect cleanup re-read `window.scrollY` during teardown, after the route had already changed, and stored `0` over the good value. Refresh was unaffected because a reload never unmounts. The position is now captured synchronously before `navigate()`, and the restore retries across frames so it can't be clamped by a document that hasn't finished growing.
 - Each section header shows a count badge (e.g. "Active 12")
 - Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge. **No prelim-hearing countdown** — that two-line block above the badge was removed 2026-08-10, so the badge is now centred for every client
 - **Same-incident bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a `[` in `#6b9fd4` (the case-number colour) drawn in the gutter to the left of the case table. ⚠️ The list is sorted purely on the numeric part of the case number with **no incident component**, so same-incident cases can interleave; a non-contiguous group is deliberately left unbracketed rather than drawn across a foreign case. See the 2026-08-10 entry and Open Items.
@@ -1610,6 +1666,7 @@ src/
   dateUtils.js             # Shared "M/D/YYYY" helpers — dateKey, todayString, toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, shiftDate
   indigentStatus.js        # INDIGENT_CYCLE / INDIGENT_COLOR / INDIGENT_ALIAS + normalizeIndigent() — shared by ClientRow, ClientFile and ClientList's tier sort (2026-09-02)
   touchClient.js           # touchClient() — the ONLY writer of clients.last_modified_at (2026-09-02). Never import from the sync layer
+  scrollRestore.js         # Client-list scroll-restore decision logic — scrollRestoreStep, maxScrollableY, isTargetReachable, shouldPersistScroll (2026-09-03). Browser-free so it can be tested
   seed.js                  # One-time seed script (node src/seed.js) — broken, see D1
 
   hooks/

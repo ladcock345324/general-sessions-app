@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient'
 import { useClients } from '../hooks/useClients'
 import { useSyncStatus } from '../SyncContext'
 import { normalizeIndigent } from '../indigentStatus'
+import { scrollRestoreStep, maxScrollableY, shouldPersistScroll } from '../scrollRestore'
 import ClientRow from '../components/ClientRow'
 import OfflineStatus from '../components/OfflineStatus'
 import DailyHoursDrawer from '../components/DailyHoursDrawer'
@@ -32,14 +33,30 @@ const SCROLL_KEY = 'gsapp:clientListScroll'
 // data router.
 //
 // Scoped to the client list. No other page restores scroll.
+
+// The single place a scroll position is written. Everything — the navigation
+// handler, the throttle, the unmount flush, pagehide — goes through here, so
+// there is exactly one line to audit when asking "what could have stored this?"
+function persistScroll(y) {
+  if (shouldPersistScroll(y)) sessionStorage.setItem(SCROLL_KEY, String(y))
+}
+
 function useClientListScrollRestoration(ready) {
   const restoredRef = useRef(false)
 
-  // Save side. Throttled to at most one write per 150ms (leading edge skipped,
-  // trailing edge written) so a flick doesn't write on every scroll event. The
-  // cleanup writes one final time: the throttle would otherwise drop the last
-  // few pixels before the user taps into a client, which is exactly the position
-  // being restored.
+  // ── Save side ──────────────────────────────────────────────────────────────
+  //
+  // Throttled to at most one write per 150ms (leading edge skipped, trailing
+  // edge written) so a flick doesn't write on every scroll event.
+  //
+  // ⚠️ `lastYRef` holds the last position observed WHILE MOUNTED, updated
+  // synchronously on every scroll event. Both the throttle and the unmount flush
+  // persist THAT, never a fresh `window.scrollY` read. This is the 2026-09-03
+  // fix: the previous cleanup called save() which re-read window.scrollY during
+  // teardown, by which point the route had changed and the document had
+  // collapsed — so it stored 0 over the good value.
+  const lastYRef = useRef(0)
+
   useEffect(() => {
     // Stop the browser's own restoration from fighting ours. Left as 'manual'
     // rather than reset to 'auto' on unmount — resetting it would hand the
@@ -48,42 +65,74 @@ function useClientListScrollRestoration(ready) {
     // depends on the default.
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
 
+    lastYRef.current = window.scrollY
+
     let timer = null
-    const save = () => sessionStorage.setItem(SCROLL_KEY, String(window.scrollY))
     const onScroll = () => {
+      // Recorded every event, unthrottled and storage-free: this is the value
+      // the flush below trusts.
+      lastYRef.current = window.scrollY
       if (timer) return
-      timer = setTimeout(() => { timer = null; save() }, 150)
+      timer = setTimeout(() => { timer = null; persistScroll(lastYRef.current) }, 150)
     }
+    // pagehide fires while the document is still intact and still scrolled, so
+    // reading live scrollY is correct HERE and only here. It is also the event
+    // that fires reliably when iOS freezes or discards a PWA tab.
+    const onPageHide = () => persistScroll(window.scrollY)
 
     window.addEventListener('scroll', onScroll, { passive: true })
-    // pagehide, not beforeunload: it is the one that fires reliably when iOS
-    // Safari freezes or discards a PWA tab.
-    window.addEventListener('pagehide', save)
+    window.addEventListener('pagehide', onPageHide)
     return () => {
-      clearTimeout(timer)
       window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('pagehide', save)
-      save()
+      window.removeEventListener('pagehide', onPageHide)
+      // Flush ONLY if a throttled write was still pending — otherwise the
+      // latest position is already stored and there is nothing to do. Writing
+      // unconditionally here is what caused the bug.
+      if (timer) {
+        clearTimeout(timer)
+        persistScroll(lastYRef.current)
+      }
     }
   }, [])
 
-  // Restore side. Gated on `ready` — useClients reads through useLiveQuery, so
-  // the first render has zero rows and a document barely taller than the
-  // viewport; scrolling then would clamp to ~0 and look like it did nothing.
-  // Guarded by a ref so a later live update (a background sync landing) can
-  // never yank the user back to a stale offset mid-browse. useLayoutEffect so
-  // the jump lands before paint rather than as a visible flash.
+  // ── Restore side ───────────────────────────────────────────────────────────
+  //
+  // Gated on `ready` — useClients reads through useLiveQuery, so the first
+  // render has zero rows and a document barely taller than the viewport;
+  // scrolling then would clamp to ~0 and look like it did nothing. Guarded by a
+  // ref so a later live update (a background sync landing) can never yank the
+  // user back to a stale offset mid-browse. useLayoutEffect so the jump lands
+  // before paint rather than as a visible flash.
+  //
+  // ⚠️ restoredRef is per-mount by construction, and ClientList genuinely
+  // remounts on the navigate-away-and-back path (flat <Routes>, no layout route
+  // or <Outlet>, so `/` → `/client/:id` swaps component types at the same tree
+  // position). It therefore resets on Back, which is what makes the restore run
+  // at all on that path.
   useLayoutEffect(() => {
     if (restoredRef.current || !ready) return
     restoredRef.current = true
-    const saved = Number(sessionStorage.getItem(SCROLL_KEY))
-    if (!saved) return
-    window.scrollTo(0, saved)
-    // One rAF re-apply, for the cold-reload case only: row heights can still
-    // settle after this effect (web fonts resolving, the safe-area inset
-    // applying), and a document that is briefly too short clamps the scroll
-    // short of the target. Re-applying inside the same frame is invisible.
-    requestAnimationFrame(() => window.scrollTo(0, saved))
+    const target = Number(sessionStorage.getItem(SCROLL_KEY))
+    if (!target) return
+
+    // Retry across a few frames instead of firing once. On a remount the rows
+    // stream in from Dexie, so the document can still be shorter than the target
+    // when this first runs — a single scrollTo would be clamped to the bottom of
+    // a short page (usually 0) and never corrected.
+    let attempt = 0
+    let raf = 0
+    const apply = () => {
+      window.scrollTo(0, target)
+      const { action } = scrollRestoreStep({
+        target,
+        currentY: window.scrollY,
+        maxScrollable: maxScrollableY(document.documentElement.scrollHeight, window.innerHeight),
+        attempt: ++attempt,
+      })
+      if (action === 'retry') raf = requestAnimationFrame(apply)
+    }
+    apply()
+    return () => cancelAnimationFrame(raf)
   }, [ready])
 }
 
@@ -168,16 +217,78 @@ function modifiedTimestamp(client) {
   return Number.isNaN(t) ? null : t
 }
 
-function sortClosed(clients) {
+// The two values this section sorts on, for one client.
+function sortKeyFor(client) {
+  return { tier: closedTier(client), modified: modifiedTimestamp(client) }
+}
+
+// Snapshot every closed client's sort inputs, keyed by id. Taken once per mount
+// — see useFrozenClosedOrder.
+function snapshotClosedOrder(clients) {
+  return new Map(clients.map(c => [c.id, sortKeyFor(c)]))
+}
+
+/**
+ * Freeze the Closed section's ORDER for as long as this view is mounted
+ * (2026-09-03).
+ *
+ * Tapping a client's indigent circle stamps last_modified_at and can change the
+ * colour tier, and this list re-sorts live — so the row the user just tapped
+ * leapt out from under their finger. The dot must respond instantly; the row
+ * must not move.
+ *
+ * ⚠️ Mount-scoped, deliberately, and that granularity is load-bearing: the row
+ * takes its correct new position the next time the list is LOADED, which covers
+ * both a page refresh and returning from a client file. ClientList genuinely
+ * remounts on that second path — `<Routes>` is flat, with no layout route or
+ * <Outlet>, so `/` → `/client/:id` swaps component types at the same tree
+ * position and React unmounts this subtree. (The scroll bug fixed the same day
+ * is the behavioural proof: its symptom came from this component's effect
+ * CLEANUP running on that navigation.)
+ *
+ * Only the ORDER is frozen. Every row still renders from live data, so the dot
+ * recolours on tap exactly as before.
+ */
+function useFrozenClosedOrder(closedClients, resolved) {
+  const [frozen, setFrozen] = useState(null)
+  // React's "adjust state while rendering" pattern — the same one CaseView's
+  // PvField uses to re-seed its draft, and for the same lint reason. The three
+  // alternatives were each worse:
+  //   • a useRef written during render trips `react-hooks/refs` (2 errors);
+  //   • a useEffect trips `react-hooks/set-state-in-effect`, AND would set the
+  //     value without scheduling a render, so the first sort would use live
+  //     values with nothing to correct it;
+  //   • a useMemo keyed only on `resolved` raises an exhaustive-deps warning.
+  // Setting state during render re-renders immediately, before commit, so the
+  // very first painted order is already the frozen one.
+  //
+  // Gated on `resolved` — useLiveQuery returns undefined on first render, and
+  // snapshotting an empty list then would freeze an empty Map that never fills.
+  // The `frozen === null` guard is what stops this looping.
+  if (resolved && frozen === null) {
+    setFrozen(snapshotClosedOrder(closedClients))
+  }
+  return frozen
+}
+
+// Closed section, sorted against a frozen snapshot when one exists.
+//
+// A client in the snapshot keeps the position it had when this view mounted. A
+// client NOT in it — newly closed, or newly arrived from a sync — falls back to
+// its live values and sorts into place normally, rather than being dropped or
+// pinned to an end. A client that leaves the section simply falls out; the
+// stale snapshot entry is never consulted again and needs no cleanup.
+function sortClosed(clients, frozen) {
+  const keyFor = c => frozen?.get(c.id) ?? sortKeyFor(c)
   return [...clients].sort((a, b) => {
-    const ta = closedTier(a)
-    const tb = closedTier(b)
-    if (ta !== tb) return ta - tb
+    const ka = keyFor(a)
+    const kb = keyFor(b)
+    if (ka.tier !== kb.tier) return ka.tier - kb.tier
 
     // Within a tier: most recently modified first, un-stamped clients at the
     // bottom of that tier and alphabetical among themselves.
-    const ma = modifiedTimestamp(a)
-    const mb = modifiedTimestamp(b)
+    const ma = ka.modified
+    const mb = kb.modified
     if (ma == null && mb == null) return byName(a, b)
     if (ma == null) return 1
     if (mb == null) return -1
@@ -259,6 +370,16 @@ export default function ClientList() {
   // Restore only once the rows actually exist — see the hook's own note.
   useClientListScrollRestoration(clients.length > 0)
 
+  // ⚠️ Capture the scroll position SYNCHRONOUSLY, at the moment of leaving,
+  // before navigate() runs. This value is correct by construction: the list is
+  // still mounted, the document is still full height, and nothing throttled can
+  // race it. Everything else (the 150ms throttle, the unmount flush) is a
+  // backstop for positions the user never navigated away from.
+  function openClient(clientId) {
+    persistScroll(window.scrollY)
+    navigate(`/client/${clientId}`)
+  }
+
   function toggleSort() {
     setSortMode(prev => {
       const next = prev === 'name' ? 'event' : 'name'
@@ -267,8 +388,14 @@ export default function ClientList() {
     })
   }
 
+  const closedClients = clients.filter(c => c.relieved_closed)
+  // Frozen for the life of this mount. `!loading` is the "the query has actually
+  // resolved" signal — useClients reports loading while useLiveQuery is still
+  // undefined, so this can't snapshot an empty list that never fills.
+  const frozenClosedOrder = useFrozenClosedOrder(closedClients, !loading)
+
   const active = sortActive(clients.filter(c => !c.relieved_closed), sortMode).map(toRowProps)
-  const relieved = sortClosed(clients.filter(c => c.relieved_closed)).map(toRowProps)
+  const relieved = sortClosed(closedClients, frozenClosedOrder).map(toRowProps)
 
   return (
     <div className={styles.screen}>
@@ -313,7 +440,7 @@ export default function ClientList() {
                     <ClientRow
                       key={client.id}
                       client={client}
-                      onClick={() => navigate(`/client/${client.id}`)}
+                      onClick={() => openClient(client.id)}
                     />
                   ))
               }
@@ -332,7 +459,7 @@ export default function ClientList() {
                     key={client.id}
                     client={client}
                     relieved
-                    onClick={() => navigate(`/client/${client.id}`)}
+                    onClick={() => openClient(client.id)}
                   />
                 ))}
               </div>
