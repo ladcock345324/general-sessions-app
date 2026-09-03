@@ -23,33 +23,6 @@ export function isScrollHoldActive() {
   return activeFinish !== null
 }
 
-// ─── Outcome log ─────────────────────────────────────────────────────────────
-//
-// Every hold records how it ended. No UI reads this — it exists so the question
-// "did the restore never land, or did it land and then get overridden?" can be
-// answered later without adding an on-screen readout. Reasons are the ones
-// scrollHoldStep returns: landed/settled, drifted, document-too-short,
-// scroll-refused, user-scrolled, pre-empted, cancelled.
-const LOG_KEY = 'gsapp:scrollHoldLog'
-const LOG_LIMIT = 10
-
-function recordOutcome(entry) {
-  try {
-    const prev = JSON.parse(sessionStorage.getItem(LOG_KEY) ?? '[]')
-    const next = Array.isArray(prev) ? prev : []
-    next.push(entry)
-    sessionStorage.setItem(LOG_KEY, JSON.stringify(next.slice(-LOG_LIMIT)))
-  } catch { /* storage unavailable or full — diagnostics must never break a scroll */ }
-}
-
-/** The last few hold outcomes, oldest first. Nothing in the UI calls this yet. */
-export function readScrollHoldLog() {
-  try {
-    const parsed = JSON.parse(sessionStorage.getItem(LOG_KEY) ?? '[]')
-    return Array.isArray(parsed) ? parsed : []
-  } catch { return [] }
-}
-
 /**
  * Drive the window to `target` and hold it there until it settles or the user
  * takes over. Returns a cleanup function — always call it.
@@ -71,14 +44,13 @@ export function readScrollHoldLog() {
 export function holdScrollAt(target) {
   // A newer hold wins outright. Done before anything else so the old loop is
   // torn down before this one touches the scroll position.
-  if (activeFinish) activeFinish('pre-empted')
+  if (activeFinish) activeFinish()
 
   const startMs = performance.now()
   let landedMs = null
   let raf = 0
   let interrupted = false
   let finished = false
-  let applies = 0
 
   // Genuine user input outranks everything — this must never fight the user for
   // the viewport. Deliberately NOT the 'scroll' event: our own scrollTo fires
@@ -86,7 +58,7 @@ export function holdScrollAt(target) {
   const interrupt = () => { interrupted = true }
   const passive = { passive: true }
 
-  function finish(reason) {
+  function finish() {
     if (finished) return
     finished = true
     if (activeFinish === finish) activeFinish = null
@@ -94,14 +66,6 @@ export function holdScrollAt(target) {
     window.removeEventListener('touchstart', interrupt, passive)
     window.removeEventListener('wheel', interrupt, passive)
     window.removeEventListener('keydown', interrupt)
-    recordOutcome({
-      at: new Date().toISOString(),
-      target,
-      finalY: Math.round(window.scrollY),
-      reason,
-      ms: Math.round(performance.now() - startMs),
-      applies,
-    })
   }
 
   const tick = () => {
@@ -119,8 +83,8 @@ export function holdScrollAt(target) {
       userInterrupted: interrupted,
     })
 
-    if (action === 'stop') { finish(reason); return }
-    if (action === 'apply') { window.scrollTo(0, target); applies++ }
+    if (action === 'stop') { finish(); return }
+    if (action === 'apply') window.scrollTo(0, target)
     // Returned exactly once, on the frame the position first arrives.
     if (reason === 'landed') landedMs = now
 
@@ -135,11 +99,10 @@ export function holdScrollAt(target) {
   // First attempt synchronously, so that when this is called from a layout
   // effect the position is already right before the browser paints.
   window.scrollTo(0, target)
-  applies++
   if (Math.abs(window.scrollY - target) <= SCROLL_TOLERANCE) landedMs = performance.now()
   raf = requestAnimationFrame(tick)
 
-  return () => finish('cancelled')
+  return finish
 }
 
 /**
