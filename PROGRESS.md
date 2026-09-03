@@ -195,6 +195,46 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
+### Hours — Always Default to Today + Whole-Number Dropdown Bug (2026-09-04)
+
+Two changes to the Hours section. **No schema change, no Dexie version bump, and — importantly — no data change: the stored numerics are correct and were not touched or migrated.**
+
+#### 1. New entries always default to today
+
+`AddHoursForm`'s date now comes from `todayString()`, full stop. The `gsapp:lastHoursDate` localStorage key is **gone**, along with **both** write-backs that fed it — the add save path and the edit save path each stamped it, and both stamps are removed. Nothing in `src/` references the key any more.
+
+⚠️ **This deliberately reverses the "smart date default" shipped 2026-07-06.** That entry is struck through in place with a pointer here, so it does not read as a regression to whoever finds it next.
+
+> ✅ **Checked, not assumed: the date is recomputed every time the form OPENS, not once at page mount.** `AddHoursForm` is conditionally rendered (`{showForm && <AddHoursForm …/>}`), so it unmounts on close and mounts fresh on every `+` tap, re-running the `useState` initializer — and `todayString()` reads `new Date()` at call time. A client file left open across midnight therefore gets the new date on the next `+`. No fix was needed for this; it was already correct.
+
+`EditHoursForm` is untouched here and still initializes from the entry's own saved date.
+
+#### 2. The bug: a 1-hour entry reopened showing 0.1
+
+**Cause confirmed against the generation code.** `HOURS_OPTIONS` is `Array.from({ length: 25 }, (_, i) => ((i + 1) / 10).toFixed(1))` — one-decimal **strings**. `hours.hours` is a **numeric** column, so a stored `1` comes back as the number `1`, and `String(1)` is `"1"`, which matches no option. Per the HTML selectedness algorithm a select with nothing selected falls back to its **first** option, so it displayed `0.1`. `0.9` and `1.1` round-tripped fine because their string forms match exactly. ⚠️ **`1.0` and `2.0` are the only two whole numbers in the 0.1–2.5 range** — the fix targets the class, not the value.
+
+> ### ⚠️ Was it silently saving 0.1? **No — plain Save was safe. But there was a real, user-triggerable corruption path.**
+>
+> The payload reads `Number(form.hours)` — **React state, not the select's DOM value** — and `form.hours` still held `"1"`. So editing a 1-hour entry's description and hitting Save wrote `1`, correctly. The user's own observation that leaving without saving preserved the stored `1` is consistent with this.
+>
+> **What was NOT safe: touching the dropdown.** The select *displayed* `0.1`, so any interaction fired `onChange` and overwrote `form.hours` with the displayed value — permanently, on the next Save. On iOS's native picker that is a low bar: opening the wheel to check the value and dismissing it can commit what is shown.
+>
+> This is the **identical failure mode** to the `next_events.reason` off-list bug fixed 2026-08-20 — "the form misrepresented what was stored, and a single interaction with the select overwrote it permanently with no way back." Same shape, same fix.
+
+**The fix is display-only.** New `toHoursOption(value)` normalizes a stored value into the option format when seeding `EditHoursForm` (`1` → `"1.0"`). The save path is unchanged and `Number("1.0")` is `1`, so **exactly the same number is written back**.
+
+⚠️ **`toHoursOption` only adopts the padded form when it round-trips** (`Number(padded) === n`). Blindly padding would turn a stored `0.15` into `"0.1"` — silently misrepresenting it as a different, valid-looking value, which is the same class of bug in a new costume. A value that does not survive padding is returned as-is for the guard below to surface.
+
+**The off-list guard from `TIME_OPTIONS` / `REASON_OPTIONS` now applies here too.** A stored value matching no option after normalization is kept as an extra option at the top and drops off once a listed value is picked. ⚠️ **This is what would have made the original bug visible instead of silent** — the select would have shown `1`, not quietly shown `0.1`. Applied to `EditHoursForm` only: it is the only one of the two that seeds from a stored value, and the add form starts at `"0.5"` with all its description presets on the list.
+
+#### Existing rows — reported, NOT changed
+
+**320 `hours` rows currently hold `0.1`**, out of 765 total. ⚠️ **That number is not a corruption count** — `0.1` is by far the app's most common legitimate value, and four `DESCRIPTION_OPTIONS` presets default to it. The breakdown is dominated by exactly what you would expect: "Met with ADA" ×67, "Rescheduled Appearance" ×29, "Courtroom wait time" ×19.
+
+Context that bounds the exposure: **6 rows still hold `1` and 0 rows hold `2`.** Whole-number entries are ~1% of the table, and a corrupted row would have *left* the `1` bucket — so any damage is small and cannot be distinguished from a genuine `0.1` by value alone. **No data was modified; this is the user's to review.**
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` at **20 errors, 0 warnings**. 120 assertions on `HOURS_OPTIONS` and `toHoursOption`, extracted verbatim from the shipped source: the old behaviour reproduced for both `1` and `2`, every one of the 25 options surviving a numeric DB round trip **and saving back as the identical number**, `0.15` being preserved rather than padded down to `0.1`, and the degenerate inputs (`null`, `undefined`, `NaN`, `''`) not throwing or producing junk.
+
 ### ✅ Scroll Restoration — RESOLVED, verified on-device (2026-09-04)
 
 **The whole scroll-restoration arc is closed.** Confirmed working by the user across **desktop, plain mobile Safari and the installed PWA**, over repeated round trips, including the case-number and `+` button exits. The three entries below are the build record; this is the summary worth reading first.
@@ -1346,7 +1386,7 @@ Nine scoped changes. **One DB change**, applied via Supabase MCP (no in-repo mig
 Three scoped changes to the Hours section of `ClientFile.jsx` (commit `71804b3`).
 
 1. **Drag-to-reorder.** New `hours.sort_order` column (double precision) added via Supabase MCP and backfilled to the existing date-desc order (newest date on top, same-day rows seeded by `created_at` ascending) — no in-repo migration file. Dexie `hours` store schema bumped to **v3** with `sort_order` indexed; `useClientFile.js`'s read path now sorts by `sort_order` ASC (replacing the old `entry_date` DESC sort). Drag implemented with **@dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`) via a dedicated ≡ grip handle per row, so dragging never conflicts with the × delete button, tap-to-edit, or text selection. Sensors: `MouseSensor` (desktop) + `TouchSensor` with a 150ms press-delay (iPhone), so normal list scrolling still works. On drop, only the moved row is rewritten to the midpoint of its new neighbors' `sort_order` (top slot = min−10, bottom = max+10), persisted offline-first (Dexie update + `addToSyncQueue` UPDATE) — the rest of the list is never renumbered. New entries get `sort_order` = current minimum − 10 so they land on top; included in the INSERT payload for both Dexie and the sync queue. Running total and delete behavior unchanged.
-2. **Date-field default.** `AddHoursForm` now defaults the date to `localStorage` key `gsapp:lastHoursDate`, falling back to today. Every successful add **and** edit save writes that entry's `entry_date` back to the key. `EditHoursForm` still initializes from the entry's own saved date (unchanged; verified no regression).
+2. ~~**Date-field default.** `AddHoursForm` now defaults the date to `localStorage` key `gsapp:lastHoursDate`, falling back to today. Every successful add **and** edit save writes that entry's `entry_date` back to the key.~~ — ⚠️ **REVERSED 2026-09-04, deliberately and by request** — not an oversight, and not a regression. The add form now **always** defaults to today, the `gsapp:lastHoursDate` key is gone, and both write-backs that fed it (add and edit) are removed. See the 2026-09-04 entry. `EditHoursForm` still initializes from the entry's own saved date, which was true then and is unchanged now.
 3. **Description dropdown.** New shared `DESCRIPTION_OPTIONS` constant (same pattern as `HOURS_OPTIONS`) with 9 preset descriptions in alphabetical order. Both `AddHoursForm` and `EditHoursForm` gained a `<select>` (blank + presets) beside the description field; picking one fills the text field and resets the select to blank — the field stays fully editable and remains what saves to `hours.description`. Typing directly is unchanged.
 
 ### Hours Dropdown Range Expanded 0.1–0.9 → 0.1–2.5 (2026-07-06)
@@ -1648,7 +1688,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - **The charge is not shown here** as of 2026-08-10 — it lives in the header case mini-list and in CaseView
 - **Hours** table: drag grip (≡), date, hours (green), description, check-off toggle, × delete button per row
   - Running total at bottom
-  - `+` button opens inline form (date defaults to last-used/today, hours dropdown 0.1–2.5)
+  - `+` button opens inline form (**date always defaults to today** as of 2026-09-04 — the last-used-date memory was removed; hours dropdown 0.1–2.5)
+  - ⚠️ **The Hours dropdown normalizes a stored value into the option format when seeding the edit form** (2026-09-04). `hours.hours` is numeric but the options are one-decimal strings, so a stored `1` arrives as `"1"`, matches nothing, and the select used to fall back to showing its first option, `0.1`. `1.0` and `2.0` are the only two whole numbers in range. Display-only — the stored number is never rewritten. An off-list value is preserved as an extra option at the top, the same guard `TIME_OPTIONS` and `REASON_OPTIONS` use
   - Rows ordered by `sort_order` ASC; drag-to-reorder. New entries slot in by **date** (see 2026-07-23 feature entry) rather than jumping to the top
   - **Check-off toggle** per row (left of ×) grays a reviewed row — **session-only** local state (a Set of ids in `HoursSection`), **not persisted**; resets on reload. A "clear checks" control appears on the Hours header when any row is checked. Purely visual — no effect on total/sort/delete
   - Tap a row to edit — **except** while selecting text or click-dragging (so descriptions can be copied out for ACAP)

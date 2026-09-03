@@ -1393,6 +1393,27 @@ function PersonalNotesSection({ clientId, initialNote }) {
 
 const HOURS_OPTIONS = Array.from({ length: 25 }, (_, i) => ((i + 1) / 10).toFixed(1))
 
+// ⚠️ hours.hours is a NUMERIC column but HOURS_OPTIONS are one-decimal STRINGS.
+// A stored 1 comes back as the number 1, whose string form is "1" — which
+// matches no option, so the select fell back to showing the first one (0.1).
+// 1.0 and 2.0 are the only two whole numbers in the 0.1–2.5 range, which is why
+// 0.9 and 1.1 always round-tripped fine and this looked like a one-off.
+//
+// This is a DISPLAY fix only. The stored numerics are correct and are never
+// rewritten: Number("1.0") is 1, so the save path writes exactly what it always
+// did.
+//
+// The round-trip check matters. Blindly padding would turn a stored 0.15 into
+// "0.1" — silently misrepresenting it as a different, valid-looking value, which
+// is the same class of bug. A value that does not survive padding is returned
+// as-is so the off-list guard below can surface it instead.
+function toHoursOption(value) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return String(value ?? '')
+  const padded = n.toFixed(1)
+  return Number(padded) === n ? padded : String(value)
+}
+
 // Common descriptions offered as a dropdown; picking one fills the (still
 // editable) description text field. Shared by AddHoursForm and EditHoursForm.
 const DESCRIPTION_OPTIONS = [
@@ -1458,10 +1479,6 @@ function applyDescriptionPick(form, description) {
   return { ...form, description, ...(preset ? { hours: preset } : {}) }
 }
 
-// localStorage key holding the last entry_date the user saved, used to default
-// the date field on the next new hours entry.
-const LAST_HOURS_DATE_KEY = 'gsapp:lastHoursDate'
-
 // Incidents render oldest-first (earliest incident_date at top). incident_date is
 // TEXT, so compare the parsed numeric key — never new Date() or a string compare.
 // Rows with a missing/unparseable date sort to the end instead of blowing up.
@@ -1476,7 +1493,14 @@ function compareIncidentsByDate(a, b) {
 
 function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
   const [form, setForm] = useState({
-    entry_date: localStorage.getItem(LAST_HOURS_DATE_KEY) || todayString(),
+    // ALWAYS today. This form is conditionally rendered, so it mounts fresh on
+    // every + tap and this initializer re-runs — the date cannot go stale on a
+    // client file left open across midnight.
+    //
+    // Superseded the 'smart date default' (2026-07-06), which seeded this from a
+    // localStorage memory of the last date saved. Deliberately reversed: the
+    // memory is gone, along with both write-backs that fed it.
+    entry_date: todayString(),
     hours: '0.5',
     description: '',
   })
@@ -1506,7 +1530,6 @@ function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
     await db.hours.put(record)
     await addToSyncQueue('hours', 'INSERT', newId, record)
     await touchClient(clientId)
-    localStorage.setItem(LAST_HOURS_DATE_KEY, record.entry_date)
     onSaved()
   }
 
@@ -1551,13 +1574,29 @@ function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
 function EditHoursForm({ entry, onSaved, onCancel }) {
   const [form, setForm] = useState({
     entry_date: entry.entry_date,
-    hours: String(entry.hours),
+    // Normalized to the option format so a whole number (1 → "1.0") matches.
+    hours: toHoursOption(entry.hours),
     description: entry.description,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  // The same off-list guard TIME_OPTIONS and REASON_OPTIONS already use: a
+  // stored value matching no option is kept as an extra option at the top rather
+  // than silently rendering as a different one, and drops off once a listed
+  // value is picked.
+  //
+  // ⚠️ This is the guard that would have made the 1.0 bug VISIBLE instead of
+  // silent — the select would have shown "1" rather than quietly displaying 0.1.
+  // Applied here and not to AddHoursForm because only this form seeds from a
+  // stored value; the add form starts at "0.5" and its description presets are
+  // all listed values.
+  const storedHours = form.hours ?? ''
+  const hoursOptions = storedHours && !HOURS_OPTIONS.includes(storedHours)
+    ? [storedHours, ...HOURS_OPTIONS]
+    : HOURS_OPTIONS
 
   async function save() {
     if (!form.entry_date.trim() || !form.description.trim()) {
@@ -1575,7 +1614,6 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
     await addToSyncQueue('hours', 'UPDATE', entry.id, { id: entry.id, ...changes })
     // entry carries its own client_id, so this form needs no extra prop.
     await touchClient(entry.client_id)
-    localStorage.setItem(LAST_HOURS_DATE_KEY, changes.entry_date)
     onSaved()
   }
 
@@ -1605,7 +1643,7 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Hours</label>
         <select className={styles.formSelect} value={form.hours} onChange={e => set('hours', e.target.value)}>
-          {HOURS_OPTIONS.map(h => <option key={h} value={h}>{h}</option>)}
+          {hoursOptions.map(h => <option key={h} value={h}>{h}</option>)}
         </select>
       </div>
       {error && <div className={styles.formError}>{error}</div>}
