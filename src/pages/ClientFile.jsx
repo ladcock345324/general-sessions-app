@@ -6,12 +6,14 @@ import { useClientFile } from '../hooks/useClientFile'
 import { extractPdfText } from '../extractPdfText'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
+import { touchClient } from '../touchClient'
 import styles from './ClientFile.module.css'
 // Borrowed for the header case mini-list so it matches the client list exactly
 // (same colors, sizes, and "(CLASSIFICATION)" parenthetical) instead of a
 // near-duplicate set of rules that would drift out of sync.
 import rowStyles from '../components/ClientRow.module.css'
 import { bracketBlocks } from '../caseGrouping'
+import { INDIGENT_CYCLE, INDIGENT_COLOR, normalizeIndigent } from '../indigentStatus'
 import TextViewerDrawer from '../components/TextViewerDrawer'
 import { toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, todayString, dateKey } from '../dateUtils'
 import {
@@ -32,16 +34,18 @@ import { CSS } from '@dnd-kit/utilities'
 
 // ─── Indigent status circle ──────────────────────────────────────────────────
 
-const INDIGENT_CYCLE = { red: 'yellow', yellow: 'green', green: 'gold', gold: 'red' }
-const INDIGENT_COLOR = { red: '#b85555', yellow: '#E8913A', green: '#3d9e6a', gold: '#FFD700' }
-
 function IndigentCircle({ clientId, status }) {
-  const current = INDIGENT_COLOR[status] ? status : 'red'
+  // normalizeIndigent resolves the legacy 'yellow' alias to 'orange' and maps
+  // anything unrecognized to 'red'. It is shared with ClientRow's copy of this
+  // component and with the Closed-section tier sort, so the dot and the tier can
+  // never disagree — see src/indigentStatus.js.
+  const current = normalizeIndigent(status)
   function handleClick(e) {
     e.stopPropagation()
     const next = INDIGENT_CYCLE[current]
     db.clients.update(clientId, { indigent_status: next })
     addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, indigent_status: next })
+    touchClient(clientId)
   }
   return (
     <div
@@ -84,6 +88,30 @@ function tapHandlers(handler) {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+// A new case INHERITS its client's closed state (2026-09-02, second batch).
+// Shared by all three case-creation paths — AddCaseForm, the affidavit-first
+// upload, and PV creation — which all live in this file.
+//
+// Before this, all three landed on 'open': the first two by omitting `status`
+// and taking the Postgres default, PV creation by sending 'open' explicitly. So
+// adding a case to a CLOSED client left that client holding a mix of 'closed'
+// cases (written by the Close handler) and one 'open' one — exactly the drift
+// the close fix earlier the same day removed.
+//
+// ⚠️ The competing reading — that adding a case to a closed client should REOPEN
+// the client — was rejected deliberately. It would move a client back into the
+// Active section as a side effect of recording a case on a finished matter,
+// which is a workflow decision the app cannot make on the user's behalf.
+// Inheriting is the conservative direction and composes with Reopen, which
+// flips every case (including one added this way) back to 'open'.
+//
+// The invariant holds either way: a closed client never has an open case, and
+// nothing changes sections unless the user asks.
+async function caseStatusForClient(clientId) {
+  const client = await db.clients.get(clientId)
+  return client?.relieved_closed ? 'closed' : 'open'
+}
 
 // Case-level release condition labels. release_status is independent of the
 // client-level custody_status (a case's condition vs. where the client is).
@@ -283,6 +311,7 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
     } else {
       await db.next_events.where('client_id').equals(clientId).delete()
     }
+    await touchClient(clientId)
     onCleared()
   }
 
@@ -309,6 +338,7 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
       await db.next_events.put(record)
       await addToSyncQueue('next_events', 'INSERT', newId, record)
     }
+    await touchClient(clientId)
     onSaved()
   }
 
@@ -477,10 +507,11 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
     // Identical field population to what the old AddCaseForm PV checkbox wrote —
     // only the trigger moved. The charge/bond columns are explicit nulls rather
     // than omitted, so the record shape matches a normal case exactly. `status`
-    // IS sent here (unlike the normal case insert, which lets Postgres default
-    // it) so the local Dexie row is correct before the next fullSync, not only
-    // after it.
+    // is sent explicitly so the local Dexie row is correct before the next
+    // fullSync, not only after it — and it now inherits the client's closed
+    // state rather than always being 'open'.
     const caseId = crypto.randomUUID()
+    const status = await caseStatusForClient(clientId)
     const caseRecord = {
       id: caseId,
       incident_id: incidentId,
@@ -490,7 +521,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
       classification: null,
       bond_amount: null,
       release_status: null,
-      status: 'open',
+      status,
       is_pv: true,
       // Every field is optional — validation was removed app-wide for this kind
       // of field, so a blank saves as null rather than ''. pv_sentence is
@@ -503,6 +534,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
     await db.cases.put(caseRecord)
     await addToSyncQueue('cases', 'INSERT', caseId, caseRecord)
 
+    await touchClient(clientId)
     onSaved()
   }
 
@@ -527,6 +559,7 @@ function AddIncidentForm({ clientId, onSaved, onCancel }) {
     }
     await db.incidents.put(record)
     await addToSyncQueue('incidents', 'INSERT', newId, record)
+    await touchClient(clientId)
     onSaved()
   }
 
@@ -619,7 +652,11 @@ const CLASSIFICATIONS = ['', 'CAPITAL', 'A FEL', 'B FEL', 'C FEL', 'D FEL', 'E F
 
 const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classification: '', bond_amount: '', release_status: '' }
 
-function AddCaseForm({ incidentId, onSaved, onCancel }) {
+// clientId is threaded in purely so a new case can stamp the client's
+// last_modified_at. It comes straight off the incident this form is nested
+// under (incident.client_id) — one prop from the immediate parent, not a value
+// plumbed down through the page.
+function AddCaseForm({ incidentId, clientId, onSaved, onCancel }) {
   const [form, setForm] = useState(EMPTY_CASE)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -641,9 +678,14 @@ function AddCaseForm({ incidentId, onSaved, onCancel }) {
       classification: form.classification || null,
       bond_amount: form.bond_amount ? Number(form.bond_amount) : null,
       release_status: form.release_status || null,
+      // Sent explicitly now rather than left to the Postgres default, so a case
+      // added to a closed client is created 'closed' and the local Dexie row is
+      // right immediately. See caseStatusForClient().
+      status: await caseStatusForClient(clientId),
     }
     await db.cases.put(record)
     await addToSyncQueue('cases', 'INSERT', newId, record)
+    await touchClient(clientId)
     onSaved()
   }
 
@@ -811,6 +853,10 @@ function AffidavitFirstUpload({ clientId, incidents }) {
       bond_amount: null,
       release_status: null,
       warrant_url: path,
+      // Sent explicitly now rather than left to the Postgres default, so an
+      // affidavit uploaded against a closed client creates a 'closed' case.
+      // See caseStatusForClient().
+      status: await caseStatusForClient(clientId),
     }
     await db.cases.put(caseRecord)
     await addToSyncQueue('cases', 'INSERT', caseId, caseRecord)
@@ -828,6 +874,7 @@ function AffidavitFirstUpload({ clientId, incidents }) {
       console.warn('[warrant_text] no text extracted; case created without it')
     }
 
+    await touchClient(clientId)
     setUploading(false)
     setFile(null)
   }
@@ -926,6 +973,7 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
     }
     await db.incidents.update(incident.id, changes)
     await addToSyncQueue('incidents', 'UPDATE', incident.id, { id: incident.id, ...changes })
+    await touchClient(incident.client_id)
     setIncident(prev => ({ ...prev, ...changes }))
     setEditing(false)
     committingRef.current = false
@@ -955,6 +1003,7 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
     await db.cases.where('incident_id').equals(incident.id).delete()
     await db.incidents.delete(incident.id)
     await addToSyncQueue('incidents', 'DELETE', incident.id, { id: incident.id })
+    await touchClient(incident.client_id)
     setDeleting(false)
     onDeleted(incident.id)
   }
@@ -1188,6 +1237,7 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
         <div className={styles.incidentAddCaseCell}>
           <AddCaseForm
             incidentId={incident.id}
+            clientId={incident.client_id}
             onSaved={() => { setShowAddCase(false); onCaseAdded() }}
             onCancel={() => setShowAddCase(false)}
           />
@@ -1252,6 +1302,7 @@ function PersonalNotesSection({ clientId, initialNote }) {
       await addToSyncQueue('personal_notes', 'UPDATE', note.id, { id: note.id, client_id: clientId, note: text, updated_at })
       setNote(prev => ({ ...prev, note: text, updated_at }))
     }
+    await touchClient(clientId)
     setSaving(false)
     setMode('idle')
   }
@@ -1264,6 +1315,7 @@ function PersonalNotesSection({ clientId, initialNote }) {
     setSaving(true)
     await db.personal_notes.delete(note.id)
     await addToSyncQueue('personal_notes', 'DELETE', note.id, { id: note.id })
+    await touchClient(clientId)
     setNote(null)
     setOpen(false)
     setMode('idle')
@@ -1452,6 +1504,7 @@ function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
     }
     await db.hours.put(record)
     await addToSyncQueue('hours', 'INSERT', newId, record)
+    await touchClient(clientId)
     localStorage.setItem(LAST_HOURS_DATE_KEY, record.entry_date)
     onSaved()
   }
@@ -1519,6 +1572,8 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
     }
     await db.hours.update(entry.id, changes)
     await addToSyncQueue('hours', 'UPDATE', entry.id, { id: entry.id, ...changes })
+    // entry carries its own client_id, so this form needs no extra prop.
+    await touchClient(entry.client_id)
     localStorage.setItem(LAST_HOURS_DATE_KEY, changes.entry_date)
     onSaved()
   }
@@ -1711,6 +1766,7 @@ function HoursSection({ clientId, hours }) {
     else newSort = ((prev.sort_order ?? 0) + (next.sort_order ?? 0)) / 2
     await db.hours.update(active.id, { sort_order: newSort })
     await addToSyncQueue('hours', 'UPDATE', active.id, { id: active.id, sort_order: newSort })
+    await touchClient(clientId)
   }
 
   function handleSaved() {
@@ -1724,6 +1780,7 @@ function HoursSection({ clientId, hours }) {
   async function confirmDelete(entry) {
     await db.hours.delete(entry.id)
     await addToSyncQueue('hours', 'DELETE', entry.id, { id: entry.id })
+    await touchClient(clientId)
     setConfirmingId(null)
   }
 
@@ -1822,6 +1879,7 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
     } else {
       console.warn('[criminal_history_text] no text extracted; existing value left unchanged')
     }
+    await touchClient(clientId)
     setUploading(false)
   }
 
@@ -1857,6 +1915,7 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
     await supabase.storage.from('warrants').remove([path])
     await db.clients.update(clientId, { criminal_history_url: null })
     await addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, criminal_history_url: null })
+    await touchClient(clientId)
     setUrl(null)
     setShowDeleteConfirm(false)
     setDeleting(false)
@@ -1979,6 +2038,7 @@ function CourtroomDocsSection({ clientId }) {
       console.warn('[extracted_text] no text extracted; existing value left unchanged')
     }
 
+    await touchClient(clientId)
     setFormName('')
     setFormFile(null)
     setShowForm(false)
@@ -1995,6 +2055,7 @@ function CourtroomDocsSection({ clientId }) {
     if (!renameValue.trim()) return
     await db.courtroom_documents.update(doc.id, { name: renameValue.trim() })
     await addToSyncQueue('courtroom_documents', 'UPDATE', doc.id, { id: doc.id, name: renameValue.trim() })
+    await touchClient(clientId)
     setRenamingId(null)
   }
 
@@ -2003,6 +2064,7 @@ function CourtroomDocsSection({ clientId }) {
     await supabase.storage.from('warrants').remove([doc.file_url])
     await db.courtroom_documents.delete(doc.id)
     await addToSyncQueue('courtroom_documents', 'DELETE', doc.id, { id: doc.id })
+    await touchClient(clientId)
     setConfirmDeleteId(null)
     setDeleting(false)
   }
@@ -2162,16 +2224,50 @@ export default function ClientFile() {
       addToSyncQueue('clients', 'DELETE', id, { id }),
     ])
 
+    // Deliberately NOT touchClient()'d — the client row is gone. Stamping here
+    // would queue a clients UPDATE behind a clients DELETE for the same id: a
+    // no-op against the server and a confusing entry in the queue.
     navigate('/')
   }
 
   const isClosed = client?.relieved_closed === true
+
+  // Closing a client also closes every case underneath it. Until 2026-09-02 the
+  // close path wrote only relieved_closed + closed_at, so cases.status sat at
+  // 'open' forever no matter how long ago the client was closed.
+  //
+  // ⚠️ The blanket flip is only safe because there is NO way to close a single
+  // case on its own: cases.status is written in exactly one place in the app (the
+  // PV creation payload, which sends 'open'), is read nowhere, and neither case
+  // form edits it — the "Status" <select> in AddCaseForm and CaseView's edit form
+  // writes cases.release_status, a different column. If a per-case close is ever
+  // added, reopen must stop flipping every case back or it will clobber one that
+  // was deliberately closed on its own.
+  //
+  // cases.disposition is deliberately NOT touched — that records HOW a case
+  // resolved and is a separate field from whether it is open.
+  //
+  // Walks client → incidents → cases the same way handleDeleteClient does, and
+  // writes each case Dexie-first then one sync-queue UPDATE, payload
+  // { id, status } — the offline-first pattern every other write here follows.
+  async function setAllCaseStatuses(status) {
+    const incidentRows = await db.incidents.where('client_id').equals(id).toArray()
+    const caseRows = (await Promise.all(
+      incidentRows.map(inc => db.cases.where('incident_id').equals(inc.id).toArray())
+    )).flat()
+    for (const c of caseRows) {
+      await db.cases.update(c.id, { status })
+      await addToSyncQueue('cases', 'UPDATE', c.id, { id: c.id, status })
+    }
+  }
 
   async function handleClose() {
     setClosing(true)
     const closedAt = new Date().toISOString()
     await db.clients.update(id, { relieved_closed: true, closed_at: closedAt })
     await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_closed: true, closed_at: closedAt })
+    await setAllCaseStatuses('closed')
+    await touchClient(id)
     setClosing(false)
     setShowCloseConfirm(false)
     refetch()
@@ -2181,6 +2277,8 @@ export default function ClientFile() {
     setClosing(true)
     await db.clients.update(id, { relieved_closed: false, closed_at: null })
     await addToSyncQueue('clients', 'UPDATE', id, { id, relieved_closed: false, closed_at: null })
+    await setAllCaseStatuses('open')
+    await touchClient(id)
     setClosing(false)
     setShowCloseConfirm(false)
     refetch()

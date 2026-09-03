@@ -6,6 +6,7 @@ import { supabase } from '../supabaseClient'
 import { extractPdfText } from '../extractPdfText'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
+import { touchClient } from '../touchClient'
 import styles from './CaseView.module.css'
 import TextViewerDrawer from '../components/TextViewerDrawer'
 
@@ -29,7 +30,9 @@ function bondStatusText(bondAmount, releaseStatus) {
 
 // ─── Edit form ───────────────────────────────────────────────────────────────
 
-function EditCaseForm({ caseData, onSaved, onCancel }) {
+// clientId comes from the page's own live query, which already walks
+// case → incident → client for the header name — no extra lookup needed.
+function EditCaseForm({ caseData, clientId, onSaved, onCancel }) {
   const [form, setForm] = useState({
     case_number:    caseData.case_number    ?? '',
     charge:         caseData.charge         ?? '',
@@ -62,6 +65,7 @@ function EditCaseForm({ caseData, onSaved, onCancel }) {
     }
     await db.cases.update(caseData.id, changes)
     await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, ...changes })
+    await touchClient(clientId)
     // The URL is keyed on case_number; with none, fall back to the id so the
     // page we navigate to still resolves.
     onSaved(changes.case_number || caseData.id)
@@ -257,6 +261,8 @@ export default function CaseView() {
 
     await db.cases.delete(caseData.id)
     await addToSyncQueue('cases', 'DELETE', caseData.id, { id: caseData.id })
+    // clientId is resolved above, before the delete, so it survives the row going away.
+    await touchClient(clientId)
 
     const remaining = await db.cases.where('incident_id').equals(incidentId).count()
     if (!remaining) {
@@ -297,6 +303,7 @@ export default function CaseView() {
     } else {
       console.warn('[warrant_text] no text extracted; existing value left unchanged')
     }
+    await touchClient(clientName?.id)
     setUploading(false)
   }
 
@@ -371,6 +378,7 @@ export default function CaseView() {
   async function savePvField(column, value) {
     await db.cases.update(caseData.id, { [column]: value })
     await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, [column]: value })
+    await touchClient(clientName?.id)
   }
 
   function handleSaved(newCaseNumber) {
@@ -418,6 +426,7 @@ export default function CaseView() {
       {editing ? (
         <EditCaseForm
           caseData={caseData}
+          clientId={clientName?.id}
           onSaved={handleSaved}
           onCancel={() => setEditing(false)}
         />
@@ -504,6 +513,7 @@ export default function CaseView() {
                   setNotesSaving(true)
                   await db.cases.update(caseData.id, { notes })
                   await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, notes })
+                  await touchClient(clientName?.id)
                   setNotesSaving(false)
                   setNotesSaved(true)
                 }}

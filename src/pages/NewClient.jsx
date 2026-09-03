@@ -78,8 +78,14 @@ export default function NewClient() {
       booking_time: combineTime(form.booking_hour, form.booking_period),
       oca: form.oca.trim() || null,
       custody_status: form.custody_status,
-      relieved_as_counsel: false,
       relieved_closed: false,
+      // The ONE place last_modified_at is set without going through
+      // touchClient(): there is no prior row to update, so it rides the INSERT
+      // rather than being an immediate follow-up UPDATE of the row just
+      // created. Creating a client counts as modifying it — without this a new
+      // client would carry a null timestamp and sort to the bottom of its tier
+      // in the Closed section the moment it was ever closed.
+      last_modified_at: new Date().toISOString(),
     }
 
     await db.clients.put(record)

@@ -38,14 +38,15 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `last_name` | text | |
 | `first_name` | text | |
 | `gender` | text | "M" or "F" |
-| `age` | int | legacy/dormant column — kept for reversibility; UI no longer reads, writes, or displays it (same pattern as `relieved_as_counsel`) |
+| `age` | int | legacy/dormant column — kept for reversibility; UI no longer reads, writes, or displays it (same pattern as `bond_amount`) |
 | `oca` | text | optional OCA # |
 | `custody_status` | text | `"in_custody"`, `"no_bond_held"`, `"bonded_out"`, `"pretrialed_out"`, `"ror"`, or `"out"`. `pretrialed_out` added 2026-06-25; `ror` ("ROR'd") and `no_bond_held` ("No Bond/Held") added 2026-07-23 — all front-end only (existing text column, no schema change). `out`/`ror`/`pretrialed_out`/`bonded_out` display a muted-green badge (`#3d9e6a`); `in_custody` and `no_bond_held` are muted crimson (`#b85555`) — both are physically in custody. **Client-level** — where the client physically is, net of all cases; independent of the case-level `cases.release_status`. |
-| `bond_amount` | int4 | legacy/dormant column — kept for reversibility; the field was removed from the New/Edit Client forms and bond now lives per-case on `cases.bond_amount`. The column itself still exists and was never dropped (same pattern as `age` and `relieved_as_counsel`). Not read or written by app logic. |
-| `relieved_as_counsel` | boolean | legacy column — kept for reversibility; not read by app logic; section placement driven by `relieved_closed` |
+| `bond_amount` | int4 | legacy/dormant column — kept for reversibility; the field was removed from the New/Edit Client forms and bond now lives per-case on `cases.bond_amount`. The column itself still exists and was never dropped (same pattern as `age`). Not read or written by app logic. ⚠️ **`relieved_as_counsel` used to be named alongside these two as a fellow dormant column — it is no longer one of them: it was DROPPED 2026-09-02.** |
+| ~~`relieved_as_counsel`~~ | — | **DROPPED from Supabase 2026-09-02** (outside the app), and all remaining app references removed the same day: the `false` it was written with in `NewClient.jsx` and `seed.js` are gone, and **Dexie went to v4 to drop its index** — it was the one dormant column that was actually indexed (`clients: 'id, last_name, relieved_as_counsel, indigent_status'`). Section placement has been driven by `relieved_closed` alone since 2026-06-16. Kept struck-through for history only. |
+| `closed_at` | timestamptz | set when a client is closed, cleared to null on reopen. ⚠️ **No longer the Closed section's sort key as of 2026-09-02** — that section now sorts by indigent-colour tier, then `last_modified_at` DESC. This column is still written by both Close and Reopen and is still the record of *when* a client was closed; it is simply no longer read for ordering. |
+| `last_modified_at` | timestamptz | nullable — last time any of this client's data changed. Added outside the app and backfilled for all 57 clients 2026-09-02; **wired up the same day** and written **only** by `touchClient()` (`src/touchClient.js`). Orders the Closed section within each colour tier, most recent first; a null sorts to the bottom of its own tier. **Not indexed in Dexie** (the sort runs in JS over the already-loaded list), so it needed no version bump. ⚠️ **Never stamped by the sync layer** — see the 2026-09-02 entry. |
 | `created_at` | timestamp | row creation timestamp, default `now()`. Not read or displayed by the app. |
 | `relieved_closed` | boolean | shows CLOSED badge when true |
-| `closed_at` | timestamptz | set when a client is closed, null when reopened; used to sort the Closed section (most recently closed first) |
 | `criminal_history_url` | text | Supabase Storage public URL for criminal history PDF |
 | `criminal_history_text` | text | extracted text from criminal history PDF — populated on upload |
 | `booking_date` | text | "M/D/YYYY" — date booked / initial appearance before magistrate; optional. Added 2026-06-24 via MCP. Originally added to compute the in-custody prelim-hearing cutoff; **that countdown was removed 2026-08-10 and this column was deliberately KEPT** — still written by the New/Edit Client forms, still a useful fact on its own, and retained so the countdown can be rebuilt without data loss. **Do not drop.** |
@@ -65,7 +66,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | ~~`subpoenas`~~ | — | **DROPPED 2026-06-24 via MCP.** Previously deprecated (data cleared, all app code references removed); the column itself has now been dropped from `next_events`. No app code reads or writes it; kept here struck-through for history only. |
 | `ada_name` | text | Assistant DA name — displayed in the single-client Next Event block only ("ADA: [name]"), never in the client list. ⚠️ **The input was REMOVED from the Next Event form 2026-08-19** and the column deliberately KEPT: the form no longer holds state for it and **omits the key entirely on save**, so existing values survive an edit instead of being nulled. **There is currently no UI to set or clear an ADA name** — re-adding one means re-adding the input. *(This row read "entered in the Next Event form" until 2026-08-20.)* |
 
-> One row per client (maybeSingle query). Add/Edit Next Event form upserts this row.
+> One row per client. Read in `useClientFile` as `db.next_events.where('client_id').equals(id).first()`; the Add/Edit Next Event form writes that row. *("maybeSingle query" until 2026-09-02 — that was Supabase-era language left over from before the Dexie migration; the one-row-per-client shape is unchanged.)*
 
 ### `incidents`
 | Column | Type | Notes |
@@ -95,7 +96,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `release_status` | text | nullable release condition for **this specific case**: `"held_without_bond"` \| `"pretrial_released"` \| `"ror"`; `null` = unset. Added 2026-07-23 via MCP (no in-repo migration). Displays "Held without bond" / "Pretrial Released" / "ROR'd". **Independent of the client-level `clients.custody_status`** — this is the condition on the case; custody_status is where the client physically is, net of all cases. |
 | `notes` | text | free-text, editable on case view with Save button |
 | `disposition` | text | null = open; shown when set |
-| `status` | text | default "open" |
+| `status` | text | default `'open'`. **Written by the client Close/Reopen path as of 2026-09-02** — closing a client sets `'closed'` on every case under every one of that client's incidents; reopening sets them all back to `'open'`. **All three case-creation paths INHERIT it from the client** (`relieved_closed ? 'closed' : 'open'`, via `caseStatusForClient()`) as of the same day, so a case added to a closed client is created closed. ⚠️ **Read nowhere and displayed nowhere** — a record, not a control, and there is no way to close a single case independently of closing the client. It is NOT `disposition`, which records *how* a case resolved and is deliberately untouched by Close/Reopen. Before 2026-09-02 nothing but PV creation ever wrote it, so every case sat at `'open'` no matter how long its client had been closed. |
 | `warrant_text` | text | extracted text from warrant PDF — populated on upload |
 | `is_pv` | boolean | **NOT NULL, default `false`.** Marks the case as a **probation violation** rather than a charged offense. Schema added ahead of the front-end; wired up 2026-08-19. When true the case carries **no** `charge`, `charge_abbrev`, `classification`, `bond_amount` or `release_status` (all written as explicit nulls), and every display site renders **"[case number] - PV"** in place of the charge/classification text. ⚠️ **Written by the Add INCIDENT form only**, alongside its `incidents.is_pv` parent — the two rows are created together in one action. It was briefly written by a checkbox inside "+ add a case" earlier on 2026-08-19; **that entry point was removed the same day** and `AddCaseForm` reverted byte-for-byte to its pre-PV state. `status` is `'open'` as normal (sent explicitly on this path, see `pv_sentence`). **Not indexed in Dexie** (the `cases` store is `'id, incident_id, case_number'`), so it needed no version bump — same as `release_status` and `classification` before it. |
 | `pv_sentence` | text | ⚠️ **DEPRECATED 2026-08-20 — kept, never read or written.** Replaced by the four `pv_*` columns below. Same "legacy/dormant column" pattern as `clients.age` and `clients.bond_amount`: **the column was deliberately NOT dropped** (reversibility), but no app code reads or writes it — the only remaining mentions in `src/` are comments saying so. **Do not re-wire it.** ⚠️ **Rows written before 2026-08-20 still hold data here that now displays nowhere** — see the migration note in the 2026-08-20 entry. |
@@ -138,7 +139,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `note` | text | free-text personal note |
 | `updated_at` | timestamptz | auto-updated on save |
 
-> One row per client (maybeSingle query). Fetched in `useClientFile`.
+> One row per client. Read in `useClientFile` as `db.personal_notes.where('client_id').equals(id).first()`. *("maybeSingle query" until 2026-09-02 — Supabase-era language predating the Dexie migration; the shape is unchanged.)*
 
 ---
 
@@ -193,6 +194,171 @@ Three reasons, in order of weight:
 ---
 
 ## Completed Features
+
+### New Cases Inherit Their Client's Closed State (2026-09-02, second batch)
+
+Closes item 3(d) from the batch below, which was flagged and deliberately left unbuilt pending a decision. **No schema change, no Dexie version bump, no data change** — `cases.status` already exists and is not indexed.
+
+**All three case-creation paths now write `status: client.relieved_closed ? 'closed' : 'open'`** instead of always landing on `'open'`. They share one helper, `caseStatusForClient(clientId)`, and all three live in `ClientFile.jsx`:
+
+| Path | Before | After |
+|---|---|---|
+| `AddCaseForm` ("+ add a case") | omitted `status`, took the Postgres default `'open'` | sends it explicitly, inherited |
+| `AffidavitFirstUpload` | omitted `status`, took the default `'open'` | sends it explicitly, inherited |
+| `AddIncidentForm.savePv()` (PV creation) | sent `status: 'open'` explicitly | sends it inherited |
+
+**No prop plumbing was needed** — all three already held `clientId` (`AddCaseForm` gained it in the batch below for `touchClient`). The helper reads the client from Dexie rather than taking a `relievedClosed` prop, so it can't act on a stale render.
+
+**The first two now send `status` explicitly rather than relying on the Postgres default.** That is the same reasoning the PV path already carried: the local Dexie row is then correct immediately, not only after the next `fullSync`.
+
+⚠️ **The competing reading — that adding a case to a closed client should REOPEN the client — was rejected deliberately, not overlooked.** It would move a client back into the Active section as a side effect of recording a case on a finished matter, and that is a workflow decision the app cannot make on the user's behalf. Inheriting is the conservative direction and composes with what the close fix already built: if the user really is resuming work they press **Reopen**, which flips every case — including one added this way — back to `'open'`.
+
+**The invariant holds in both directions: a closed client never has an open case, and nothing changes sections without the user asking.**
+
+> **`cases.status` remains invisible in the UI.** It is not displayed anywhere, and there is still no way to close a single case independently of closing the client file — the "Status" `<select>` in both case forms writes `cases.release_status`, a different column. That is what keeps the blanket Close/Reopen flip safe; see item 3(c) below.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged. 9 assertions on the helper, its body diff-confirmed byte-identical to the shipped source: closed → `'closed'`, active → `'open'`, the four falsy `relieved_closed` shapes → `'open'`, a missing or null client row falling back to `'open'` without throwing (the old behaviour, so a race can only ever under-apply), and the invariant assertion that a closed client can never produce an open case. ⚠️ **Not verified on production** — on-device checking is the user's.
+
+### Four-Item Batch — `relieved_as_counsel` Removed + Case-Close Bug, Purple Circle, List Scroll Restore, Closed-Section Tiers (2026-09-02)
+
+Four requested changes in one session, done in the order 3 → 2 → 1 → 4 because the tier sort in item 4 depends on the colour set in item 2 being settled first.
+
+**Two schema facts, both applied outside the app over MCP before this work started and relied on as given:** `clients.last_modified_at` (timestamptz, nullable) exists and is backfilled for all 57 clients; `clients.relieved_as_counsel` has been dropped. **No schema or data change was made from here.**
+
+⚠️ **One Dexie version bump WAS required, contrary to the expectation going in — v3 → v4.** `relieved_as_counsel` was the one dormant column that was actually **indexed** (`clients: 'id, last_name, relieved_as_counsel, indigent_status'`), and dropping an index is exactly the case that needs a new version. `last_modified_at` and `cases.status` are both non-indexed and needed nothing, as expected. **The v1 and v2 declarations were deliberately left untouched** — they are the migration record for a device upgrading *from* those versions, and rewriting them in place would hand a fresh install a different schema than an upgraded one. The new version declares only the changed store:
+
+```js
+db.version(4).stores({ clients: 'id, last_name, indigent_status' })
+```
+
+---
+
+#### Item 3 — `relieved_as_counsel` removed, and the case-close bug fixed
+
+**(a) The column is gone from the codebase.** Two live writes removed — `NewClient.jsx`'s insert record and `seed.js`'s — plus the Dexie index above. The only surviving mentions in `src/` are the frozen v1/v2 store strings and the v4 comment explaining the drop. In this document the schema row is struck through, and the two "same pattern as `relieved_as_counsel`" asides on `age` and `bond_amount` are corrected — it is no longer a dormant column, it no longer exists. The 2026-06-16 "Collapse Relieved as Counsel into Closed" entry is left as written, per the house convention of retaining build records.
+
+**(b) The bug: closing a client never closed its cases.** The Close path wrote only `relieved_closed` and `closed_at`. `cases.status` was written in exactly **one** place in the whole app — the PV creation payload, which sends `'open'` — so every case in the database sat at `'open'` no matter how long ago its client was closed. The historical rows were backfilled by the user; this stops the code recreating the problem on the next close.
+
+`handleClose` now walks client → incidents → cases and writes `status: 'closed'` on every case: one Dexie update plus one sync-queue UPDATE per case, payload `{ id, status }`, following the offline-first pattern already in that handler. The walk is factored into a local `setAllCaseStatuses(status)` that mirrors how `handleDeleteClient` gathers the same rows.
+
+⚠️ **`cases.disposition` is deliberately NOT touched.** It records *how* a case resolved, which is a different question from whether it is open.
+
+**(c) Reopen is symmetric — and that was checked first, not assumed.** The condition for symmetry was that no path exists to close a single case independently. It does not:
+
+| | |
+|---|---|
+| `cases.status` written | one place only — the PV creation payload (`'open'`) |
+| `cases.status` read or displayed | **nowhere** |
+| The "Status" `<select>` in `AddCaseForm` and CaseView's edit form | writes **`cases.release_status`** — a different column (Held without bond / Pretrial Released / ROR'd) |
+
+So there is no deliberately-closed single case for a blanket reopen to clobber, and `handleReopenCase` sets every case back to `'open'` through the same helper. ⚠️ **If a per-case close is ever added, this is the thing that has to change** — that note sits in the code immediately above the helper.
+
+**(d) Reported, not built in the first batch — a case added to an already-closed client came out `'open'`.** All three creation paths did it: `AddCaseForm` and the affidavit-first flow omitted `status` entirely and took the Postgres default `'open'`; PV creation sent `status: 'open'` explicitly. None looked at `clients.relieved_closed`, so adding a case to a closed client left that client's cases in a mixed state — the pre-existing ones `'closed'`, the new one `'open'` — exactly the inconsistency (b) set out to remove. **Fixed in the second batch below.**
+
+---
+
+#### Item 2 — Purple added, and `'yellow'` renamed to `'orange'`
+
+**New cycle: red → orange → green → purple → gold → red.** Purple is `#9B59B6`; that hex is the knob if it doesn't read as distinct from the other four on the `#1E2A3A` row background.
+
+**Purple means: case closed, no work left, final review or ACAP upload pending.** Semantic only — it drives the item 4 tier ordering and nothing else.
+
+⚠️ **`'yellow'` → `'orange'` is a rename with a permanent legacy alias, not a migration.** The value stored as `'yellow'` was always the orange circle (`#E8913A`); only the name was confusing. `'orange'` is now canonical and **nothing writes `'yellow'` any more**, but:
+
+- **A stored `'yellow'` renders orange and advances to green** — same colour, same cycle position as `'orange'`.
+- **It must not fall through to the off-cycle normalizer**, which would render it red and — since tier follows the dot — move that client between tiers in the Closed section.
+- **The alias is load-bearing during the deploy window.** The live database still held `'yellow'` rows when this shipped; they are renamed separately, afterwards.
+- **It stays after the rename.** It costs one object lookup and covers any row that escapes: a device offline during the rename, a restore from an older `backups` snapshot, a row hand-edited in the dashboard.
+
+**The constants moved into a new shared module, `src/indigentStatus.js`** — `INDIGENT_CYCLE`, `INDIGENT_COLOR`, `INDIGENT_ALIAS` and `normalizeIndigent()`.
+
+⚠️ **This is a deliberate departure from the byte-for-byte duplication `ClientRow.jsx` and `ClientFile.jsx` carried until now**, and it follows the precedent `caseGrouping.js` already set here. The Closed section now sorts clients into tiers **by colour**, so a second or third copy free to drift would put a client in a tier that disagrees with the dot rendered beside their name. One definition makes "the tier never disagrees with the dot" structural rather than conventional. It also avoids a *third* copy in `ClientList.jsx` — and exporting the helper from `ClientRow.jsx` was not an option, since a non-component export there trips `react-refresh/only-export-components` and would have been a 21st lint error.
+
+**The `IndigentCircle` component is still written out in both views**, and that duplication is kept deliberately: they genuinely differ (ClientRow uses the `.indigentCircle` class for its hit area, ClientFile uses inline styles). Only the data is shared.
+
+**Everything else about the circle is unchanged, as specified:** the 28px hit-area container with its 14px `pointer-events: none` dot, `stopPropagation` on click/pointerdown/pointerup, the offline-first Dexie + sync-queue write, off-cycle → red *display* normalization, and a client with no valid value advancing to the **second** cycle entry (now orange) on first tap. Only the cycle map and the colour map changed.
+
+> **The normalization is display-only, and always has been.** A row holding `'yellow'`, `'gray'`, `''` or null renders as its normalized colour but **keeps its stored value until the circle is tapped** — the tap then writes the *next* value, not the normalized one. A legacy `'gray'` row therefore shows red and jumps straight to orange.
+
+**Verification:** 46 assertions against the shipped module itself (imported directly, not a transcribed copy) — cycle order and colours for all five states; the alias resolving to orange for colour *and* cycle position; a regression assertion that `'yellow'` is **not** treated as off-cycle, which is the bug the alias exists to prevent; ten off-cycle shapes including the near-misses `'Yellow'` and `' yellow'`, each landing on red and advancing to orange; no cycle target or colour key being `'yellow'`; five taps from any state returning to it; and prototype keys (`'constructor'`, `'__proto__'`) resolving to red rather than to a function.
+
+---
+
+#### Item 1 — Client-list scroll restoration
+
+Two symptoms, one fix: scrolling deep into the list, tapping a client and hitting Back landed at the top of the list, and so did a page refresh.
+
+⚠️ **The scrolling element is the DOCUMENT, not a container — checked before any code was written, because getting it wrong produces code that silently does nothing.** Nothing in the `html → body → #root → .screen` chain sets an `overflow` or a fixed height (`.screen` is `min-height: 100vh` with neither), so the page scrolls as a whole and `window.scrollY` is the only value that means anything. The only `overflow-y: auto` elements in the app are the two drawers' internal bodies.
+
+- **Persisted to `sessionStorage`** under `gsapp:clientListScroll` — that is what covers the reload. The component tree doesn't survive one, so a ref or React state could only ever have fixed the in-app half.
+- **Not history-based, deliberately.** ClientFile's Back is `navigate('/')`, which pushes a new entry rather than popping one, so anything keyed on history state would miss the main path. `<ScrollRestoration>` is also unavailable — `main.jsx` uses `BrowserRouter`, not a data router.
+- **Restore is gated on the data actually being present** (`clients.length > 0`). `useClients` reads through `useLiveQuery`, so the first render has zero rows and a document barely taller than the viewport; restoring then would clamp to ~0 and look like it had done nothing.
+- **Restores once, guarded by a ref**, so a background sync landing mid-browse can't yank the user back to a stale offset.
+- **`useLayoutEffect`, so the jump lands before paint** rather than as a visible flash — plus **one `requestAnimationFrame` re-apply** for the cold-reload case only: row heights can still settle after the layout effect (web fonts, the safe-area inset resolving), and a document that is briefly too short clamps the scroll short of target. Re-applying within the same frame is invisible.
+- **Writes are throttled** to at most one per 150ms (leading edge skipped, trailing edge written). The effect cleanup writes one final time — the throttle would otherwise drop the last few pixels before the user taps into a client, which is precisely the position being restored. `pagehide` is handled too, being the event that fires reliably when iOS freezes or discards a PWA tab.
+- ✅ **`history.scrollRestoration` IS set to `'manual'`**, as invited, so the browser's own restoration doesn't fight ours. **It is deliberately not reset to `'auto'` on unmount** — resetting it would hand the client-list history entry back to the browser, which is the thing being overridden. No other page restores scroll, so nothing else depends on the default.
+
+**Scoped to the client list. No other page got scroll restoration.**
+
+> **Related, pre-existing, and deliberately NOT changed:** React Router does not reset scroll on navigation, so tapping a client from deep in the list can land you partway down the client file. Long-standing behaviour, not among the reported symptoms, and fixing it would mean touching pages this item was scoped away from.
+
+---
+
+#### Item 4 — Closed-section tier ordering, and `last_modified_at` wired up
+
+**Everything here is the CLOSED section only.** The Active section's ordering is untouched and the "Sorting by:" toggle is untouched — it already correctly did not reach this section, and `sortClosed()` still takes no mode argument. `sortClosed()` is the only function whose behaviour changed.
+
+**(a) `closed_at` DESC replaced by a three-tier sort:**
+
+| Tier | Colours | |
+|---|---|---|
+| 1 | red, orange, green | top |
+| 2 | purple | |
+| 3 | gold | bottom |
+
+A gold client can never appear above any other tier; a purple one never above tier 1, always above gold. **Within a tier:** `last_modified_at` DESC (most recently modified first), then last name A→Z, then first name for identical last names. A null `last_modified_at` sorts to the bottom of **its own** tier and alphabetically among the other nulls there — nulls are never pooled across tiers.
+
+⚠️ **Tier is keyed on `normalizeIndigent()` — the same function the circle uses to pick its colour — never on the raw stored string.** That is the whole mechanism behind "a client's tier can never disagree with the dot next to their name": legacy `'yellow'` is orange and lands in tier 1, and null / `''` / unrecognized render red and land in tier 1 too. Deriving the tier from the raw value would put a `'yellow'` client in no tier at all and an unrecognized one wherever the map happened to fall through.
+
+An **unparseable** `last_modified_at` is treated as null rather than becoming `NaN` — a `NaN` comparison would make the comparator inconsistent, and the resulting order arbitrary rather than merely wrong.
+
+`closed_at` is still written by both Close and Reopen and is still the record of *when* a client was closed. It is simply no longer read for ordering.
+
+**(b) `last_modified_at` is no longer a dead column.** New `touchClient(clientId)` in **`src/touchClient.js`** — one Dexie update plus one sync-queue UPDATE, payload `{ id, last_modified_at: new Date().toISOString() }`. It is the **only** writer of that column.
+
+⚠️ **It must never be called from `fullSync`, `processSyncQueue`, or any other sync-layer path.** Those replay *server* state into Dexie; stamping there would mark every client freshly modified on every sync and destroy the ordering outright. This is enforced structurally rather than only documented — `syncManager.js` does not import `touchClient.js`, and must not start. Reading a client file, scrolling it and navigating away all leave the timestamp alone, and **the session-only hours check-off toggle does not stamp**, because it persists nothing at all.
+
+**The full call-site list — 29 calls across 5 files.** This list is the thing most likely to drift: a new client-data write path needs a call added here.
+
+| Area | Sites |
+|---|---|
+| **Hours** | add · edit · delete · drag-reorder |
+| **Incidents** | add · inline edit (date/location/description) · delete |
+| **Cases** | add (`AddCaseForm`) · edit (CaseView) · delete (CaseView) · PV field edits (CaseView `PvField`) · affidavit-first creation · PV incident+case creation |
+| **Next Event** | save · clear |
+| **Personal Notes** | save (add and edit branches) · delete |
+| **Client** | New Client save · Edit Client save · Close · Reopen |
+| **Criminal History** | upload · delete |
+| **Courtroom Documents** | upload · rename · delete |
+| **Indigent circle** | tap — **both** render sites, `ClientRow.jsx` and `ClientFile.jsx` |
+| **CaseView — not on the original list** | **Save Notes** (`cases.notes`) · **Upload/Replace Affidavit** (`cases.warrant_url` + `warrant_text`) |
+
+**Two write paths were found that the request didn't list, and both were added:** CaseView's **Save Notes** and its **Upload/Replace Affidavit**. Both change a client's data and would otherwise have left that client looking untouched.
+
+**Two deliberate exceptions:**
+
+- **Delete Client is NOT stamped.** The client row is gone; stamping would queue a `clients` UPDATE behind a `clients` DELETE for the same id — a no-op against the server and a confusing queue entry.
+- **New Client sets `last_modified_at` inline in its INSERT record** rather than calling `touchClient()`. There is no prior row to update, so the alternative is an immediate follow-up UPDATE of the row just created: two queue entries, a FIFO ordering dependency, and a window where the client exists with a null timestamp. Creating a client counts as modifying it.
+
+**Two components gained one prop each, from their immediate parent — nothing was plumbed through the page.** `AddCaseForm` takes `clientId` (from `incident.client_id`, already on the incident it is nested under), and CaseView's `EditCaseForm` takes `clientId` (from the page's existing live query, which already walks case → incident → client for the header name). Every other site already had the id in scope: `EditHoursForm` reads `entry.client_id`, `IncidentGroup` reads `incident.client_id`, and the rest hold a `clientId` prop already.
+
+**Verification:** 30 assertions on the tier sort, run against the shipped `sortClosed` region **extracted verbatim and diff-confirmed byte-identical to the source** rather than retyped — tier assignment for all five colours plus the alias and seven off-cycle shapes; tier dominating recency in both directions (a gold client modified today still sits below a red one modified three weeks ago); ordering within each tier; nulls staying at the bottom of their own tier and never pooling across tiers; an unparseable timestamp behaving as null; both name tiebreaks; input not mutated; and the same nine-client pool producing an identical order across 200 random shuffles, which an inconsistent comparator would not.
+
+---
+
+**Verification for the batch:** `npm run build` clean after every item (only the pre-existing >500 kB chunk notice). `npx eslint .` at **20 errors** after every item and at the end — unchanged from baseline and the same 20: Node globals in `scripts/` and `seed.js` (13), `react-refresh/only-export-components` on the three context files, `react-hooks/set-state-in-effect` ×3, and the empty block in `extractPdfText`. **No new lint error was introduced and none was suppressed.** ⚠️ **Not verified on production** — all on-device checking is the user's.
+
+> **Worth knowing, pre-existing, and NOT changed here.** `fullSync`'s "re-apply pending local writes" loop does `db[table].put(entry.payload)` for queued UPDATEs. A `put` **replaces** the whole record, but UPDATE payloads are partial by design (`{ id, last_modified_at }`, `{ id, indigent_status }`, …), so a pending UPDATE replayed through that loop would blank the rest of that row locally until the next clean sync. The window is narrow — `fullSync` drains the queue first, so only entries that *failed* to push are still pending — and it long predates this work. `touchClient` adds one more partial-payload UPDATE per data change, which widens the exposure in volume without changing its character. Flagged rather than fixed: it is sync-layer semantics and outside this batch.
 
 ### Dead-Code Sweep — 15 Unreferenced CSS Classes Removed (2026-08-20, fifth batch, commit `f87f2f7`)
 
@@ -1043,6 +1209,8 @@ Adds a per-client preliminary-hearing deadline line to the client list for in-cu
 
 ### Indigent Circle — 4-Color Cycle, Gray Removed, Red Default (2026-06-22)
 
+> ⚠️ **SUPERSEDED 2026-09-02 — read the "Purple Circle + 'yellow' → 'orange'" entry at the top for current behaviour.** The cycle is now **five** colours (purple added), and **the value this entry calls `'yellow'` is now stored as `'orange'`** — same `#E8913A`, clearer name — with `'yellow'` kept as a permanent legacy alias. What still stands here: gray is gone as a state/default/fallback, red is the unset default, off-cycle values normalize to red, and both render sites stay in sync. Retained as the build record.
+
 Replaced the indigent-status circle's old 3-state cycle with a 4-state one and removed gray entirely. **Supersedes the cycle/default described in the 2026-06-10 "UI Polish" entry below.**
 
 - **New cycle (wrapping):** `red → yellow → green → gold → red → …` (was `gray → red → green → gray`).
@@ -1129,7 +1297,7 @@ Fixes the **blank-screen-on-offline-cold-launch** bug: launching the app offline
 
 3. **Client List sort toggle** — a badge control (white text, transparent fill, thin rounded-pill border) sits directly above the Active section header. Cycles between "Sorting by: Name" and "Sorting by: Next Event"; selection persisted in `localStorage` (key `clientListSortMode`).
    - **Active section** — Name mode = alphabetical by last name; Next Event mode = ascending by combined event date+time (soonest first), with clients that have no next event grouped at the bottom, alphabetical among themselves. (A missing `event_time` sorts as start of day, so dateless events precede timed events on the same date.)
-   - **Closed section** — the toggle does NOT apply; always sorted by `closed_at` DESC (most recently closed at top), with legacy null-`closed_at` clients at the bottom. Close Case stamps `closed_at` (`new Date().toISOString()`); Reopen Case clears it back to null. Both written offline-first to Dexie + enqueued via `addToSyncQueue`, same as `relieved_closed`.
+   - **Closed section** — the toggle does NOT apply; sorted by `closed_at` DESC (most recently closed at top), with legacy null-`closed_at` clients at the bottom. Close Case stamps `closed_at` (`new Date().toISOString()`); Reopen Case clears it back to null. Both written offline-first to Dexie + enqueued via `addToSyncQueue`, same as `relieved_closed`. *(⚠️ **The `closed_at` ORDERING described here was replaced 2026-09-02** by the three-tier colour sort — see that entry. `closed_at` itself is still written by both handlers exactly as described; it is just no longer read for ordering.)*
 
 4. **ADA moved to Next Event** — removed `clients.da_name` from the forms, the ClientFile header, and all code references; the column was dropped from the DB. Added an "Assistant DA Name" input to the Next Event form (`next_events.ada_name`). The single-client Next Event box now shows "ADA: [name]" appended (e.g. "Trial  |  Courtroom 5C  |  L. Jones  |  ADA: Mary Hamilton") only when set. **Not shown in the client list view.**
 
@@ -1240,12 +1408,13 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 ### Client List (`/`)
 - Fetches all clients from Supabase via `useClients` hook
 - Two sections: **Active** (`relieved_closed = false`) and **Closed** (`relieved_closed = true`) — header text rendered as "CLOSED" via CSS `text-transform: uppercase`
-- **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — always sorted by `closed_at` DESC, null-`closed_at` clients at the bottom. (See the 2026-06-21 "Client List + Next Event Batch" entry.)
+- **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — `sortClosed()` takes no mode argument. As of **2026-09-02** it sorts by **indigent-colour tier** (red/orange/green → purple → gold), then `last_modified_at` DESC within each tier, then last name / first name; it no longer uses `closed_at`. See the 2026-09-02 entry.
+- **Scroll position is restored** on the client list (2026-09-02) — both on returning from a client file and across a full page reload, via `sessionStorage`. The client list is the only page that does this.
 - Each section header shows a count badge (e.g. "Active 12")
 - Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge. **No prelim-hearing countdown** — that two-line block above the badge was removed 2026-08-10, so the badge is now centred for every client
 - **Same-incident bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a `[` in `#6b9fd4` (the case-number colour) drawn in the gutter to the left of the case table. ⚠️ The list is sorted purely on the numeric part of the case number with **no incident component**, so same-incident cases can interleave; a non-contiguous group is deliberately left unbracketed rather than drawn across a foreign case. See the 2026-08-10 entry and Open Items.
 - **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), right-anchored so all case number left edges are flush. **As of 2026-08-09 it is an in-flow flex item on desktop, not `position: absolute`** — the absolute version was out of flow, so a row never grew and a client with 5+ cases bled into the neighbouring rows (see the 2026-08-09 entry; mobile was always in-flow and is unchanged). `charge_abbrev` shown if set, falls back to `charge`; if `classification` is set, it follows in parens (e.g. `Sex Offender Registration Viol (A MIS)`), styled to match the next-event info line (`#6b9fd4`, normal weight, 13px desktop / 11px mobile)
-- Badge colors: **In Custody** → muted crimson (`#b85555`); **Bonded Out** / **Out** → muted green (`#3d9e6a`); **CLOSED** / relieved clients → gray
+- Badge colors — **all six statuses**, matching `CustodyBadge`: **In Custody** and **No Bond/Held** → muted crimson (`#b85555`), both being physically in custody; **Out**, **ROR'd**, **Pretrialed Out** and **Bonded Out** → muted green (`#3d9e6a`); **CLOSED** / closed-section clients → gray, which overrides both. *(This bullet listed only three statuses until 2026-09-02 — it predated `pretrialed_out` (2026-06-25) and `ror` / `no_bond_held` (2026-07-23). The Custody Status section below was correct throughout; this was the stale copy.)*
 - Clients in the Closed section (`relieved_closed = true`) show all custody badges in gray
 - `+` button top-right → Add Client form
 - **Mobile layout** (`max-width: 768px`): 3-line stacked layout — name, next event, case table + badge on same line. Desktop layout unchanged.
@@ -1410,6 +1579,11 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 | Bonded Out / Out badge | muted green `#3d9e6a` |
 | CLOSED / gray badge | `rgba(74,74,74,0.5)` bg / `#c0c0c0` text |
 | Hours value / Saved confirmation | green `#5ecf90` |
+| Indigent circle — red | `#b85555` |
+| Indigent circle — orange (stored `'orange'`; legacy `'yellow'`) | `#E8913A` |
+| Indigent circle — green | `#3d9e6a` |
+| Indigent circle — purple (2026-09-02) | `#9B59B6` |
+| Indigent circle — gold | `#FFD700` |
 | Section headers (client list) | background `#0f1820`, text `#c8d0db` |
 | Delete buttons | muted red `#7a3a30` border / `#c97060` text |
 | Close/Reopen Case button | yellow `#c8a84b` |
@@ -1434,11 +1608,13 @@ src/
   extractPdfText.js        # PDF text extraction utility — pdfjs-dist v6 + CDN worker
   caseGrouping.js          # bracketBlocks() — same-incident "[" grouping + contiguity guard, shared by ClientRow and ClientFile
   dateUtils.js             # Shared "M/D/YYYY" helpers — dateKey, todayString, toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, shiftDate
-  seed.js                  # One-time seed script (node src/seed.js)
+  indigentStatus.js        # INDIGENT_CYCLE / INDIGENT_COLOR / INDIGENT_ALIAS + normalizeIndigent() — shared by ClientRow, ClientFile and ClientList's tier sort (2026-09-02)
+  touchClient.js           # touchClient() — the ONLY writer of clients.last_modified_at (2026-09-02). Never import from the sync layer
+  seed.js                  # One-time seed script (node src/seed.js) — broken, see D1
 
   hooks/
     useClients.js          # Reads all clients + next_events + cases from Dexie via useLiveQuery
-    useClientFile.js       # Reads client + incidents + cases + hours + nextEvent + personalNote from Dexie; exposes refetch()
+    useClientFile.js       # Reads client + incidents + cases + hours + nextEvent + personalNote from Dexie
 
   pages/
     Login.jsx / .module.css
@@ -1454,8 +1630,11 @@ src/
     TextViewerDrawer.jsx / .module.css  # Slide-up drawer for viewing extracted PDF text; used in CaseView and ClientFile
     DailyHoursDrawer.jsx / .module.css  # Full-height, read-only cross-client daily hours viewer; opened from ClientList
 
-  data/                    # (deleted — static sample files removed 2026-06-09)
+  assets/                  # hero.png, react.svg, vite.svg — Vite-template leftovers, tracked in git, imported by nothing
+  data/                    # (contents deleted 2026-06-09 — static sample files; the empty directory is still on disk, untracked)
 ```
+
+> ⚠️ **`useClientFile` does NOT expose a working `refetch()`.** It returns one — `useCallback(() => {}, [])` — and three sites in `ClientFile.jsx` call it (`handleClose`, `handleReopenCase`, `CriminalHistorySection`'s `onDeleted`), but **it is an empty no-op**. Every one of those views refreshes because `useLiveQuery` observes the Dexie write, not because of the refetch. *(This line read "exposes refetch()" until 2026-09-02, which invited the opposite conclusion.)* **Do not "fix" a stale-data bug by adding another `refetch()` call** — if a view isn't updating, the Dexie write is the thing that didn't happen. The no-op is kept only so the existing call sites still compile.
 
 ---
 

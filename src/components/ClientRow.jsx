@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
+import { touchClient } from '../touchClient'
 import { bracketBlocks } from '../caseGrouping'
+import { INDIGENT_CYCLE, INDIGENT_COLOR, normalizeIndigent } from '../indigentStatus'
 import styles from './ClientRow.module.css'
 
 // Returns pointer event props that fire `handler` on tap but not on:
@@ -59,16 +61,18 @@ function isOverdue(dateStr, timeStr) {
   return Date.now() - when.getTime() > OVERDUE_GRACE_MS
 }
 
-const INDIGENT_CYCLE = { red: 'yellow', yellow: 'green', green: 'gold', gold: 'red' }
-const INDIGENT_COLOR = { red: '#b85555', yellow: '#E8913A', green: '#3d9e6a', gold: '#FFD700' }
-
 function IndigentCircle({ clientId, status }) {
-  const current = INDIGENT_COLOR[status] ? status : 'red'
+  // normalizeIndigent resolves the legacy 'yellow' alias to 'orange' and maps
+  // anything unrecognized to 'red'. It is shared with ClientFile's copy of this
+  // component and with the Closed-section tier sort, so the dot and the tier can
+  // never disagree — see src/indigentStatus.js.
+  const current = normalizeIndigent(status)
   function handleClick(e) {
     e.stopPropagation()
     const next = INDIGENT_CYCLE[current]
     db.clients.update(clientId, { indigent_status: next })
     addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, indigent_status: next })
+    touchClient(clientId)
   }
   return (
     <div

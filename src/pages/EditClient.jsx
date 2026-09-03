@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
+import { touchClient } from '../touchClient'
 import styles from './NewClient.module.css'
 
 const HOURS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
@@ -101,6 +102,7 @@ export default function EditClient() {
 
     await db.clients.update(id, changes)
     await addToSyncQueue('clients', 'UPDATE', id, { id, ...changes })
+    await touchClient(id)
     navigate(`/client/${id}`, { replace: true })
   }
 

@@ -1,14 +1,91 @@
-import { useState } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useClients } from '../hooks/useClients'
 import { useSyncStatus } from '../SyncContext'
+import { normalizeIndigent } from '../indigentStatus'
 import ClientRow from '../components/ClientRow'
 import OfflineStatus from '../components/OfflineStatus'
 import DailyHoursDrawer from '../components/DailyHoursDrawer'
 import styles from './ClientList.module.css'
 
 const SORT_KEY = 'clientListSortMode'
+const SCROLL_KEY = 'gsapp:clientListScroll'
+
+// ─── Client-list scroll restoration ──────────────────────────────────────────
+//
+// Restores the list's scroll position on BOTH return paths: tapping a client and
+// coming back, and a full page reload. sessionStorage rather than a ref or React
+// state is what covers the reload — the component tree doesn't survive it.
+//
+// ⚠️ THE SCROLLING ELEMENT IS THE DOCUMENT, not a container. Nothing in the
+// html → body → #root → .screen chain sets an overflow or a fixed height
+// (.screen is min-height: 100vh with no overflow), so the page scrolls as a
+// whole and window.scrollY is the value that means anything. The only
+// overflow-y: auto elements in the app are the two drawers' internal bodies.
+// Scrolling a container ref here would silently do nothing.
+//
+// Deliberately NOT a history-based solution: ClientFile's Back is
+// navigate('/'), not navigate(-1), so it creates a new history entry rather
+// than popping one — anything keyed on history state would miss the main path.
+// <ScrollRestoration> is also unavailable: main.jsx uses BrowserRouter, not a
+// data router.
+//
+// Scoped to the client list. No other page restores scroll.
+function useClientListScrollRestoration(ready) {
+  const restoredRef = useRef(false)
+
+  // Save side. Throttled to at most one write per 150ms (leading edge skipped,
+  // trailing edge written) so a flick doesn't write on every scroll event. The
+  // cleanup writes one final time: the throttle would otherwise drop the last
+  // few pixels before the user taps into a client, which is exactly the position
+  // being restored.
+  useEffect(() => {
+    // Stop the browser's own restoration from fighting ours. Left as 'manual'
+    // rather than reset to 'auto' on unmount — resetting it would hand the
+    // client-list history entry back to the browser, which is the thing we are
+    // overriding. No other page in the app restores scroll, so nothing else
+    // depends on the default.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+
+    let timer = null
+    const save = () => sessionStorage.setItem(SCROLL_KEY, String(window.scrollY))
+    const onScroll = () => {
+      if (timer) return
+      timer = setTimeout(() => { timer = null; save() }, 150)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    // pagehide, not beforeunload: it is the one that fires reliably when iOS
+    // Safari freezes or discards a PWA tab.
+    window.addEventListener('pagehide', save)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('pagehide', save)
+      save()
+    }
+  }, [])
+
+  // Restore side. Gated on `ready` — useClients reads through useLiveQuery, so
+  // the first render has zero rows and a document barely taller than the
+  // viewport; scrolling then would clamp to ~0 and look like it did nothing.
+  // Guarded by a ref so a later live update (a background sync landing) can
+  // never yank the user back to a stale offset mid-browse. useLayoutEffect so
+  // the jump lands before paint rather than as a visible flash.
+  useLayoutEffect(() => {
+    if (restoredRef.current || !ready) return
+    restoredRef.current = true
+    const saved = Number(sessionStorage.getItem(SCROLL_KEY))
+    if (!saved) return
+    window.scrollTo(0, saved)
+    // One rAF re-apply, for the cold-reload case only: row heights can still
+    // settle after this effect (web fonts resolving, the safe-area inset
+    // applying), and a document that is briefly too short clamps the scroll
+    // short of the target. Re-applying inside the same frame is invisible.
+    requestAnimationFrame(() => window.scrollTo(0, saved))
+  }, [ready])
+}
 
 const byLastName = (a, b) => a.last_name.localeCompare(b.last_name)
 
@@ -53,16 +130,59 @@ function sortActive(clients, mode) {
   })
 }
 
-// Closed section: always by closed_at DESC (most recently closed first); null
-// closed_at sorts to the bottom. Toggle does not affect this section.
+// Closed section: three colour tiers, then most-recently-modified first inside
+// each tier. Replaced the old flat closed_at DESC ordering 2026-09-02.
+//
+//   Tier 1  red, orange, green   (top)
+//   Tier 2  purple               — closed, no work left, awaiting final review
+//   Tier 3  gold                 (bottom)
+//
+// A gold client can never appear above any other tier; a purple one can never
+// appear above tier 1 but always sits above gold.
+//
+// ⚠️ The tier is keyed on normalizeIndigent(), the SAME function the circle uses
+// to pick its colour — never on the raw stored string. That is what guarantees a
+// client's tier can't disagree with the dot rendered next to their name: legacy
+// 'yellow' resolves to orange (tier 1), and null/''/unrecognized resolves to red
+// (tier 1) because that is what those render as. See src/indigentStatus.js.
+//
+// The "Sorting by:" toggle still does not reach this section — sortClosed takes
+// no mode argument, exactly as before.
+const INDIGENT_TIER = { red: 1, orange: 1, green: 1, purple: 2, gold: 3 }
+
+function closedTier(client) {
+  return INDIGENT_TIER[normalizeIndigent(client.indigent_status)]
+}
+
+// Full name order: last name, then first name for identical last names.
+const byName = (a, b) =>
+  a.last_name.localeCompare(b.last_name) ||
+  (a.first_name ?? '').localeCompare(b.first_name ?? '')
+
+// null when unset OR unparseable — an unparseable timestamp must land in the
+// nulls rather than produce NaN comparisons, which would make the comparator
+// inconsistent and the resulting order arbitrary.
+function modifiedTimestamp(client) {
+  if (!client.last_modified_at) return null
+  const t = new Date(client.last_modified_at).getTime()
+  return Number.isNaN(t) ? null : t
+}
+
 function sortClosed(clients) {
   return [...clients].sort((a, b) => {
-    const ca = a.closed_at ? new Date(a.closed_at).getTime() : null
-    const cb = b.closed_at ? new Date(b.closed_at).getTime() : null
-    if (ca == null && cb == null) return 0
-    if (ca == null) return 1
-    if (cb == null) return -1
-    return cb - ca
+    const ta = closedTier(a)
+    const tb = closedTier(b)
+    if (ta !== tb) return ta - tb
+
+    // Within a tier: most recently modified first, un-stamped clients at the
+    // bottom of that tier and alphabetical among themselves.
+    const ma = modifiedTimestamp(a)
+    const mb = modifiedTimestamp(b)
+    if (ma == null && mb == null) return byName(a, b)
+    if (ma == null) return 1
+    if (mb == null) return -1
+    if (ma !== mb) return mb - ma
+    return byName(a, b)
   })
 }
 
@@ -135,6 +255,9 @@ export default function ClientList() {
     localStorage.getItem(SORT_KEY) === 'event' ? 'event' : 'name'
   )
   const [showHours, setShowHours] = useState(false)
+
+  // Restore only once the rows actually exist — see the hook's own note.
+  useClientListScrollRestoration(clients.length > 0)
 
   function toggleSort() {
     setSortMode(prev => {

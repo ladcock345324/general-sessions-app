@@ -19,7 +19,6 @@ async function seed() {
       oca: '140804',
       custody_status: 'in_custody',
       bond_amount: 5000,
-      relieved_as_counsel: false,
       relieved_closed: false,
       criminal_history: null,
     })
