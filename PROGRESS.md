@@ -195,6 +195,58 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
+### iOS Scroll — Save-Side Corruption Fixed + Single-Hold Invariant (2026-09-03, third batch)
+
+**(A) from the entry below is confirmed fixed on device** — the bottom-of-file symptom is gone in both plain Safari and the installed PWA, and plain Safari is now correct across the board. This batch addresses what remained: **in the installed PWA only, Back from a client file landed at the top of the list roughly 30% of the time.** No schema change, no Dexie version bump, no data change.
+
+#### The prime suspect was NOT the cause — but it was hardened anyway
+
+The suspicion was that `useScrollToTopOnMount`'s hold-at-zero outlived its page and fought the list's restore. **Checked first, and both holds already returned working cleanups**: `useLayoutEffect(() => holdScrollAt(0), [])` returns `holdScrollAt`'s return value, which *is* the cleanup, and the list's restore does `return holdScrollAt(target)`. React's commit ordering also runs a deleted subtree's cleanups before the incoming route's layout effects, so the two could not overlap in practice.
+
+**Hardened regardless, because a hold loop that outlives its page is wrong on its own terms** and the old design leaned on two things staying true — that `cancelAnimationFrame` is enough, and that React's commit ordering never changes:
+
+- **A module-level single-hold token.** At most one hold is live app-wide, and **a newer hold pre-empts an older one immediately** (the old one's `finish` is called synchronously before the new one touches the scroll), rather than the two interleaving.
+- **A `finished` flag checked at the top of every frame**, not just `cancelAnimationFrame`. Cancellation alone relies on no frame already being in flight.
+- **Every hold now records its outcome** — target, final position, reason, duration, number of re-applies — into a capped 10-entry `sessionStorage` log (`gsapp:scrollHoldLog`, read with `readScrollHoldLog()`). ⚠️ **No UI reads it and nothing is displayed**, per the instruction not to add a visible readout. It exists so "did the restore never land, or land and then get overridden?" is answerable later: the reason is `document-too-short` in the first case and `drifted` or `user-scrolled` in the second.
+
+#### The actual cause: the save side was recording our own programmatic scrolling
+
+⚠️ **This is a save-side corruption, not a restore failure** — which is exactly why it presented as "the restore sometimes doesn't work".
+
+The scroll listener that persists the position was attached the whole time the restore hold was running, and **it could not tell our `window.scrollTo` calls from the user's finger**:
+
+1. Back into a list saved at 3000. The hold starts and calls `scrollTo(0, 3000)`.
+2. Rows have not arrived yet, so the document is one viewport tall and that scroll is **clamped — frequently to 0**.
+3. The clamped scroll **fires a `scroll` event**, which the save listener records and schedules to persist.
+4. 150ms later it writes **0** over the good saved position.
+5. The hold then reaches 3000 correctly and this trip looks fine — but the *next* Back reads `0`, hits the `if (!target) return` guard, and lands at the top.
+
+The failure therefore lands one trip **after** the trip that caused it, which is why it looked untied to any particular client and why it was intermittent: it depends on whether a clamped intermediate or the final position was the last thing persisted. **`onScroll` now returns early while `isScrollHoldActive()`.**
+
+**A second, related save-side defect fixed at the same time.** The unmount flush persisted `lastYRef` — the last position seen in a scroll *event* — whenever a throttled write was pending. But iOS coalesces scroll events during momentum scrolling, so tapping a row while the list is still gliding leaves `lastYRef` lagging well behind the live `window.scrollY` that the exit handler had just stored correctly. The flush would then **replace a correct value with a stale one**. It is now skipped once an exit handler has captured authoritatively.
+
+#### Every navigation path off the client list now persists — audited exhaustively
+
+There are exactly three `navigate()` calls reachable from the list, plus sign-out. **Two of the three were not persisting.**
+
+| Exit | Before | Now |
+|---|---|---|
+| Tapping a client row (Active + Closed) | ✅ persisted | `openClient` → `captureScrollNow()` |
+| **Tapping a case number inside a row → CaseView** | ❌ **did not persist** | `ClientRow`'s new `onNavigateAway` prop |
+| **The `+` button → New Client** | ❌ **did not persist** | `openNewClient` → `captureScrollNow()` |
+| Sign out | — | **deliberately not captured** — a session boundary; restoring a scroll position after re-login would be odd |
+| Hours drawer | — | not an exit; an overlay with no navigation |
+
+Confirmed by search that there is no `<a href>`, no `window.location`, and no other `navigate()` on the page. All exits now funnel through one `captureScrollNow()` returned by the restoration hook, which persists a **live** `window.scrollY` and marks the value authoritative.
+
+> ✅ **Re-confirmed: the exit capture reads live, not throttled.** `captureScrollNow()` calls `persistScroll(window.scrollY)` directly. `lastYRef` is referenced only inside the save-side effect and never on any tap path.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` at **20 errors, 0 warnings** — unchanged baseline.
+
+**31 new assertions** driving the real `holdScrollAt` against a fake browser with a manually pumped rAF, so frames are deterministic. The module was copied with only its two import lines rewritten and the React wrapper omitted, and **the remainder proved verbatim against the shipped source**. Covering: a hold reporting active then inactive and detaching all three listeners; **a cancelled hold never re-applying afterwards even as the position moves under it** (the reported symptom, directly); **a frame that runs after cleanup not re-applying**, which `cancelAnimationFrame` alone would not cover; a later hold pre-empting an earlier one and the earlier one not dragging the position back; touch abandoning the hold without fighting back; a document that stays short for 640ms and then grows still landing; drift inside the settle window being corrected; and the outcome log being capped, ordered oldest-first, and carrying the fields needed to diagnose. The 36 state-machine, 25 frozen-order, 46 indigent and 9 case-status assertions were all re-run and still pass.
+
+⚠️ **Not verified on production** — on-device checking is the user's.
+
 ### iOS Scroll — Missing Forward Reset + Restore Hardened Against Safari (2026-09-03, second batch)
 
 Mobile-Safari-only follow-up to the entry below. **No schema change, no Dexie version bump, no data change.**
@@ -1719,7 +1771,7 @@ src/
   indigentStatus.js        # INDIGENT_CYCLE / INDIGENT_COLOR / INDIGENT_ALIAS + normalizeIndigent() — shared by ClientRow, ClientFile and ClientList's tier sort (2026-09-02)
   touchClient.js           # touchClient() — the ONLY writer of clients.last_modified_at (2026-09-02). Never import from the sync layer
   scrollRestore.js         # Scroll decision logic — scrollHoldStep (REACH/SETTLE state machine), maxScrollableY, isTargetReachable, shouldPersistScroll (2026-09-03). Browser-free so it can be tested
-  scrollHold.js            # holdScrollAt() + useScrollToTopOnMount() — drives and HOLDS a scroll position; used by the list restore and every detail route's forward reset (2026-09-03)
+  scrollHold.js            # holdScrollAt() + useScrollToTopOnMount() + isScrollHoldActive() + readScrollHoldLog() — drives and HOLDS a scroll position, one hold live app-wide, outcomes logged to sessionStorage (2026-09-03)
   seed.js                  # One-time seed script (node src/seed.js) — broken, see D1
 
   hooks/

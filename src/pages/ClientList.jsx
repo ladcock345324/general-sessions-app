@@ -5,7 +5,7 @@ import { useClients } from '../hooks/useClients'
 import { useSyncStatus } from '../SyncContext'
 import { normalizeIndigent } from '../indigentStatus'
 import { shouldPersistScroll } from '../scrollRestore'
-import { holdScrollAt } from '../scrollHold'
+import { holdScrollAt, isScrollHoldActive } from '../scrollHold'
 import ClientRow from '../components/ClientRow'
 import OfflineStatus from '../components/OfflineStatus'
 import DailyHoursDrawer from '../components/DailyHoursDrawer'
@@ -57,6 +57,9 @@ function useClientListScrollRestoration(ready) {
   // teardown, by which point the route had changed and the document had
   // collapsed — so it stored 0 over the good value.
   const lastYRef = useRef(0)
+  // Set once an exit handler has persisted a live, authoritative position. The
+  // unmount flush must not then overwrite it with a lagging throttled value.
+  const authoritativeRef = useRef(false)
 
   useEffect(() => {
     // history.scrollRestoration = 'manual' is set once at boot in main.jsx —
@@ -66,6 +69,16 @@ function useClientListScrollRestoration(ready) {
 
     let timer = null
     const onScroll = () => {
+      // ⚠️ IGNORE OUR OWN SCROLLING. A restore hold calls window.scrollTo
+      // repeatedly, and every one of those fires a scroll event here. During the
+      // hold's REACH phase the document is still growing, so those scrollTo
+      // calls are CLAMPED — often to 0 on a one-viewport document — and this
+      // listener would faithfully record the clamped intermediate and persist it
+      // 150ms later, overwriting the real saved position with 0. The next Back
+      // would then read 0, skip the restore entirely, and land at the top.
+      // That is a save-side corruption, not a restore failure, which is why it
+      // looked like the restore "sometimes didn't work".
+      if (isScrollHoldActive()) return
       // Recorded every event, unthrottled and storage-free: this is the value
       // the flush below trusts.
       lastYRef.current = window.scrollY
@@ -84,10 +97,17 @@ function useClientListScrollRestoration(ready) {
       window.removeEventListener('pagehide', onPageHide)
       // Flush ONLY if a throttled write was still pending — otherwise the
       // latest position is already stored and there is nothing to do. Writing
-      // unconditionally here is what caused the bug.
+      // unconditionally here is what caused the 2026-09-03 Back bug.
+      //
+      // ⚠️ And never when an exit handler already captured a live position.
+      // lastYRef is only as fresh as the last scroll EVENT, and iOS coalesces
+      // those during momentum scrolling — so tapping a row while the list is
+      // still gliding leaves lastYRef lagging well behind the live scrollY that
+      // captureNow() just stored. Flushing here would replace a correct value
+      // with a stale one.
       if (timer) {
         clearTimeout(timer)
-        persistScroll(lastYRef.current)
+        if (!authoritativeRef.current) persistScroll(lastYRef.current)
       }
     }
   }, [])
@@ -120,6 +140,16 @@ function useClientListScrollRestoration(ready) {
     // length of the settle window). Abandons instantly on real user input.
     return holdScrollAt(target)
   }, [ready])
+
+  // ⚠️ THE authoritative exit capture. Every navigation path that leaves the
+  // client list must call this immediately before navigating: the list is still
+  // mounted and full height at that instant, so a LIVE window.scrollY read is
+  // correct by construction and cannot be raced by a trailing timer or lagged by
+  // iOS coalescing scroll events during momentum scrolling.
+  return function captureNow() {
+    persistScroll(window.scrollY)
+    authoritativeRef.current = true
+  }
 }
 
 const byLastName = (a, b) => a.last_name.localeCompare(b.last_name)
@@ -354,16 +384,25 @@ export default function ClientList() {
   const [showHours, setShowHours] = useState(false)
 
   // Restore only once the rows actually exist — see the hook's own note.
-  useClientListScrollRestoration(clients.length > 0)
+  const captureScrollNow = useClientListScrollRestoration(clients.length > 0)
 
-  // ⚠️ Capture the scroll position SYNCHRONOUSLY, at the moment of leaving,
-  // before navigate() runs. This value is correct by construction: the list is
-  // still mounted, the document is still full height, and nothing throttled can
-  // race it. Everything else (the 150ms throttle, the unmount flush) is a
-  // backstop for positions the user never navigated away from.
+  // ⚠️ EVERY navigation path off this page goes through captureScrollNow()
+  // first. The full list, so the next one added doesn't get missed:
+  //   1. tapping a client row (Active and Closed)      → openClient
+  //   2. tapping a case number inside a row → CaseView → ClientRow's
+  //      onNavigateAway prop, wired to this same function
+  //   3. the + button → New Client                     → below
+  // Not an exit: the Hours drawer (an overlay, no navigation) and Sign out
+  // (a session boundary — restoring a scroll position after re-login would be
+  // odd, and the list is remounted from scratch anyway).
   function openClient(clientId) {
-    persistScroll(window.scrollY)
+    captureScrollNow()
     navigate(`/client/${clientId}`)
+  }
+
+  function openNewClient() {
+    captureScrollNow()
+    navigate('/client/new')
   }
 
   function toggleSort() {
@@ -392,7 +431,7 @@ export default function ClientList() {
       <OfflineStatus />
       <header className={styles.header}>
         <h1 className={styles.title}>Clients</h1>
-        <button className={styles.addClientBtn} onClick={() => navigate('/client/new')}>+</button>
+        <button className={styles.addClientBtn} onClick={openNewClient}>+</button>
       </header>
 
       {loading && (
@@ -427,6 +466,7 @@ export default function ClientList() {
                       key={client.id}
                       client={client}
                       onClick={() => openClient(client.id)}
+                      onNavigateAway={captureScrollNow}
                     />
                   ))
               }
@@ -446,6 +486,7 @@ export default function ClientList() {
                     client={client}
                     relieved
                     onClick={() => openClient(client.id)}
+                    onNavigateAway={captureScrollNow}
                   />
                 ))}
               </div>

@@ -111,7 +111,11 @@ function RelivedBadge() {
   return <span className={styles.closedBadge}>CLOSED</span>
 }
 
-export default function ClientRow({ client, relieved = false, onClick }) {
+// onNavigateAway fires immediately before this row navigates anywhere the
+// parent didn't route itself — currently just the case-number tap, which is a
+// SECOND exit off the client list and was previously leaving without saving the
+// scroll position. Defaults to a no-op so the component stands alone.
+export default function ClientRow({ client, relieved = false, onClick, onNavigateAway }) {
   const navigate = useNavigate()
   // bookingDate / bookingTime are deliberately NOT destructured here: the
   // in-custody preliminary-hearing countdown that consumed them was removed
@@ -169,7 +173,12 @@ export default function ClientRow({ client, relieved = false, onClick }) {
                 // alone, so an unnumbered case would have a zero-width hit area and
                 // be unreachable from this list. A dash gives it something to tap,
                 // and the id keeps the URL resolvable (CaseView resolves both).
-                const pu = e => { e.stopPropagation(); if (Math.abs(e.clientX - start.x) < 5 && Math.abs(e.clientY - start.y) < 5) navigate(`/case/${c.case_number || c.id}`) }
+                const pu = e => {
+                  e.stopPropagation()
+                  if (Math.abs(e.clientX - start.x) >= 5 || Math.abs(e.clientY - start.y) >= 5) return
+                  onNavigateAway?.()
+                  navigate(`/case/${c.case_number || c.id}`)
+                }
                 return (
                   <div key={c.id} className={styles.caseTableRow}>
                     <span className={styles.caseNum} onPointerDown={pd} onPointerUp={pu}>{c.case_number || '—'}</span>
