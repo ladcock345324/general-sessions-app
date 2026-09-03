@@ -8,6 +8,7 @@ import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import { touchClient } from '../touchClient'
 import styles from './ClientFile.module.css'
+import { useScrollToTopOnMount } from '../scrollHold'
 // Borrowed for the header case mini-list so it matches the client list exactly
 // (same colors, sizes, and "(CLASSIFICATION)" parenthetical) instead of a
 // near-duplicate set of rules that would drift out of sync.
@@ -2178,6 +2179,11 @@ function CourtroomDocsSection({ clientId }) {
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function ClientFile() {
+  // Forward navigation must land at the top. Nothing else in the app does this
+  // for us on mobile Safari, which carries the client list's scroll position
+  // into this shorter page and clamps it to the end. See scrollHold.js.
+  useScrollToTopOnMount()
+
   const { id } = useParams()
   const navigate = useNavigate()
   const { client, incidents, nextEvent, hours, personalNote, loading, error, refetch } = useClientFile(id)

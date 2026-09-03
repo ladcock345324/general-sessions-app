@@ -5,6 +5,7 @@ import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import { touchClient } from '../touchClient'
 import styles from './NewClient.module.css'
+import { useScrollToTopOnMount } from '../scrollHold'
 
 const HOURS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
 
@@ -48,6 +49,10 @@ function pickerHandlers() {
 }
 
 export default function EditClient() {
+  // Same hole as the other detail routes — reached from a scrolled client file.
+  // See scrollHold.js.
+  useScrollToTopOnMount()
+
   const { id } = useParams()
   const navigate = useNavigate()
 

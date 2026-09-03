@@ -4,7 +4,8 @@ import { supabase } from '../supabaseClient'
 import { useClients } from '../hooks/useClients'
 import { useSyncStatus } from '../SyncContext'
 import { normalizeIndigent } from '../indigentStatus'
-import { scrollRestoreStep, maxScrollableY, shouldPersistScroll } from '../scrollRestore'
+import { shouldPersistScroll } from '../scrollRestore'
+import { holdScrollAt } from '../scrollHold'
 import ClientRow from '../components/ClientRow'
 import OfflineStatus from '../components/OfflineStatus'
 import DailyHoursDrawer from '../components/DailyHoursDrawer'
@@ -58,13 +59,9 @@ function useClientListScrollRestoration(ready) {
   const lastYRef = useRef(0)
 
   useEffect(() => {
-    // Stop the browser's own restoration from fighting ours. Left as 'manual'
-    // rather than reset to 'auto' on unmount — resetting it would hand the
-    // client-list history entry back to the browser, which is the thing we are
-    // overriding. No other page in the app restores scroll, so nothing else
-    // depends on the default.
-    if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
-
+    // history.scrollRestoration = 'manual' is set once at boot in main.jsx —
+    // it belongs there rather than here, so it also covers a cold load straight
+    // into a client file.
     lastYRef.current = window.scrollY
 
     let timer = null
@@ -115,24 +112,13 @@ function useClientListScrollRestoration(ready) {
     const target = Number(sessionStorage.getItem(SCROLL_KEY))
     if (!target) return
 
-    // Retry across a few frames instead of firing once. On a remount the rows
-    // stream in from Dexie, so the document can still be shorter than the target
-    // when this first runs — a single scrollTo would be clamped to the bottom of
-    // a short page (usually 0) and never corrected.
-    let attempt = 0
-    let raf = 0
-    const apply = () => {
-      window.scrollTo(0, target)
-      const { action } = scrollRestoreStep({
-        target,
-        currentY: window.scrollY,
-        maxScrollable: maxScrollableY(document.documentElement.scrollHeight, window.innerHeight),
-        attempt: ++attempt,
-      })
-      if (action === 'retry') raf = requestAnimationFrame(apply)
-    }
-    apply()
-    return () => cancelAnimationFrame(raf)
+    // Drive and HOLD, rather than firing once. Two things this survives that a
+    // single scrollTo did not: a document still growing as rows arrive from
+    // Dexie (waited out against a wall-clock deadline, because on iOS an
+    // IndexedDB read can outlast any sane frame budget), and mobile Safari
+    // moving the scroll AFTER us during the route change (taken back for the
+    // length of the settle window). Abandons instantly on real user input.
+    return holdScrollAt(target)
   }, [ready])
 }
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import styles from './NewClient.module.css'
+import { useScrollToTopOnMount } from '../scrollHold'
 
 const EMPTY = {
   last_name: '',
@@ -50,6 +51,9 @@ function pickerHandlers() {
 }
 
 export default function NewClient() {
+  // Same hole as the other detail routes. See scrollHold.js.
+  useScrollToTopOnMount()
+
   const navigate = useNavigate()
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)

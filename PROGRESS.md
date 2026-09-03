@@ -195,6 +195,57 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
+### iOS Scroll — Missing Forward Reset + Restore Hardened Against Safari (2026-09-03, second batch)
+
+Mobile-Safari-only follow-up to the entry below. **No schema change, no Dexie version bump, no data change.**
+
+**What testing established, and what it ruled out.** Desktop was correct throughout. The failure was **intermittent for identical actions on the same client**, which makes it a race rather than a logic error. Clients at the top of the list never misbehaved — those are tapped from scroll position 0 — so the fault tracked **the carried scroll position, not the client**. A second symptom mattered more than the first: tapping a client sometimes landed at the **bottom of that client's file**, which the restore code has no involvement in at all. And plain Safari as a regular tab was **markedly worse** than the installed PWA, so ⚠️ **this was never standalone-mode-specific** — standalone was partially masking it. That whole line of investigation is closed.
+
+#### (A) Nothing reset the scroll on forward navigation — the larger half
+
+⚠️ **Confirmed by absence: before this change there was not a single `scrollTo` anywhere in `src/pages/`.** Desktop browsers reset scroll on navigation for you, which is exactly why this was invisible there. Mobile Safari carries the previous page's offset into the new route — and a client file is shorter than a scrolled client list, so the carried position clamps to the end and **lands the user at the bottom of the file they just opened**.
+
+`useScrollToTopOnMount()` now runs on every detail route. **The hole existed on all four, not just the two named**, so all four got it:
+
+| Route | Reached from |
+|---|---|
+| `ClientFile` | a scrolled client list — the reported symptom |
+| `CaseView` | a scrolled client file |
+| `NewClient` | the client list |
+| `EditClient` | a scrolled client file |
+
+⚠️ **Deliberately NOT a blanket app-wide reset, and never applied to `ClientList`.** Forward navigation into a detail page resets; returning to the list restores. A blanket reset would destroy the restore built the day before.
+
+#### (B) The restore lost the race intermittently — the smaller residue
+
+Two independent hardenings, either of which could have produced intermittency on its own:
+
+**1. The frame budget became a wall-clock deadline.** The retry budget was 10 frames — **≈166ms**, which on iOS can easily elapse before IndexedDB has returned a single row. The restore then measured a one-viewport document, clamped to 0 and gave up. ⚠️ **Frames are not a unit of data arriving.** `REACH_DEADLINE_MS = 1500` replaces it.
+
+**2. The restore now HOLDS its position instead of firing once and trusting it.** After landing it keeps watching for `SETTLE_MS = 1000` and re-applies if the position moves without user input — because Safari can act *after* our restore, and whoever lands last wins. ⚠️ **Abandoned instantly on genuine `touchstart`, `wheel` or `keydown`**, so it can never fight the user for the viewport. Deliberately **not** the `scroll` event: our own `scrollTo` fires that, which would abort the hold immediately.
+
+Both directions of travel now run through one driver, `holdScrollAt(target)` in the new **`src/scrollHold.js`** — the list restore passes the saved position, the detail pages pass `0`. They are the same problem with a different target. The decision half stays in the browser-free `scrollRestore.js` as a two-phase state machine (`scrollHoldStep`): REACH until the position first lands, then SETTLE watching for drift.
+
+**`history.scrollRestoration = 'manual'` moved to `main.jsx`**, set once at boot. Inside `ClientList`'s effect it never applied on a cold load straight into a client file, and only took effect after the list had mounted once. ⚠️ **It is necessary but demonstrably not sufficient** — it does not stop mobile Safari moving the scroll across these route changes, which is why (A) and (B) are both needed.
+
+> ✅ **Ruled out, checked rather than assumed: `openClient()` already persisted a LIVE read.** It calls `persistScroll(window.scrollY)` directly; `lastYRef` (the throttled value) is referenced only inside the save-side effect and never on the tap path. So the momentum-scroll lag concern — tapping a row while the list is still gliding — was never in play. No change was needed.
+
+**Which defect accounts for which symptom:**
+
+| Symptom | Cause |
+|---|---|
+| Landing at the **bottom of a client file** | **(A)** — nothing reset forward navigation; the carried offset clamped to the end of a shorter page |
+| **Back landing at the top**, intermittently | **(B)** — the restore ran, then Safari moved the scroll after it, or the 166ms budget expired before rows arrived |
+| Only clients **below the fold** affected | Both — a tap from position 0 carries nothing forward and has nothing to restore |
+| **Plain Safari worse than the PWA** | (A) mainly; a browser tab does more of its own scroll management across route changes than a standalone window |
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` at **20 errors, 0 warnings** — unchanged baseline.
+
+- **36 assertions** on the hold state machine, imported directly from the shipped module: user input outranking every other state including the deadline; the reach phase waiting out a document that is still growing; the wall-clock deadline distinguishing `document-too-short` from `scroll-refused`; `landed` being announced exactly once so the settle clock starts correctly; drift inside the window re-applying and drift *after* it being left alone; and `target: 0` behaving correctly for the detail-page reset.
+- Plus a **frame-by-frame loop simulation** against a fake browser that clamps like a real one: rows arriving after **900ms** still land (and an explicit assertion that the old 10-frame budget would have expired first), a simulated Safari jolt to the bottom 300ms after landing being taken back, the same jolt after the window closing being left alone, user input stopping the loop within a frame, a permanently-short document terminating at the deadline rather than spinning, and every simulated path terminating.
+
+⚠️ **Not verified on production** — all on-device checking is the user's, and this is a mobile-Safari timing issue that only a real device can settle.
+
 ### Closed-Section Order Frozen Per Mount + Scroll-Restore Back Bug Fixed (2026-09-03)
 
 Two changes: one behaviour change, one bug in what shipped the day before. **No schema change, no Dexie version bump, no data change.**
@@ -1465,7 +1516,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Two sections: **Active** (`relieved_closed = false`) and **Closed** (`relieved_closed = true`) — header text rendered as "CLOSED" via CSS `text-transform: uppercase`
 - **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — `sortClosed()` takes no mode argument. As of **2026-09-02** it sorts by **indigent-colour tier** (red/orange/green → purple → gold), then `last_modified_at` DESC within each tier, then last name / first name; it no longer uses `closed_at`. See the 2026-09-02 entry.
 - ⚠️ **The Closed section's ORDER is frozen while the view is mounted (2026-09-03)** so that tapping an indigent circle doesn't make the row jump out from under the user's finger. **The dot still recolours instantly — only the position is held.** The row takes its new position on the next load of the list, which includes both a refresh and returning from a client file (ClientList remounts on that path). A client not in the snapshot — newly closed, newly synced — falls back to live values and sorts in normally. Active-section ordering is unaffected.
-- **Scroll position is restored** on the client list (2026-09-02) — both on returning from a client file and across a full page reload, via `sessionStorage`. The client list is the only page that does this. ⚠️ **The Back path was broken on arrival and fixed 2026-09-03**: the effect cleanup re-read `window.scrollY` during teardown, after the route had already changed, and stored `0` over the good value. Refresh was unaffected because a reload never unmounts. The position is now captured synchronously before `navigate()`, and the restore retries across frames so it can't be clamped by a document that hasn't finished growing.
+- **Scroll position is restored** on the client list (2026-09-02) — both on returning from a client file and across a full page reload, via `sessionStorage`. The client list is the only page that does this. ⚠️ **The Back path was broken on arrival and fixed 2026-09-03**: the effect cleanup re-read `window.scrollY` during teardown, after the route had already changed, and stored `0` over the good value. Refresh was unaffected because a reload never unmounts. The position is now captured synchronously before `navigate()`, and the restore retries until a wall-clock deadline so it can't be clamped by a document that hasn't finished growing.
+- ⚠️ **Every OTHER route resets scroll to the top on mount** (`useScrollToTopOnMount`, 2026-09-03) — `ClientFile`, `CaseView`, `NewClient`, `EditClient`. Mobile Safari carries the previous page's offset across an SPA route change, which was landing users at the *bottom* of a client file opened from a scrolled list. **The client list is deliberately excluded**: forward navigation into a detail page resets, returning to the list restores. Both directions share one driver in `scrollHold.js`, which holds the position for a settle window against Safari's own late scroll handling and abandons instantly on real user input.
 - Each section header shows a count badge (e.g. "Active 12")
 - Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge. **No prelim-hearing countdown** — that two-line block above the badge was removed 2026-08-10, so the badge is now centred for every client
 - **Same-incident bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a `[` in `#6b9fd4` (the case-number colour) drawn in the gutter to the left of the case table. ⚠️ The list is sorted purely on the numeric part of the case number with **no incident component**, so same-incident cases can interleave; a non-contiguous group is deliberately left unbracketed rather than drawn across a foreign case. See the 2026-08-10 entry and Open Items.
@@ -1666,7 +1718,8 @@ src/
   dateUtils.js             # Shared "M/D/YYYY" helpers — dateKey, todayString, toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, shiftDate
   indigentStatus.js        # INDIGENT_CYCLE / INDIGENT_COLOR / INDIGENT_ALIAS + normalizeIndigent() — shared by ClientRow, ClientFile and ClientList's tier sort (2026-09-02)
   touchClient.js           # touchClient() — the ONLY writer of clients.last_modified_at (2026-09-02). Never import from the sync layer
-  scrollRestore.js         # Client-list scroll-restore decision logic — scrollRestoreStep, maxScrollableY, isTargetReachable, shouldPersistScroll (2026-09-03). Browser-free so it can be tested
+  scrollRestore.js         # Scroll decision logic — scrollHoldStep (REACH/SETTLE state machine), maxScrollableY, isTargetReachable, shouldPersistScroll (2026-09-03). Browser-free so it can be tested
+  scrollHold.js            # holdScrollAt() + useScrollToTopOnMount() — drives and HOLDS a scroll position; used by the list restore and every detail route's forward reset (2026-09-03)
   seed.js                  # One-time seed script (node src/seed.js) — broken, see D1
 
   hooks/

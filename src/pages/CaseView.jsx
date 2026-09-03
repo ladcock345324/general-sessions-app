@@ -9,6 +9,7 @@ import { addToSyncQueue } from '../syncManager'
 import { touchClient } from '../touchClient'
 import styles from './CaseView.module.css'
 import TextViewerDrawer from '../components/TextViewerDrawer'
+import { useScrollToTopOnMount } from '../scrollHold'
 
 // Charge classification, most-serious → least-serious. Blank = unset (stored
 // null) and stays first — it's the placeholder, not a severity level.
@@ -219,6 +220,10 @@ function PvField({ label, value, placeholder, type, onCommit }) {
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function CaseView() {
+  // Same hole as ClientFile — reached by scrolling a client file and tapping a
+  // case, so it carries that page's offset on mobile Safari. See scrollHold.js.
+  useScrollToTopOnMount()
+
   const { caseNumber } = useParams()
   const navigate = useNavigate()
 
