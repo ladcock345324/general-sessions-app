@@ -46,6 +46,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `closed_at` | timestamptz | set when a client is closed, cleared to null on reopen. ⚠️ **No longer the Closed section's sort key as of 2026-09-02** — that section now sorts by indigent-colour tier, then `last_modified_at` DESC. This column is still written by both Close and Reopen and is still the record of *when* a client was closed; it is simply no longer read for ordering. |
 | `last_modified_at` | timestamptz | nullable — last time any of this client's data changed. Added outside the app and backfilled for all 57 clients 2026-09-02; **wired up the same day** and written **only** by `touchClient()` (`src/touchClient.js`). Orders the Closed section within each colour tier, most recent first; a null sorts to the bottom of its own tier. **Not indexed in Dexie** (the sort runs in JS over the already-loaded list), so it needed no version bump. ⚠️ **Never stamped by the sync layer** — see the 2026-09-02 entry. |
 | `created_at` | timestamp | row creation timestamp, default `now()`. Not read or displayed by the app. |
+| `indigent_status` | text | the circle beside the client's name. Five states, cycling **red → orange → green → purple → gold → red**; column DEFAULT is `'red'` (migration `supabase_migration_indigent_default_red.sql`). **Indexed in Dexie** (`clients: 'id, last_name, indigent_status'`). ⚠️ **`'orange'` is canonical; `'yellow'` is a permanent LEGACY ALIAS for it** — same colour `#E8913A`, same cycle position — resolved by `normalizeIndigent()` in [`src/indigentStatus.js`](src/indigentStatus.js), which also maps anything unrecognized to `'red'` for display. Purple (added 2026-09-02) means *case closed, no work left, final review or ACAP upload pending* and drives the Closed section's tier sort. Renamed from `'yellow'` outside the app 2026-09-02; **zero `'yellow'` rows remain**. *(This column shipped 2026-06-10 but was never added to this table until the 2026-09-04 audit.)* |
 | `relieved_closed` | boolean | shows CLOSED badge when true |
 | `criminal_history_url` | text | Supabase Storage public URL for criminal history PDF |
 | `criminal_history_text` | text | extracted text from criminal history PDF — populated on upload |
@@ -195,7 +196,43 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
-### Hours — Always Default to Today + Whole-Number Dropdown Bug (2026-09-04)
+### Session Summary — 2026-09-02 → 2026-09-04
+
+Everything that shipped across this run, in commit order. Detail lives in the individual entries below — this is the index. **All of it is confirmed working on-device by Lucas** (desktop, plain mobile Safari, and the installed PWA).
+
+- [`80ce731`](https://github.com/ladcock345324/general-sessions-app/commit/80ce731) — `relieved_as_counsel` removed app-wide + **Dexie v3 → v4**; the client Close/Reopen path now writes `cases.status`; new cases **inherit** their client's closed state; the indigent circle gains **purple** and `'yellow'` is renamed to `'orange'`; client-list scroll restoration; the Closed section re-sorted into **colour tiers** with `clients.last_modified_at` wired up via `touchClient()`. See [Four-Item Batch](#four-item-batch--relieved_as_counsel-removed--case-close-bug-purple-circle-list-scroll-restore-closed-section-tiers-2026-09-02-commit-80ce731) and [New Cases Inherit Their Client's Closed State](#new-cases-inherit-their-clients-closed-state-2026-09-02-commit-80ce731).
+- [`76d3c51`](https://github.com/ladcock345324/general-sessions-app/commit/76d3c51) — the Closed section's **order is frozen per mount** so a tap on the indigent circle can't move the row out from under the user; first fix to scroll restoration on Back. See [that entry](#closed-section-order-frozen-per-mount-scroll-restore-back-bug-fixed-2026-09-03-commit-76d3c51).
+- [`bc6e006`](https://github.com/ladcock345324/general-sessions-app/commit/bc6e006) — **scroll reset on forward navigation** for every detail route; the restore's frame budget becomes a wall-clock deadline and it holds its position through a settle window.
+- [`29959ef`](https://github.com/ladcock345324/general-sessions-app/commit/29959ef) — the save side stops recording **our own programmatic scrolling**; one scroll hold live app-wide; every exit off the client list persists.
+- [`f2c53b2`](https://github.com/ladcock345324/general-sessions-app/commit/f2c53b2) — diagnostic scaffolding removed and the scroll arc closed as [RESOLVED](#scroll-restoration-resolved-verified-on-device-2026-09-04-commit-f2c53b2).
+- [`ba3dc93`](https://github.com/ladcock345324/general-sessions-app/commit/ba3dc93) — Hours entries **always default to today**; whole-number hours (`1`, `2`) no longer display as `0.1`. See [that entry](#hours-always-default-to-today-whole-number-dropdown-bug-2026-09-04-commit-ba3dc93).
+
+#### The five things worth remembering — each spans more than one entry
+
+**1. `clients.last_modified_at` is live, and the sync layer must never stamp it.** The column exists, is backfilled for all 57 clients (applied outside the app), and is written **only** by `touchClient()` in [`src/touchClient.js`](src/touchClient.js) — **29 calls across 4 files**, plus `NewClient.jsx`'s inline stamp on INSERT. It orders the Closed section within each colour tier.
+
+> ⚠️ **STANDING PROHIBITION: never call `touchClient()` from `fullSync`, `processSyncQueue`, or any other sync-layer path.** Those replay *server* state into Dexie; stamping there would mark every client freshly modified on every sync and destroy the ordering outright. This is enforced structurally — `syncManager.js` does not import `touchClient.js`, **and must not start**. Reading a client file, scrolling it and navigating away all leave the timestamp alone, as does the session-only hours check-off toggle, which persists nothing.
+
+**2. `'orange'` is the canonical indigent value; `'yellow'` is a permanent legacy alias.** The five-state cycle is **red → orange → green → purple → gold → red** ([`src/indigentStatus.js`](src/indigentStatus.js)). The value that was stored as `'yellow'` is the orange circle (`#E8913A`) — only the name changed. **The data rename was applied outside the app by the user after the code shipped, and is confirmed complete — zero `'yellow'` rows remain as of 2026-09-04** (57 clients: green 31, red 10, gold 9, purple 4, orange 3). ⚠️ **The alias is permanent and must not be removed as tidy-up now that the rename is done**: it costs one object lookup and covers any row that escapes the rename — a device offline during it, a restore from an older `backups` snapshot, a row hand-edited in the dashboard. Without it a stray `'yellow'` falls through to the off-cycle normalizer, renders red, and jumps tiers in the Closed section. Purple means *case closed, no work left, final review or ACAP upload pending*.
+
+**3. Dexie went v3 → v4, and the reason is specific.** `relieved_as_counsel` was the one dormant column that was actually **indexed** (`clients: 'id, last_name, relieved_as_counsel, indigent_status'`), and **dropping an index is exactly the case that needs a new version**. Everything else added this session — `last_modified_at`, `cases.status` — is non-indexed and needed nothing, which is the normal case. ⚠️ The v1 and v2 declarations in [`localDB.js`](src/localDB.js) are deliberately left untouched: they are the migration record for a device upgrading *from* those versions, and rewriting them in place would give a fresh install a different schema than an upgraded one.
+
+**4. Scroll restoration had two root causes, and neither was the one first suspected.**
+   - **Nothing scrolled to the top on forward navigation, anywhere in the app** — not one `scrollTo` existed in `src/pages/`. Desktop browsers do this for you, which masked it completely; mobile Safari carries the previous page's offset into the new route, so opening a client file from a scrolled list landed at the **bottom** of it.
+   - **A clamped restore scroll was persisted as if it were a user scroll.** During the restore's reach phase the document is one viewport tall, so `scrollTo` is clamped — usually to 0 — and that fired a `scroll` event the save side recorded and wrote to storage. ⚠️ **The failure therefore surfaced one navigation AFTER the trip that caused it**, which is why it looked random and untied to any client.
+
+   **Knobs, by file:** `REACH_DEADLINE_MS` (1500) and `SETTLE_MS` (1000) in [`src/scrollRestore.js`](src/scrollRestore.js) — the first is **wall clock, deliberately not a frame count**, because an IndexedDB read on iOS routinely outlasts any frame budget; lower the second if a deliberate scroll is ever pulled back shortly after arriving. `SCROLL_TOLERANCE` (2px) is there for fractional offsets. The driver is [`src/scrollHold.js`](src/scrollHold.js); the save side and exit captures are in [`ClientList.jsx`](src/pages/ClientList.jsx).
+
+**5. The Closed section: colour tiers, and an order frozen per mount.** Tier 1 red/orange/green → tier 2 purple → tier 3 gold; within a tier, `last_modified_at` DESC, then last name, then first name, with a null timestamp at the bottom of **its own** tier. ⚠️ **The tier is keyed on `normalizeIndigent()`, the same function the dot uses** — never on the raw string — so a client's tier can never disagree with the colour beside their name. The **order is then frozen for the life of the mount** so tapping the circle recolours the dot instantly without the row moving; it takes its new position on the next load of the list, which includes both a refresh and returning from a client file. The "Sorting by:" toggle still does not reach this section.
+
+#### Still open after this run
+
+- **`fullSync`'s partial-payload `put`** — promoted to [D4](#d4-fullsyncs-pending-write-replay-uses-put-with-partial-payloads) in the DEFERRED section so it stops living only inside a batch entry. Untouched, and a background task chip was raised for it.
+- **[D1](#d1-srcseedjs-broken-and-carries-a-second-copy-of-the-supabase-anon-key) `src/seed.js`** — still broken, still carries a duplicate anon key. One line was removed from it this session (`relieved_as_counsel`), which does **not** count as the repair-or-delete decision that item is waiting on.
+- **[D2](#d2-extraction-progress-state-during-pdf-upload)** (extraction progress state) and **[D3](#d3-automation-layer)** (automation layer) — unchanged.
+- **Existing `hours` rows** — **320 of 765 hold `0.1`**, reported and deliberately **not** modified. ⚠️ That is not a corruption count: `0.1` is the most common legitimate value and four description presets default to it. 6 rows hold `1`, none hold `2`, so the exposure is small and a corrupted row cannot be told from a genuine one by value alone. The user reviews these.
+
+### Hours — Always Default to Today + Whole-Number Dropdown Bug (2026-09-04, commit `ba3dc93`)
 
 Two changes to the Hours section. **No schema change, no Dexie version bump, and — importantly — no data change: the stored numerics are correct and were not touched or migrated.**
 
@@ -235,7 +272,9 @@ Context that bounds the exposure: **6 rows still hold `1` and 0 rows hold `2`.**
 
 **Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` at **20 errors, 0 warnings**. 120 assertions on `HOURS_OPTIONS` and `toHoursOption`, extracted verbatim from the shipped source: the old behaviour reproduced for both `1` and `2`, every one of the 25 options surviving a numeric DB round trip **and saving back as the identical number**, `0.15` being preserved rather than padded down to `0.1`, and the degenerate inputs (`null`, `undefined`, `NaN`, `''`) not throwing or producing junk.
 
-### ✅ Scroll Restoration — RESOLVED, verified on-device (2026-09-04)
+✅ **VERIFIED ON-DEVICE 2026-09-04** — confirmed working by the user. See the session summary at the top of Completed Features.
+
+### ✅ Scroll Restoration — RESOLVED, verified on-device (2026-09-04, commit `f2c53b2`)
 
 **The whole scroll-restoration arc is closed.** Confirmed working by the user across **desktop, plain mobile Safari and the installed PWA**, over repeated round trips, including the case-number and `+` button exits. The three entries below are the build record; this is the summary worth reading first.
 
@@ -270,7 +309,7 @@ The per-hold outcome log added while chasing this — the capped `gsapp:scrollHo
 
 **Verification:** `npm run build` clean. `npx eslint .` at **20 errors, 0 warnings**. 28 assertions drive the real `holdScrollAt` against a fake browser with a pumped rAF (module proved verbatim against the shipped source), plus 36 state-machine assertions — all re-run after the removal, along with the 25 frozen-order, 46 indigent and 9 case-status suites.
 
-### iOS Scroll — Save-Side Corruption Fixed + Single-Hold Invariant (2026-09-03, third batch)
+### iOS Scroll — Save-Side Corruption Fixed + Single-Hold Invariant (2026-09-03, third batch, commit `29959ef`)
 
 **(A) from the entry below is confirmed fixed on device** — the bottom-of-file symptom is gone in both plain Safari and the installed PWA, and plain Safari is now correct across the board. This batch addresses what remained: **in the installed PWA only, Back from a client file landed at the top of the list roughly 30% of the time.** No schema change, no Dexie version bump, no data change.
 
@@ -322,7 +361,7 @@ Confirmed by search that there is no `<a href>`, no `window.location`, and no ot
 
 ✅ **VERIFIED ON-DEVICE 2026-09-04** — desktop, plain mobile Safari and the installed PWA, over repeated round trips. See the RESOLVED summary at the top of Completed Features.
 
-### iOS Scroll — Missing Forward Reset + Restore Hardened Against Safari (2026-09-03, second batch)
+### iOS Scroll — Missing Forward Reset + Restore Hardened Against Safari (2026-09-03, second batch, commit `bc6e006`)
 
 Mobile-Safari-only follow-up to the entry below. **No schema change, no Dexie version bump, no data change.**
 
@@ -362,7 +401,7 @@ Both directions of travel now run through one driver, `holdScrollAt(target)` in 
 | Symptom | Cause |
 |---|---|
 | Landing at the **bottom of a client file** | **(A)** — nothing reset forward navigation; the carried offset clamped to the end of a shorter page |
-| **Back landing at the top**, intermittently | **(B)** — the restore ran, then Safari moved the scroll after it, or the 166ms budget expired before rows arrived |
+| **Back landing at the top**, intermittently | ⚠️ **This attribution was WRONG and is corrected below.** (B) was a real defect and its two hardenings were both needed, but the residual ~30% in the installed PWA turned out to be a **save-side corruption** found the same day — see the third-batch entry above |
 | Only clients **below the fold** affected | Both — a tap from position 0 carries nothing forward and has nothing to restore |
 | **Plain Safari worse than the PWA** | (A) mainly; a browser tab does more of its own scroll management across route changes than a standalone window |
 
@@ -373,9 +412,11 @@ Both directions of travel now run through one driver, `holdScrollAt(target)` in 
 
 ✅ **VERIFIED ON-DEVICE 2026-09-04** — desktop, plain mobile Safari and the installed PWA, over repeated round trips. See the RESOLVED summary at the top of Completed Features.
 
-### Closed-Section Order Frozen Per Mount + Scroll-Restore Back Bug Fixed (2026-09-03)
+### Closed-Section Order Frozen Per Mount + Scroll-Restore Back Bug Fixed (2026-09-03, commit `76d3c51`)
 
 Two changes: one behaviour change, one bug in what shipped the day before. **No schema change, no Dexie version bump, no data change.**
+
+> ⚠️ **"Back Bug Fixed" in the title is true of the bug this entry describes, but did NOT end the Back problem.** The teardown clobber below was real and its fix was necessary — but on mobile Safari two further causes remained, found over the next three commits: **no scroll reset on forward navigation** (`bc6e006`) and **the save side recording our own programmatic scrolling** (`29959ef`). Read those before treating this entry as the whole story. The freeze half of this entry was complete as shipped.
 
 #### 1. The Closed section no longer re-sorts under the user's finger
 
@@ -428,7 +469,9 @@ return () => {
 
 ✅ **VERIFIED ON-DEVICE 2026-09-04** — desktop, plain mobile Safari and the installed PWA, over repeated round trips. See the RESOLVED summary at the top of Completed Features.
 
-### New Cases Inherit Their Client's Closed State (2026-09-02, second batch)
+### New Cases Inherit Their Client's Closed State (2026-09-02, commit `80ce731`)
+
+> **Same commit as the four-item batch below**, not a later one — it was written as a follow-up after the item 3(d) decision came back, but nothing had been pushed yet, so both shipped together in `80ce731`. *(This entry was headed "second batch" until the 2026-09-04 audit, which implied a separate commit.)*
 
 Closes item 3(d) from the batch below, which was flagged and deliberately left unbuilt pending a decision. **No schema change, no Dexie version bump, no data change** — `cases.status` already exists and is not indexed.
 
@@ -450,9 +493,11 @@ Closes item 3(d) from the batch below, which was flagged and deliberately left u
 
 > **`cases.status` remains invisible in the UI.** It is not displayed anywhere, and there is still no way to close a single case independently of closing the client file — the "Status" `<select>` in both case forms writes `cases.release_status`, a different column. That is what keeps the blanket Close/Reopen flip safe; see item 3(c) below.
 
-**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged. 9 assertions on the helper, its body diff-confirmed byte-identical to the shipped source: closed → `'closed'`, active → `'open'`, the four falsy `relieved_closed` shapes → `'open'`, a missing or null client row falling back to `'open'` without throwing (the old behaviour, so a race can only ever under-apply), and the invariant assertion that a closed client can never produce an open case. ⚠️ **Not verified on production** — on-device checking is the user's.
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged. 9 assertions on the helper, its body diff-confirmed byte-identical to the shipped source: closed → `'closed'`, active → `'open'`, the four falsy `relieved_closed` shapes → `'open'`, a missing or null client row falling back to `'open'` without throwing (the old behaviour, so a race can only ever under-apply), and the invariant assertion that a closed client can never produce an open case.
 
-### Four-Item Batch — `relieved_as_counsel` Removed + Case-Close Bug, Purple Circle, List Scroll Restore, Closed-Section Tiers (2026-09-02)
+✅ **VERIFIED ON-DEVICE 2026-09-04** — confirmed working by the user. See the session summary at the top of Completed Features.
+
+### Four-Item Batch — `relieved_as_counsel` Removed + Case-Close Bug, Purple Circle, List Scroll Restore, Closed-Section Tiers (2026-09-02, commit `80ce731`)
 
 Four requested changes in one session, done in the order 3 → 2 → 1 → 4 because the tier sort in item 4 depends on the colour set in item 2 being settled first.
 
@@ -500,7 +545,7 @@ So there is no deliberately-closed single case for a blanket reopen to clobber, 
 
 - **A stored `'yellow'` renders orange and advances to green** — same colour, same cycle position as `'orange'`.
 - **It must not fall through to the off-cycle normalizer**, which would render it red and — since tier follows the dot — move that client between tiers in the Closed section.
-- **The alias is load-bearing during the deploy window.** The live database still held `'yellow'` rows when this shipped; they are renamed separately, afterwards.
+- **The alias was load-bearing during the deploy window.** The live database still held `'yellow'` rows when this shipped; they were renamed separately afterwards. ✅ **That rename is DONE** — applied outside the app by the user, and confirmed on 2026-09-04: **zero `'yellow'` rows remain** (57 clients: green 31, red 10, gold 9, purple 4, orange 3). ⚠️ **The alias still stays** — see the next bullet; it is now insurance, not a migration crutch.
 - **It stays after the rename.** It costs one object lookup and covers any row that escapes: a device offline during the rename, a restore from an older `backups` snapshot, a row hand-edited in the dashboard.
 
 **The constants moved into a new shared module, `src/indigentStatus.js`** — `INDIGENT_CYCLE`, `INDIGENT_COLOR`, `INDIGENT_ALIAS` and `normalizeIndigent()`.
@@ -561,7 +606,7 @@ An **unparseable** `last_modified_at` is treated as null rather than becoming `N
 
 ⚠️ **It must never be called from `fullSync`, `processSyncQueue`, or any other sync-layer path.** Those replay *server* state into Dexie; stamping there would mark every client freshly modified on every sync and destroy the ordering outright. This is enforced structurally rather than only documented — `syncManager.js` does not import `touchClient.js`, and must not start. Reading a client file, scrolling it and navigating away all leave the timestamp alone, and **the session-only hours check-off toggle does not stamp**, because it persists nothing at all.
 
-**The full call-site list — 29 calls across 5 files.** This list is the thing most likely to drift: a new client-data write path needs a call added here.
+**The full call-site list — 29 calls across 4 files** (`ClientFile.jsx` ×22, `CaseView.jsx` ×5, `ClientRow.jsx` ×1, `EditClient.jsx` ×1), **plus `NewClient.jsx`'s inline stamp**, which is the documented fifth site and not a `touchClient()` call. *(This line read "29 calls across 5 files" until the 2026-09-04 audit — the count was right, the file count silently included `NewClient.jsx`.)* This list is the thing most likely to drift: a new client-data write path needs a call added here.
 
 | Area | Sites |
 |---|---|
@@ -589,9 +634,11 @@ An **unparseable** `last_modified_at` is treated as null rather than becoming `N
 
 ---
 
-**Verification for the batch:** `npm run build` clean after every item (only the pre-existing >500 kB chunk notice). `npx eslint .` at **20 errors** after every item and at the end — unchanged from baseline and the same 20: Node globals in `scripts/` and `seed.js` (13), `react-refresh/only-export-components` on the three context files, `react-hooks/set-state-in-effect` ×3, and the empty block in `extractPdfText`. **No new lint error was introduced and none was suppressed.** ⚠️ **Not verified on production** — all on-device checking is the user's.
+**Verification for the batch:** `npm run build` clean after every item (only the pre-existing >500 kB chunk notice). `npx eslint .` at **20 errors** after every item and at the end — unchanged from baseline and the same 20: Node globals in `scripts/` and `seed.js` (13), `react-refresh/only-export-components` on the three context files, `react-hooks/set-state-in-effect` ×3, and the empty block in `extractPdfText`. **No new lint error was introduced and none was suppressed.**
 
-> **Worth knowing, pre-existing, and NOT changed here.** `fullSync`'s "re-apply pending local writes" loop does `db[table].put(entry.payload)` for queued UPDATEs. A `put` **replaces** the whole record, but UPDATE payloads are partial by design (`{ id, last_modified_at }`, `{ id, indigent_status }`, …), so a pending UPDATE replayed through that loop would blank the rest of that row locally until the next clean sync. The window is narrow — `fullSync` drains the queue first, so only entries that *failed* to push are still pending — and it long predates this work. `touchClient` adds one more partial-payload UPDATE per data change, which widens the exposure in volume without changing its character. Flagged rather than fixed: it is sync-layer semantics and outside this batch.
+✅ **VERIFIED ON-DEVICE 2026-09-04** — confirmed working by the user. See the session summary at the top of Completed Features. Specifically confirmed: the five-colour circle and the `'yellow'` → `'orange'` rename, the frozen Closed-section order, and the close-state case-status inheritance.
+
+> **Worth knowing, pre-existing, and NOT changed here.** `fullSync`'s "re-apply pending local writes" loop does `db[table].put(entry.payload)` for queued UPDATEs. A `put` **replaces** the whole record, but UPDATE payloads are partial by design (`{ id, last_modified_at }`, `{ id, indigent_status }`, …), so a pending UPDATE replayed through that loop would blank the rest of that row locally until the next clean sync. The window is narrow — `fullSync` drains the queue first, so only entries that *failed* to push are still pending — and it long predates this work. `touchClient` adds one more partial-payload UPDATE per data change, which widens the exposure in volume without changing its character. Flagged rather than fixed: it is sync-layer semantics and outside this batch. → **Promoted to [D4](#d4-fullsyncs-pending-write-replay-uses-put-with-partial-payloads) on 2026-09-04** so it is tracked in the DEFERRED section rather than only here. Still unresolved.
 
 ### Dead-Code Sweep — 15 Unreferenced CSS Classes Removed (2026-08-20, fifth batch, commit `f87f2f7`)
 
@@ -1904,7 +1951,7 @@ src/
 
 ## ⏸ DEFERRED — decided, not forgotten
 
-Three items explicitly parked as of **2026-08-10**. Each is a deliberate deferral with a known reason, not an oversight or a lost thread. Listed most-actionable first.
+**Four items** explicitly parked — D1–D3 as of **2026-08-10**, D4 added **2026-09-04**. Each is a deliberate deferral with a known reason, not an oversight or a lost thread. Listed most-actionable first.
 
 ### D1. `src/seed.js` — broken, and carries a SECOND copy of the Supabase anon key
 
@@ -1913,6 +1960,8 @@ Three items explicitly parked as of **2026-08-10**. Each is a deliberate deferra
 It is also **broken and would fail on first run**: it inserts into columns that no longer exist — `cases.da_name` and `clients.criminal_history` (both dropped 2026-06-09) — and would throw at the first case insert. It additionally writes the dormant `clients.bond_amount`.
 
 **Decision pending: repair it against the current schema, or delete it.** Both are fine; **leaving a broken seed script that looks runnable is the worst of the three options**, which is exactly the state it is in now. If repaired, the anon key must come from `supabaseClient.js` rather than a second literal.
+
+> **Touched once since, and it does NOT count as the decision.** The `relieved_as_counsel: false` line was removed on 2026-09-02 as part of dropping that column app-wide. The file is still broken for every other reason above, still carries the duplicate anon key, and is still waiting on repair-or-delete.
 
 ### D2. Extraction progress state during PDF upload
 
@@ -1923,6 +1972,24 @@ Whether to surface a distinct **"Extracting text…"** state while `extractPdfTe
 ### D3. Automation layer
 
 Recurring tasks, reminders, or hooks — for example auto-notifying before hearing dates. **Not yet scoped**: no trigger mechanism, delivery channel, or storage model has been chosen, and the app currently has no server-side component to run scheduled work.
+
+### D4. `fullSync`'s pending-write replay uses `put` with partial payloads
+
+**Promoted here 2026-09-04** so it stops living only as a footnote inside the `80ce731` entry. Found while wiring `touchClient`, flagged rather than fixed at the time because it is sync-layer semantics and was outside that batch's scope. **Still untouched**; a background task chip was raised for it.
+
+`fullSync` ends by re-applying pending sync-queue entries so local writes survive the `clear()` + `bulkPut()`:
+
+```js
+if (entry.operation === 'INSERT' || entry.operation === 'UPDATE') {
+  await db[entry.table_name].put(entry.payload)
+}
+```
+
+⚠️ **`put` REPLACES a whole record, but UPDATE payloads are partial by design** — `{ id, last_modified_at }`, `{ id, indigent_status }`, `{ id, status }`, `{ id, warrant_text }`. Replaying a pending UPDATE through that loop therefore blanks every other field of that row in Dexie until the next clean sync repopulates it. INSERT payloads are full records and are fine.
+
+**The window is narrow and this long predates the 2026-09 work:** `fullSync` calls `processSyncQueue` first, so only entries that *failed* to push are still pending — but that is exactly the offline / lie-fi case the sync layer exists to handle. `touchClient` adds one more partial-payload UPDATE per client-data change, which widens the exposure in volume without changing its character.
+
+**Likely fix:** branch on operation — keep `put` for INSERT, use `db[table].update(entry.record_id, entry.payload)` for UPDATE. Server data is never at risk either way; this is a local-cache correctness issue.
 
 ---
 
@@ -1992,7 +2059,7 @@ Things explicitly identified and **not** done. Rough priority order.
 
 1. ~~`EditClient.jsx` still reads from Supabase, not Dexie — the last remaining offline gap.~~ — **RESOLVED 2026-07-28.** [`EditClient.jsx`](src/pages/EditClient.jsx) now loads the client via `useLiveQuery(() => db.clients.get(id), [id])`, matching `useClientFile`. A `useEffect` populates the form **once** from the first non-`undefined` live value (`setForm(prev => prev ?? {...})`) so a later background-sync update to the same client can't stomp an in-progress edit; `liveClient === null` still surfaces "Client not found." Save path unchanged — writes still go to Dexie + `addToSyncQueue`, which pushes to Supabase. Editing a client now works offline. **New eslint error** (18 → 19): `react-hooks/set-state-in-effect` on the populate effect — the exact same rule already present at [`CaseView.jsx:146`](src/pages/CaseView.jsx:146) for its analogous `liveData` sync effect, not a new class of problem.
 
-2. **`src/seed.js` is broken and carries a duplicate credential.** → **Promoted to [D1](#d1-srcseedjs--broken-and-carries-a-second-copy-of-the-supabase-anon-key) in the DEFERRED section (2026-08-10)**, where the duplicate-anon-key problem is spelled out as the reason it matters. Still unresolved; still a pending repair-or-delete decision.
+2. **`src/seed.js` is broken and carries a duplicate credential.** → **Promoted to [D1](#d1-srcseedjs-broken-and-carries-a-second-copy-of-the-supabase-anon-key) in the DEFERRED section (2026-08-10)**, where the duplicate-anon-key problem is spelled out as the reason it matters. Still unresolved; still a pending repair-or-delete decision.
 
 3. ~~**Out-of-custody preliminary-hearing countdown is not implemented.**~~ — **MOOT as of 2026-08-10: the entire prelim countdown was removed**, so neither branch exists now. The Rule 5 research (including the 30-day out-of-custody period, the misdemeanor-coverage caveat and the Rule 45 holiday simplification) is **deliberately retained** under Known Issues for a future rebuild, and `booking_date`/`booking_time` were kept so a rebuild needs no data work.
 
