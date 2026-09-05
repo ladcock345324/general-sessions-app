@@ -1,0 +1,650 @@
+[
+  {
+    "id": "06883652-e284-4b6f-a9d0-c0925bbbe2e8",
+    "client_id": "5602cff9-2745-459d-99d6-0b3e3ed724ab",
+    "incident_date": "6/26/2026",
+    "incident_description": "The affiant believes that on 6/26/2026, officers responded to an officer-involved collision. Officers noted signs of impairment and the defendant admitted to drinking and smoking marijuana. The defendant failed field sobriety tests on all three standard indicators. During a search, the defendant discarded a smoked THC blunt in the grass. He was arrested for DUI and evidence tampering.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "0b42f96c-8d4e-4140-a931-89f8ce6ab55c",
+    "client_id": "7e9c578a-6ee2-45c3-9ac6-ce338fb95cab",
+    "incident_date": "6/13/2026",
+    "incident_description": "The affiant believes that on 6/13/2026, police tried to stop Jones, a known suspended driver, in a blue Kia K5 near 17th Ave N and Blank St. He ran a stop sign and fled at speeds over 70 mph on a residential street. He nearly wrecked going airborne over train tracks. He had no proof of insurance. Police terminated the pursuit due to danger to the public.",
+    "location": "17th Ave North and Blank Street",
+    "is_pv": false
+  },
+  {
+    "id": "0ba92ad5-b4ed-49ae-9e19-c1827b59a163",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "incident_date": "7/7/2026",
+    "incident_description": "The affiant believes that on 7/7/2026, Slayden took merchandise from TJ Maxx valued at $158.93. He left the store without paying and without consent.",
+    "location": "TJ Maxx",
+    "is_pv": false
+  },
+  {
+    "id": "0f9e76c1-f9f2-4f9f-867a-3604e3be0b7a",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "incident_date": "7/28/2026",
+    "incident_description": "A black 2014 Mitsubishi outlander gets reported stolen on 7/28. At 11:40 PM (stolen from 2804 West End Ave). That night, officers are able to track the vehicle to an Exxon gas station using \"Air One\". \"Air One\" is able to determine that Mr. Walker got out of the PASSENGER SEAT of the car and sat down on a nearby curb. Police arrive at the Exxon and arrest him. While in custody, Mr. Walker tells police that he \"was made aware that the vehicle was stolen by the driver after the driver picked him up earlier in the night.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "164066d9-81ef-49c6-ab42-91605874df21",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "incident_date": "6/12/2026",
+    "incident_description": "The affiant believes that on 6/12/2026, defendant, a registered sex offender since a 2002 conviction, failed to report to MNPD SOR within 48 hours of his release from custody. He was arrested 6/10/2026 on DUI and drug charges, released the same day at 1:22 p.m. He had signed SOR forms and had prior SOR violation convictions.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "1da716e4-02e5-470e-9701-e9f5e6d99809",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "incident_date": "1/30/2026",
+    "incident_description": "The affiant believes that on 1/30/2026, defendant, a registered sex offender since a 2002 conviction, failed to complete his required annual in-person verification with MNPD SOR. His birthday-based reporting window ran 1/16-1/30/2026. He had signed SOR forms and had prior convictions for SOR violations.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "1e3cadcd-5f68-417d-9956-60002a3ea8ee",
+    "client_id": "77c9d677-44a5-43b7-a9c7-2d5fab656885",
+    "incident_date": "5/19/2026",
+    "incident_description": "The affiant believes that on 5/19/2026, defendant and an unidentified female entered True Religion in Opry Mills Mall. Defendant concealed $524.40 in merchandise into her tote purse. They exited without paying. Detectives identified defendant using security footage, her driver's license, and Facebook.",
+    "location": "True Religion (Opry Mills Mall)",
+    "is_pv": false
+  },
+  {
+    "id": "1e4ee9cc-465c-4de8-acb1-46a8c128380a",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "incident_date": null,
+    "incident_description": "Aggravated Criminal Trespass",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "1f17db4f-99b4-4818-ae15-aa60b4526931",
+    "client_id": "5166dbf8-f1bc-4a6a-9ac3-1d6267c434a5",
+    "incident_date": "4/30/2026",
+    "incident_description": "The affiant believes that on 4/30/2026, officers on routine patrol saw the defendant driving with no brake light and made a traffic stop. A records check showed her driver's license was revoked. She was aware her license was invalid but kept driving. The vehicle she was driving also had no valid insurance.",
+    "location": "365 S 5th St, Nashville, TN 37206",
+    "is_pv": false
+  },
+  {
+    "id": "26896cae-88bc-4ff9-b136-1ee4ce5b0724",
+    "client_id": "629e8757-dc16-4d71-a61c-779c3dc71523",
+    "incident_date": "6/8/2026",
+    "incident_description": "The affiant believes that on 6/8/2026, a trooper clocked defendant driving 83 mph in a 65 mph zone on I-65 North near mile marker 90.8. Defendant handed over a state ID, not a license. His license was revoked due to a 2019 DUI conviction, with 17 total revocations. He also had an active FTA warrant.",
+    "location": "I-65 North near mile marker 90.8",
+    "is_pv": false
+  },
+  {
+    "id": "2d05429e-f489-422f-92aa-995406d010fd",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "incident_date": "7/31/2026",
+    "incident_description": "Same day he missed his Shelter Court setting. Police observed him getting in pedestrians' faces on the sidewalk; unsteady, slurred speech, odor of alcohol. Warned, walked back, continued. Taken into custody; pulled away while being walked to the patrol car. Glass pipe with residue found in search incident to arrest. 5 charges.",
+    "location": "On the street outside 221 Broadway",
+    "is_pv": false
+  },
+  {
+    "id": "3002031a-3b4e-4772-9bd4-593311a541f2",
+    "client_id": "72901533-866e-4578-87c8-f31c7456f77f",
+    "incident_date": "2/7/2023",
+    "incident_description": "Shoplifting incident an Walmart. Bench warrant issued 3/9/2023. She was arrested 5/19/2026 and posted a $1,000 bond.",
+    "location": "Walmart (Gallatin Pike)",
+    "is_pv": false
+  },
+  {
+    "id": "3281d897-61b1-4bd2-871d-2463ebb33399",
+    "client_id": "f5e218ea-5d66-4bb7-8e54-3dd7d64dde8d",
+    "incident_date": "5/8/2026",
+    "incident_description": "The affiant believes that on 5/8/2026, the defendant was driving a Jeep Trailhawk northbound on Gallatin Pike N. He swerved into the median lane to pass traffic while accelerating at a high rate of speed. He then swerved back into traffic aggressively, causing an accident. During the stop, he admitted he understood why he was being pulled over.",
+    "location": "Gallatin Pike N & Anderson Ln, Madison, TN 37115",
+    "is_pv": false
+  },
+  {
+    "id": "3294c69d-b51f-45cb-8e77-021143afbcaa",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "incident_date": "7/23/2026",
+    "incident_description": "Alleged to have been caught in the (Lebanon Pike) Marshall's parking lot with $188 of shoplifted merchandise",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "3df81857-7ca8-459f-9aad-74820f616b17",
+    "client_id": "c3ffe25d-edf3-452b-80d0-291bf9837d3d",
+    "incident_date": "7/28/2026",
+    "incident_description": "The affiant believes that on 7/28/2026, Nolasco-Rivera used the victim's car to pick up their child from school, per their usual arrangement. He then refused to return the vehicle, claiming she owed him money. She denied this, saying any debt was owed to his father, who had helped her buy the car. She texted asking for the car back; he ignored her and did not return it.",
+    "location": "Ocala Dr",
+    "is_pv": false
+  },
+  {
+    "id": "478e1005-4b57-46dd-9f16-e204c76fab32",
+    "client_id": "19e68f86-215d-4973-a7d3-d986001cafd4",
+    "incident_date": "5/6/2026",
+    "incident_description": "The affiant believes that on 5/6/2026, officers were directing traffic at Nissan Stadium. They tried to wave down the defendant's gold Honda Accord with flashlights and batons. She kept driving toward a controlled entrance. Officer Embry had to move to avoid being struck. When stopped, she admitted she was on her phone and didn't see anyone.",
+    "location": "Nissan Stadium",
+    "is_pv": false
+  },
+  {
+    "id": "518c9085-fb29-47b8-9041-7875ba506842",
+    "client_id": "f4e6a0dc-1f7d-4a9e-a800-f154dc3b1696",
+    "incident_date": "5/28/2026",
+    "incident_description": "Mr. Braden and Ms. Gooch (drunk) are wandering down the street; They run into police; Gooch tells police \"Yesterday, Mr. Braden pushed me while we were at the laundromat together, and I fell down hard and bruised my breast\"",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "51a52362-83e1-40ac-bbc2-2f1f30992b2f",
+    "client_id": "353ea54b-88ea-48aa-a170-fe0879836c8a",
+    "incident_date": "7/13/2026",
+    "incident_description": "The affiant believes that on 7/13/2026, police located a vehicle reported stolen near the James Cayce area. Officers stopped the vehicle on S 9th St near Main St and confirmed the VIN matched the stolen vehicle report. The defendant was identified as the driver and had no valid driver's license. The vehicle was valued at approximately $5,000.",
+    "location": "S 9th St & Main St, Nashville, TN",
+    "is_pv": false
+  },
+  {
+    "id": "5562a2a0-ca01-4e38-87fb-5415664eba58",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "incident_date": "6/10/2026",
+    "incident_description": "The affiant believes that on 6/10/2026, officers found a Nissan Altima idling in an intersection on Una Antioch Pike with a strong marijuana odor inside. Defendant admitted he had been driving while intoxicated. A search found 35.4 grams of marijuana and pills. Both occupants refused implied consent and stayed silent after Miranda.",
+    "location": "Una Antioch Pike",
+    "is_pv": false
+  },
+  {
+    "id": "57a799ef-53b9-4975-8651-9874d581163c",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "incident_date": "6/12/2026",
+    "incident_description": "The affiant believes that on 6/12/2026 Mcguire and an unidentified female both stole a comforter a walked out. 100 Oaks Mall TJ Maxx.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "5b727d74-0062-44c4-8767-37fdc119574f",
+    "client_id": "ab56f58c-375f-4bac-8f69-144402acbaca",
+    "incident_date": "6/15/2026",
+    "incident_description": "The affiant believes that on 6/15/2026, officers saw Johnson and a friend walking near 525 Shelby Ave, dressed in dark clothing and ski masks. His friend fled on foot. Johnson also fled briefly, then stopped and consented to a search. Officers found a marijuana pipe and two unprescribed pill bottles. He admitted the pipe was his.",
+    "location": "Near 525 Shelby Ave",
+    "is_pv": false
+  },
+  {
+    "id": "5d284b73-a43b-4568-a143-5fd7f8bbeb8c",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "incident_date": "1/28/2026",
+    "incident_description": "Alleged to have taken $300 worth of merchandise from the Nash West Shopping Center Marshall's along with a \"Gerald Mcguire\". This affidavit is mostly about Gerald, not Helen!",
+    "location": "Marshalls (Nash West Mall)",
+    "is_pv": false
+  },
+  {
+    "id": "67fcfb4d-5978-4a1d-b752-6eeec5ace3a7",
+    "client_id": "b05dea7a-c597-4e45-bd1e-feebe9de19f6",
+    "incident_date": "3/18/2026",
+    "incident_description": "Pedestrians flag down police & tells them \"there's drugs in that car over there.\" Police say they walked up and saw Womack in the driver's seat and the drugs in plain sight",
+    "location": "545 Donelson Pike Nashville TN",
+    "is_pv": false
+  },
+  {
+    "id": "6979f93f-9aa1-432e-9800-9da6abfb65b2",
+    "client_id": "77c9d677-44a5-43b7-a9c7-2d5fab656885",
+    "incident_date": "5/29/2026",
+    "incident_description": "The affiant believes that on 5/29/2026, defendant and an unidentified female concealed about $3,524 in merchandise from True Religion in Opry Mills Mall across three dates (5/19, 5/22, 5/29), caught on security footage. Defendant's Facebook later posted the tagged items for sale in groups known for reselling stolen goods.",
+    "location": "True Religion (Opry Mills Mall)",
+    "is_pv": false
+  },
+  {
+    "id": "6a222e41-16f1-403d-a973-8068c6f824fb",
+    "client_id": "94f81408-4a46-48ec-9ffb-1452a58b81a7",
+    "incident_date": "6/8/2026",
+    "incident_description": "The affiant believes that on 6/8/2026, security flagged police at 123 2nd Ave S for a possible theft. A search of defendant found a stranger's wallet in her bra strap and two stolen credit cards in her purse, taken from a victim's missing $500 Louis Vuitton wallet. Defendant had bloodshot eyes, smelled of alcohol, and was agitated.",
+    "location": "123 2nd Ave S",
+    "is_pv": false
+  },
+  {
+    "id": "7236d69d-74eb-432a-abe0-159ad23da327",
+    "client_id": "19d8d350-199b-4248-af78-97948a6cb13a",
+    "incident_date": "1/6/2026",
+    "incident_description": "Casey Bowman (male) and Marshell Bowman (female, CLIENT) (presumably siblings) are accused of stealing a Milwaukee M18 ½” Impact wrench with battery and charger (valued at $399) from Home Depot",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "72d7bdfa-ae94-499b-85e3-804b29be204d",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "incident_date": "8/13/2026",
+    "incident_description": "The affiant believes that on 8/13/2026, officers stopped a gray Kia Optima and found a firearm with a scratched-off serial number in the console. Defendant denied knowing about it, blaming the driver. A search also found cocaine, Suboxone, and a crack pipe; defendant admitted the drugs were his, naming them as cocaine and Suboxone. He had an active warrant.",
+    "location": "Traffic stop, Davidson County",
+    "is_pv": false
+  },
+  {
+    "id": "7849e72c-ca9f-4e1a-a1ee-9ea03b030957",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "incident_date": "6/9/2026",
+    "incident_description": "PV Warrant issued 6/9/2026",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "797ed29c-5742-4db3-b38c-5d049ca69ef8",
+    "client_id": "77c9d677-44a5-43b7-a9c7-2d5fab656885",
+    "incident_date": "5/22/2026",
+    "incident_description": "The affiant believes that on 5/22/2026, defendant and an unidentified female entered True Religion in Opry Mills Mall carrying shopping bags. Security video shows them concealing about $1,000 in merchandise into the bags and leaving without paying. Detectives identified defendant using the footage and her driver's license.",
+    "location": "True Religion (Opry Mills Mall)",
+    "is_pv": false
+  },
+  {
+    "id": "7aa44820-5433-4117-9872-947776b8164e",
+    "client_id": "1aa9b6e2-5929-460c-88f2-02f6f8a54be0",
+    "incident_date": "5/30/2026",
+    "incident_description": "The affiant believes that on 5/30/2026, the defendant and an unidentified woman entered True Religion at Opry Mills Mall. Store video shows them concealing merchandise inside their shirts. They left without paying, taking $825 worth of merchandise. Staff identified the defendant from prior incidents. Detectives confirmed her identity using booking photos, her license, and Facebook.",
+    "location": "True Religion, Opry Mills Mall",
+    "is_pv": false
+  },
+  {
+    "id": "7b0b2d55-55da-43ef-9c2b-d175b56f7e28",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "incident_date": "6/6/2026",
+    "incident_description": "The affiant believes that on 6/6/2026, Leblanc pinched her in the WeGo women's bathroom.",
+    "location": "WeGo women's bathroom",
+    "is_pv": false
+  },
+  {
+    "id": "7c10f785-b58f-430c-ab78-86707a101ca4",
+    "client_id": "e485ed9e-73d0-4bb3-a87b-f05c55e6d1a5",
+    "incident_date": "11/1/2025",
+    "incident_description": "The affiant believes that on 11/1/2025, officers observed Alanigo and another male fighting outside 429 Broadway. Officers detained both parties. Each alleged the other had assaulted him. Officers issued a state citation for disorderly conduct due to the totality of the circumstances.",
+    "location": "429 Broadway, Nashville, TN",
+    "is_pv": false
+  },
+  {
+    "id": "7dff5b03-e7a4-404c-9db7-2f785bd8cf30",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "incident_date": "5/30/2026",
+    "incident_description": "The affiant believes that on 5/30/2026, Slayden entered Marshall's on Lebanon Pk. He took 4 pairs of Nike shoes valued at approximately $300. He left without paying, passing all points of sale. He was identified via surveillance and body cam footage. A gold watch matched his 4/22/2026 booking photo.",
+    "location": "Marshall's Lebanon Pike",
+    "is_pv": false
+  },
+  {
+    "id": "8063d2c4-ca78-47ae-b1c9-1b6daf6939a9",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "incident_date": "8/8/2026",
+    "incident_description": "The affiant believes that on 8/8/2026, Trooper Sheppard stopped a white Acura on I-24 West for having no taillights lit. Bravo had slurred speech, no license on him, and admitted to three shots of vodka. Odor of alcohol on his person. HGN 6/6 clues, Walk-and-Turn 4/8, One-Leg Stand 4/4. Arrested for DUI 3rd. Blood drawn at 01:35 on a search warrant. Prior DUI 2nd on 12/15/2025.",
+    "location": "I-24 West, 52-mile marker (Davidson County)",
+    "is_pv": false
+  },
+  {
+    "id": "816cdb71-6f49-48b5-ab80-e37fa38f0373",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "incident_date": "6/17/2026",
+    "incident_description": "The affiant believes that on 6/17/2026, Slayden returned to the same Marshall's on Lebanon Pk. He took 3 pairs of shoes valued at approximately $120. He left without paying, passing all points of sale. He was identified as the suspect from the 5/30/2026 theft at the same store.",
+    "location": "Marshall's Lebanon Pike",
+    "is_pv": false
+  },
+  {
+    "id": "83a6b234-b9b4-437f-8f72-69a015ee41c3",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "incident_date": "12/3/2025",
+    "incident_description": "Alleged victim (Kenny Wayne) leaves vinyl records at James-Woods' house, the keeps/destroys them, he presses charges",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "85a8b78c-994a-480c-9977-627e355b2095",
+    "client_id": "70b77667-6a1b-44d8-8388-f4b9f2bbfe98",
+    "incident_date": "8/14/2026",
+    "incident_description": "The affiant believes that on 8/14/2026, defendant was involved in a wreck on Springfield Hwy near East End. She admitted to driving but had no license, providing only an ID. A computer check showed her license was suspended. She was not at fault in the wreck.",
+    "location": "Springfield Hwy near East End",
+    "is_pv": false
+  },
+  {
+    "id": "8879480b-bf46-4777-8b7f-c99e628ad4db",
+    "client_id": "0033c0e3-f69c-4a1f-9a2a-0fc1dfbba9fe",
+    "incident_date": "5/6/2026",
+    "incident_description": "The affiant believes that on 5/6/2026, officers responded to a trespassing complaint at 926 Main St. Security said the defendant had repeatedly been told to stay off the property and returned to the parking lot to ask patrons for money. Officers detained a man matching the description nearby, and the complainant positively identified him. He said, \"I do pass through the location.\" Camera footage also showed him on the property.",
+    "location": "926 Main St, Nashville, TN 37206",
+    "is_pv": false
+  },
+  {
+    "id": "8936dcd0-ab3e-4ebf-824f-460ec0983168",
+    "client_id": "e88749cb-3748-42e5-9202-f0935b211af6",
+    "incident_date": "3/13/2026",
+    "incident_description": "Pitts is on CSL (community supervision for life).  On 3/13/26 he failed to show up at the \"Pavilion Probation and Parole Office\" within 48 hours of release from DDC and he failed to update his Sex Offender Registry quarterly.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "8a19dcfd-f2bc-4838-a065-0cf23a5affbb",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "incident_date": "5/28/2026",
+    "incident_description": "The affiant believes that on 6/28/2026, Mcguire went to the Madison TJ Maxx by herself and took tote bags off the shelf and put items in them and walked out with $464 worth of stuff",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "8a6bf638-4a8d-4654-aa43-b236f44a1c18",
+    "client_id": "93ffbd1a-04c0-41f4-a646-0ba1bfdcc958",
+    "incident_date": "9/19/2025",
+    "incident_description": "The affiant believes that on 9/19/2025, the defendant contacted a cash-for-junk buyer to sell the victim's 2008 Volvo XC90. She told the buyer she needed it removed because she was being evicted. She provided her ID and a signed bill of sale to complete the sale. The victim was in jail at the time and never gave permission. The vehicle was valued at approximately $4,000.",
+    "location": "1612 16th Ave N Unit D, Nashville, TN 37208",
+    "is_pv": false
+  },
+  {
+    "id": "8a9cb096-4a8e-4b9a-831b-cc84d6e60221",
+    "client_id": "619c0adb-c89e-4714-9fb8-f5e6fec78784",
+    "incident_date": "5/29/2026",
+    "incident_description": "The affiant believes that on 5/29/2026, Epps sold Rogers' 2001 Chevy Blazer without permission. Rogers valued it near $7,200. A neighbor saw a female with a tow truck driver near the vehicle. Tow driver Blackstock said he met a female and bought the Blazer for Wheelzies. He identified Epps in a photo lineup as the seller. The Blazer was found at a Dickson County scrap yard.",
+    "location": "Dickson County scrap yard",
+    "is_pv": false
+  },
+  {
+    "id": "8b2245b4-4898-43f9-8774-f463b8088839",
+    "client_id": "4a4b7785-f832-4d71-b788-12bbf648b64b",
+    "incident_date": "5/5/2023",
+    "incident_description": "According to Latonya Bright, Ms. Webster and 3 of her friends showed up to the hookah bar and started beating Ms. Bright with hookahs.",
+    "location": "Church street hookah bar",
+    "is_pv": false
+  },
+  {
+    "id": "91dc103a-e04b-4495-8208-0059cc697fd7",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "incident_date": "7/21/2026",
+    "incident_description": "Detectives are following Mr. Redding's black Nissan Maxima, suspecting he was involved in narcotics-related transactions. They try to pull him over once and he fled. A bit later the detectives intercepted him and tried to pull him over again. He stopped his car briefly but drove off again after the detectives got out. His car was quickly spiked. He drove a bit further and got out of the car, fled on foot, fell in a creek, and was arrested. His DL was suspended at the time.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "9c3cce38-2a34-482e-8ef7-3669e847f542",
+    "client_id": "b05dea7a-c597-4e45-bd1e-feebe9de19f6",
+    "incident_date": "12/19/2025",
+    "incident_description": "Womack gets in a minor car accident; officers arrive and learn he shouldn't have been driving because his license was revoked",
+    "location": "4956 Edmonson Pike",
+    "is_pv": false
+  },
+  {
+    "id": "9d4e5384-d725-4b38-abc6-6c2232d5c3e9",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "incident_date": "1/31/2026",
+    "incident_description": "The affiant believes that on 1/31/2026, TJ Maxx's (Madison TN) \"Loss Prevention Personnel\" called police to report a shoplifting. 3 people (1 was Helen, 1 was Mr. Mcguire, 1 unidentified). Total value between the 3 of the was $268",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "9ed46532-44b9-4fc8-95ab-781c1016e4c9",
+    "client_id": "6f4d9826-8c8e-45fc-9b4d-46af1ab8fc35",
+    "incident_date": "7/28/2024",
+    "incident_description": "Alleged victim (Ronnie Wilson) approaches officers says Woods-James came at me with a knife and later slashed one of my tires",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "a47b31c7-6ba1-4d03-b925-1a93a16af0de",
+    "client_id": "967ce851-5be8-4426-a735-1f183ede8499",
+    "incident_date": "8/10/2026",
+    "incident_description": "The affiant believes that on 8/10/2026, Circle K staff on Murfreesboro Pike flagged officers down and reported a woman harassing customers. Officers ordered her to leave and she refused to identify herself. She then walked next door to the Burger King drive-through and harassed customers there. She was arrested for refusing to identify herself and the likelihood the conduct would continue.",
+    "location": "Circle K & Burger King (Murfreesboro Pike)",
+    "is_pv": false
+  },
+  {
+    "id": "afd49991-78b5-4aab-a02d-865eec6c447e",
+    "client_id": "7acc1b33-142c-48d3-9202-2ada0184f198",
+    "incident_date": "6/17/2026",
+    "incident_description": "Mr. McMillan and his boys are passed out in a car, officers approach and ask for his ID, he gives a fake name. McMillan had an outstanding warrant.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "b347c6dc-5e6a-486c-b817-7b0b599bc4af",
+    "client_id": "02ba511d-b845-41a9-bfe5-630681201996",
+    "incident_date": "8/28/2026",
+    "incident_description": "The affiant believes that on 8/28/2026, staff told the defendant to leave the property the night before. Staff stated the defendant never left. The property had a trespass waiver on file. When staff returned and found the defendant still there, staff called police. Officers placed the defendant into custody without incident.",
+    "location": "3112 Nolensville Pike, Nashville, TN",
+    "is_pv": false
+  },
+  {
+    "id": "bb40ba96-5831-4c73-b080-2a4f9a979148",
+    "client_id": "59b84266-1226-4a49-a369-fc736f605870",
+    "incident_date": null,
+    "incident_description": null,
+    "location": null,
+    "is_pv": true
+  },
+  {
+    "id": "bbd298eb-0077-4034-a225-198427525941",
+    "client_id": "218e23ef-c09c-4ae1-b701-8bd672679e20",
+    "incident_date": "10/26/2025",
+    "incident_description": "The affiant believes that on 10/26/2025, Mr. Cox entered the Gucci store to return/exchange something. He's allegedly on camera grabbing a green baseball cap off the wall while doing so.",
+    "location": "Gucci store - Green Hills Mall",
+    "is_pv": false
+  },
+  {
+    "id": "bc33957a-9685-4565-87bc-3677cfd6f693",
+    "client_id": "82a414ef-b297-41a9-99a4-49fd8edbcca4",
+    "incident_date": "2/23/2024",
+    "incident_description": "The affiant believes that on 2/23/2024, Howse was involved in a traffic accident at 28th Ave N and Charlotte, and Howse gave police a \"state ID card\" and when police ran the ID number it showed as revoked.",
+    "location": "28th Ave N and Charlotte",
+    "is_pv": false
+  },
+  {
+    "id": "beb421f8-9e18-4063-a43e-5c76bcec3af4",
+    "client_id": "96ecf695-5ed0-403e-bbb5-d2d0a7c06d02",
+    "incident_date": "4/24/2026",
+    "incident_description": "Criminal trespass citation issued to Mr. Wilborn, who is homeless and sleeps under bridges.",
+    "location": "Under a Nashville bridge",
+    "is_pv": false
+  },
+  {
+    "id": "c498cf3f-1344-497f-b6d4-a23f2a2dc6a6",
+    "client_id": "19d8d350-199b-4248-af78-97948a6cb13a",
+    "incident_date": "1/11/2026",
+    "incident_description": "Casey Bowman (male) and Marshell Bowman (female, CLIENT) (presumably siblings) are accused of stealing a DeWalt combo kit (valued at $249) from Home Depot",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "c5e0938c-2fb4-4925-a9c1-3c92342a36f9",
+    "client_id": "7e9c578a-6ee2-45c3-9ac6-ce338fb95cab",
+    "incident_date": "3/28/2026",
+    "incident_description": "The affiant believes that on 3/28/2026, police saw Jones, a known suspended driver, on Spring St near the I-24 on-ramp. They attempted a stop on I-24 West; he fled at high speed, driving erratically and passing cars on the shoulder. Police did not pursue due to danger to the public. They later found him at his home. He fled on foot and was apprehended after a taser deployment.",
+    "location": "Spring St (East Nashville)",
+    "is_pv": false
+  },
+  {
+    "id": "c6132d58-88be-4b48-afa6-9afaff1100eb",
+    "client_id": "efa25bd0-8c02-44b0-a014-8845d9bef27a",
+    "incident_date": null,
+    "incident_description": "Mr. Rives was living under a bridge, he was asked to leave and didn't",
+    "location": "Under a Nashville bridge",
+    "is_pv": false
+  },
+  {
+    "id": "c9bc6981-0b83-45dc-b795-1e219dd3421a",
+    "client_id": "77c9d677-44a5-43b7-a9c7-2d5fab656885",
+    "incident_date": "5/29/2026",
+    "incident_description": "The affiant believes that on 5/29/2026, defendant and an unidentified female entered True Religion in Opry Mills Mall carrying tote purses. Security video shows them concealing about $2,000 in merchandise from the first table. They exited without paying. Detectives identified defendant via the footage and her driver's license.",
+    "location": "True Religion (Opry Mills Mall)",
+    "is_pv": false
+  },
+  {
+    "id": "ca824dc4-58a5-4294-a0c9-eee42b52d71a",
+    "client_id": "63fb79ce-9363-477e-a6d2-c05bba6c8af1",
+    "incident_date": "7/12/2026",
+    "incident_description": "The affiant believes that on 7/12/2026, officers found Slayden asleep in his truck at 84 Lester Ave, engine running. He had slurred speech and bloodshot eyes. A records check revealed two outstanding warrants. He showed impairment on HGN testing. A search found a crack pipe and 3 bags of suspected cocaine. He admitted smoking crack about 2 hours earlier and refused a blood/breath sample.",
+    "location": "84 Lester Ave",
+    "is_pv": false
+  },
+  {
+    "id": "ced081f7-9616-4cb5-bd2d-17b2dc71186f",
+    "client_id": "1d777a6e-cb05-4a2d-a2a4-387dc2ea3e56",
+    "incident_date": "1/19/2026",
+    "incident_description": "The affiant believes that on 1/19/2026, officers stopped the defendant near S 6th St & Sylvan St for failing to yield. Vehicle smelled of marijuana; defendant seen smoking a marijuana cigarette. Search found 91.8g of marijuana in 4 bags and $325 in small bills, suggesting intent to sell. Defendant admitted smoking and driving. He had no driver's license.",
+    "location": "S 6th St & Sylvan St",
+    "is_pv": false
+  },
+  {
+    "id": "ceda9812-8041-4c5c-94ba-105b7017fb75",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "incident_date": "1/22/2026",
+    "incident_description": "The affiant believes that on 1/22/2026, Ms. Whitworth and \"Terri Newsom\" went into the TJ Maxx in Madison and (paid for 'some' things), but stole $170 worth of children's clothing",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "d05866b9-aeb9-4f7f-9f52-3b4dfb8f6833",
+    "client_id": "c5e4b0ff-8b78-4bef-b8aa-05fd4eb66b3b",
+    "incident_date": "5/10/2023",
+    "incident_description": "The affiant believes that on 5/10/2023, Anderson came to the victim's house to complain about their children's phone use. Anderson grabbed and hit the victim's hands, then hit her in the chest. Anderson tried to force her way inside. The victim recorded the incident on police body camera.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "d1f63791-51a8-4903-a5e0-ee56babdacc3",
+    "client_id": "991a01e3-edaa-4635-b707-a1f186637681",
+    "incident_date": "12/3/2025",
+    "incident_description": "According to Lee, he was just at her house getting high. According to her, he beat her. He left. She called the police. It's his word against hers.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "d2e9a44d-3caf-435b-a46d-c214a5830eb8",
+    "client_id": "42a5e73a-8f8e-46bf-b845-bff01e7f5671",
+    "incident_date": "4/18/2026",
+    "incident_description": "The affiant believes that on 4/18/2026, Iskandar, a hotel maintenance worker, entered the victim's secured storage room and removed her belongings. Camera footage showed him leaving the room concealing items. Police found her iPad and laptop in his room; her wallet was missing. He claimed the items looked abandoned. Police also found crack pipes and cocaine in his room.",
+    "location": "720 Royal Pkwy (a Hotel)",
+    "is_pv": false
+  },
+  {
+    "id": "d4506808-6edd-4c1d-9fd7-95a4e71f16b5",
+    "client_id": "408d3968-3e82-4f53-b905-325692cb6d8a",
+    "incident_date": "8/15/2026",
+    "incident_description": "The affiant believes that on 8/15/2026, officers stopped defendant for an expired registration. He admitted to drinking four beers, smelled of alcohol, and had slurred speech. He failed the HGN, walk-and-turn, and one-leg-stand field sobriety tests. He agreed to a blood draw.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "d5bb7abe-2a36-487a-95c3-6adc9ab63c6a",
+    "client_id": "0c8eb906-0c25-433a-b72e-c4bf635ca550",
+    "incident_date": "5/8/2026",
+    "incident_description": "FTA'd on 5/8 for a court date on an Aggravated Criminal Trespass charge",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "d9248ead-4ed9-4699-b546-c35d5bcc10fd",
+    "client_id": "6d27e5fb-c424-45d7-bdf4-2866839cd56a",
+    "incident_date": "5/31/2022",
+    "incident_description": "The affiant believes that on 5/31/2022, Granberry was involved in a 4-vehicle chain-reaction collision on I-24E near MM 49/4. After being rear-ended by an unknown driver, he rear-ended a Honda Accord. He showed a witness his license and insurance, then left before police arrived. He was identified via ARMS using photos of his license and Chrysler 200.",
+    "location": "I-24E near MM 49/4",
+    "is_pv": false
+  },
+  {
+    "id": "dfb9e8b8-3bf7-4bb9-bb74-74fcbfbc83c3",
+    "client_id": "31611abd-0380-464f-afba-4cb2aad87996",
+    "incident_date": "5/11/2026",
+    "incident_description": "The affiant believes that on 5/11/2026, Ms. Whitworth and \"Terri Newsom\" went into the \"HomeGoods\" in the Bellevue One shopping center and stole $371 worth of kitchen items",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "e72432ab-9b1d-433b-84f0-f2cfad463eae",
+    "client_id": "ec797b6f-e4db-43ae-925e-b3e8cebf7ff8",
+    "incident_date": "8/29/2026",
+    "incident_description": "The affiant believes that on 8/29/2026, officers found the defendant parked in a park after closing hours. Officers saw two crack pipes with burn residue in the driver's door. Officers found 0.71 grams of methamphetamine in the vehicle. The defendant gave officers a false name and birthdate. He later admitted his real identity and had an outstanding felony probation warrant.",
+    "location": "836 Burnett, Nashville, TN",
+    "is_pv": false
+  },
+  {
+    "id": "e91882e9-1e37-41da-99c9-c46ea467122f",
+    "client_id": "c62dc57a-f408-428c-8602-6c7570ba8b19",
+    "incident_date": "3/9/2026",
+    "incident_description": "Ms. Causey breaks into her old apartment's leasing office and trashes it",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "e9438856-08b9-46f1-a69e-35fcd0d16186",
+    "client_id": "7eda0ec5-d437-4943-b887-7f3497135af5",
+    "incident_date": "6/5/2026",
+    "incident_description": "Ms. Vaughn (source of affidavit info) says that around 7pm, word goes around about a stolen gun. Vaughn says that around 9:09pm, she went to go an a walk with her daughter but she was confronted and beaten up by Ms. Tor'Kesha Greenlee (client) and Ms. Tyteanna Wells.",
+    "location": "621 Windsor Green Blvd",
+    "is_pv": false
+  },
+  {
+    "id": "eadcd885-7a27-4b6f-9464-f6dbb6409717",
+    "client_id": "f912da22-cfef-40d2-8327-621e94bce8a8",
+    "incident_date": "8/16/2026",
+    "incident_description": "The affiant believes that on 8/16/2026, Anderson flagged down officers, saying the victim tried to spray him so he hit her. Ridley had a 1-inch head laceration. She said Anderson hit her with a glass bottle after she smacked his cup. Anderson admitted it. Co-worker Dawson said Anderson also hit his arm with a stick; officers saw a large contusion.",
+    "location": "Bus stop, Lafayette St. & Lewis St.",
+    "is_pv": false
+  },
+  {
+    "id": "ec008271-05b6-4088-bcd2-03fc37ce858a",
+    "client_id": "0677398a-cc64-4700-8b9e-4b8ba4b4594a",
+    "incident_date": "5/9/2025",
+    "incident_description": "Failed to register as sex offender",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "f2afc6ec-2b01-421e-aae3-858a169bb650",
+    "client_id": "4293d91d-140f-46ea-9705-741cfbeb2b1a",
+    "incident_date": "6/7/2026",
+    "incident_description": "The affiant believes that on 6/7/2026, defendant fled a traffic stop near Dickerson Pike and Doverside Drive at about 100 mph. A police helicopter tracked him to a home on Solomon Lane, where he surrendered without incident. Defendant admitted he fled because he was scared and had a suspended license. No injuries resulted.",
+    "location": "Dickerson Pike & Doverside Drive",
+    "is_pv": false
+  },
+  {
+    "id": "f31bd324-64d7-4bd9-af4b-4aa2aa88f88e",
+    "client_id": "f053d0cb-dff8-42b6-9f4a-3be63308c660",
+    "incident_date": "7/4/2025",
+    "incident_description": "The affiant believes that on 7/4/2025, Robinson cashed a $700 Western Union money order belonging to David Short at Walmart without consent. Walmart records listed Robinson's name, DOB, SSN, and license number. His license photo matched the man in surveillance footage. A man denied being Robinson when called and hung up.",
+    "location": "Walmart (Charlotte Pike)",
+    "is_pv": false
+  },
+  {
+    "id": "f51e4b74-ea58-4a22-83e3-6c9782e4f3da",
+    "client_id": "d64d82b8-dc57-4885-877a-de3f1a60968f",
+    "incident_date": "8/28/2026",
+    "incident_description": "The affiant believes that on 8/28/2026, the defendant returned to 500 Broadway Pl after being trespassed from the property twice before by a Berry Hill security officer. Officers detained him while assisting that officer. In the patrol car, the defendant told officers he should \"f*** me up\" and that they \"deserve a beating.\" Officers confirmed he had an outstanding warrant via his Social Security number.",
+    "location": "500 Broadway Pl, Nashville, TN",
+    "is_pv": false
+  },
+  {
+    "id": "f6712a04-e97b-4ace-8491-bbba98f1b21d",
+    "client_id": "d8ef421f-1d08-4aeb-8555-03cde64d7de1",
+    "incident_date": null,
+    "incident_description": "PROBATION VIOLATION Charge. There is GS1011493, GS1011493P, GS1011493P1, and GS1011493P2. 3 Total. Failure to pay fines? New arrests?",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "f7cd67b9-4b6c-48e8-bcbe-331d1ba2ae9c",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "incident_date": "9/9/2025",
+    "incident_description": "The affiant believes that on 9/9/2025, Karla Fields was found near a stolen Enterprise rental vehicle at 4039 Murfreesboro Pike. The blue 2024 Ford Escape was due back 6/30/2025 but was never returned. Fields claimed she had until 9/15/2025. Enterprise denied any extension. Fields helped locate the keys inside the abandoned house and had personal items in the car. Estimated value: $25,000.",
+    "location": "4039 Murfreesboro Pike, Nashville, TN",
+    "is_pv": false
+  },
+  {
+    "id": "f97bc63d-1434-412d-ba47-1254faea5bff",
+    "client_id": "54159160-1992-423c-92cd-10fac116ee6e",
+    "incident_date": "6/16/2026",
+    "incident_description": "Mr. Campbell is alleged to have showed up to Ms. Buckhammer's home with a gun & threatened her son, Mr. Grayson.",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "fc86cda1-1c0f-41f0-96fa-00d4b58883b2",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "incident_date": "4/1/2026",
+    "incident_description": "Pulled over; he didn't have a driver's license whatsoever",
+    "location": null,
+    "is_pv": false
+  },
+  {
+    "id": "ffbdd202-7562-4c4d-a590-c72f6c7c08ce",
+    "client_id": "19d8d350-199b-4248-af78-97948a6cb13a",
+    "incident_date": "1/5/2026",
+    "incident_description": "Casey Bowman (male) and Marshell Bowman (female, CLIENT) (presumably siblings) are accused of stealing a Milwaukee M18 drill combo kit (valued at $249) from Home Depot",
+    "location": null,
+    "is_pv": false
+  }
+]
