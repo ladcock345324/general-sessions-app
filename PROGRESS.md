@@ -196,7 +196,7 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
-### Closed Section — Red Split Into Its Own Tier (2026-09-11)
+### Closed Section — Red Split Into Its Own Tier (2026-09-11, commit `5d15267`)
 
 **One-line change to one constant, CLOSED section only.** Red was pulled out of the old top tier (red/orange/green) into a tier of its own at the very top. `INDIGENT_TIER` in [`ClientList.jsx`](src/pages/ClientList.jsx) went from `{ red: 1, orange: 1, green: 1, purple: 2, gold: 3 }` to `{ red: 1, orange: 2, green: 2, purple: 3, gold: 4 }`; the comment block above it was rewritten to match. Nothing else in the file changed.
 
