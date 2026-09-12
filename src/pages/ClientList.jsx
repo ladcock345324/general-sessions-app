@@ -195,25 +195,28 @@ function sortActive(clients, mode) {
   })
 }
 
-// Closed section: three colour tiers, then most-recently-modified first inside
-// each tier. Replaced the old flat closed_at DESC ordering 2026-09-02.
+// Closed section: four colour tiers, then most-recently-modified first inside
+// each tier. Replaced the old flat closed_at DESC ordering 2026-09-02; red was
+// split out of the top tier into its own on 2026-09-11.
 //
-//   Tier 1  red, orange, green   (top)
-//   Tier 2  purple               — closed, no work left, awaiting final review
-//   Tier 3  gold                 (bottom)
+//   Tier 1  red                  (top)
+//   Tier 2  orange, green
+//   Tier 3  purple               — closed, no work left, awaiting final review
+//   Tier 4  gold                 (bottom)
 //
 // A gold client can never appear above any other tier; a purple one can never
-// appear above tier 1 but always sits above gold.
+// appear above orange/green but always sits above gold; a red one always sits
+// above everything else.
 //
 // ⚠️ The tier is keyed on normalizeIndigent(), the SAME function the circle uses
 // to pick its colour — never on the raw stored string. That is what guarantees a
 // client's tier can't disagree with the dot rendered next to their name: legacy
-// 'yellow' resolves to orange (tier 1), and null/''/unrecognized resolves to red
+// 'yellow' resolves to orange (tier 2), and null/''/unrecognized resolves to red
 // (tier 1) because that is what those render as. See src/indigentStatus.js.
 //
 // The "Sorting by:" toggle still does not reach this section — sortClosed takes
 // no mode argument, exactly as before.
-const INDIGENT_TIER = { red: 1, orange: 1, green: 1, purple: 2, gold: 3 }
+const INDIGENT_TIER = { red: 1, orange: 2, green: 2, purple: 3, gold: 4 }
 
 function closedTier(client) {
   return INDIGENT_TIER[normalizeIndigent(client.indigent_status)]

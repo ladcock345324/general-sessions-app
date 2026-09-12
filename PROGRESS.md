@@ -196,6 +196,37 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
+### Closed Section — Red Split Into Its Own Tier (2026-09-11)
+
+**One-line change to one constant, CLOSED section only.** Red was pulled out of the old top tier (red/orange/green) into a tier of its own at the very top. `INDIGENT_TIER` in [`ClientList.jsx`](src/pages/ClientList.jsx) went from `{ red: 1, orange: 1, green: 1, purple: 2, gold: 3 }` to `{ red: 1, orange: 2, green: 2, purple: 3, gold: 4 }`; the comment block above it was rewritten to match. Nothing else in the file changed.
+
+| Tier | Colours | |
+|---|---|---|
+| 1 | red | top |
+| 2 | orange, green | |
+| 3 | purple | |
+| 4 | gold | bottom |
+
+A red client now sits above everything else in the section regardless of when it was last touched; orange and green still share a tier and still compete on recency between themselves. Purple never rises above orange/green, gold never rises above purple — exactly as before, one tier further down.
+
+**Everything else about `sortClosed()` is unchanged, and was re-proven rather than assumed:**
+
+- Tier is still keyed on `normalizeIndigent()`, never the raw stored string. Legacy `'yellow'` therefore lands in **tier 2** with orange (it used to land in tier 1 *with* orange — the alias followed orange, not red), and null / `''` / unrecognized still land in **tier 1** because they render red.
+- Within a tier: `last_modified_at` DESC, then last name A→Z, then first name. A null or unparseable timestamp still sorts to the bottom of **its own** tier — a never-stamped red stays above an orange modified today.
+- The frozen-per-mount order ([`useFrozenClosedOrder`](src/pages/ClientList.jsx), 2026-09-03) is untouched. The snapshot stores the tier *number*, so a mount taken under the new map freezes the new positions; a tap on the circle still recolours the dot without moving the row.
+- The Active section and the "Sorting by:" toggle are untouched; `sortClosed()` still takes no mode argument.
+
+**No schema change, no Dexie version bump, no data change.** The visible effect is that every red row in the Closed section moves above the orange and green rows as a block; purple and gold rows do not move relative to anything.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` at **20 errors, 0 warnings** before and after — the same 20, none in `ClientList.jsx`. The earlier scratchpad suites were not retained, so all four were rebuilt from their entries here and re-run against the shipped code:
+
+- **56 assertions on the tier sort**, run against the `sortClosed` region **extracted verbatim and diff-confirmed byte-identical to the source** (lines 219–248 and 293–317 of `ClientList.jsx`, with `normalizeIndigent` imported from the real module): the four-tier map shape; tier assignment for all five colours, the `'yellow'` alias landing in tier 2, and ten off-cycle shapes (including `'Yellow'`, `' yellow'`, `'constructor'`, `'__proto__'`) landing in tier 1; **tier dominating recency across all nine cross-tier pairs in both directions** — a red client never stamped at all still sits above a gold one modified today, and an orange never stamped still sits above a purple modified today; orange and green trading places on recency inside their shared tier; one-of-each-colour with recencies fully inverted still coming out red → (green/orange by recency) → purple → gold; nulls staying at the bottom of their own tier across all four tiers and never pooling; an unparseable timestamp behaving as null; both name tiebreaks; input not mutated; and an eleven-client pool producing an identical order across 200 random shuffles.
+- **23 assertions on the frozen order** against the same extracted region: a gold→red tap that changes tier *and* timestamp leaving the row in place (while the unfrozen sort would put it at the top), the row staying put through all five colours of the cycle, a red→gold tap not sinking and an orange→red tap not rising into tier 1, the next mount picking up the new positions, newcomers sorting into the correct one of four tiers by live values, a removed client falling out harmlessly, the snapshot not being mutated, and wholesale churn of every client's colour and timestamp leaving a frozen list identical across 200 shuffles.
+- **53 assertions on `indigentStatus.js`**, imported directly: cycle order and colours for all five states, the alias resolving to orange for colour and cycle position, `'yellow'` not treated as off-cycle, ten off-cycle shapes landing on red and advancing to orange, no cycle target or colour key being `'yellow'`, five taps from any state returning to it, and prototype keys resolving to red.
+- **10 assertions on `caseStatusForClient`**, its body extracted from `ClientFile.jsx` and asserted byte-identical to the expected two lines before being evaluated against a stub `db`: closed → `'closed'`, active and the four falsy shapes → `'open'`, a missing or null row → `'open'` without throwing, and the invariant that a closed client never yields an open case.
+
+Not yet verified on-device.
+
 ### Session Summary — 2026-09-02 → 2026-09-04
 
 Everything that shipped across this run, in commit order. Detail lives in the individual entries below — this is the index. **All of it is confirmed working on-device by Lucas** (desktop, plain mobile Safari, and the installed PWA).
@@ -223,7 +254,7 @@ Everything that shipped across this run, in commit order. Detail lives in the in
 
    **Knobs, by file:** `REACH_DEADLINE_MS` (1500) and `SETTLE_MS` (1000) in [`src/scrollRestore.js`](src/scrollRestore.js) — the first is **wall clock, deliberately not a frame count**, because an IndexedDB read on iOS routinely outlasts any frame budget; lower the second if a deliberate scroll is ever pulled back shortly after arriving. `SCROLL_TOLERANCE` (2px) is there for fractional offsets. The driver is [`src/scrollHold.js`](src/scrollHold.js); the save side and exit captures are in [`ClientList.jsx`](src/pages/ClientList.jsx).
 
-**5. The Closed section: colour tiers, and an order frozen per mount.** Tier 1 red/orange/green → tier 2 purple → tier 3 gold; within a tier, `last_modified_at` DESC, then last name, then first name, with a null timestamp at the bottom of **its own** tier. ⚠️ **The tier is keyed on `normalizeIndigent()`, the same function the dot uses** — never on the raw string — so a client's tier can never disagree with the colour beside their name. The **order is then frozen for the life of the mount** so tapping the circle recolours the dot instantly without the row moving; it takes its new position on the next load of the list, which includes both a refresh and returning from a client file. The "Sorting by:" toggle still does not reach this section.
+**5. The Closed section: colour tiers, and an order frozen per mount.** Tier 1 red/orange/green → tier 2 purple → tier 3 gold *(as of this run — red became its own top tier on 2026-09-11, making four; see that entry)*; within a tier, `last_modified_at` DESC, then last name, then first name, with a null timestamp at the bottom of **its own** tier. ⚠️ **The tier is keyed on `normalizeIndigent()`, the same function the dot uses** — never on the raw string — so a client's tier can never disagree with the colour beside their name. The **order is then frozen for the life of the mount** so tapping the circle recolours the dot instantly without the row moving; it takes its new position on the next load of the list, which includes both a refresh and returning from a client file. The "Sorting by:" toggle still does not reach this section.
 
 #### Still open after this run
 
@@ -593,6 +624,8 @@ Two symptoms, one fix: scrolling deep into the list, tapping a client and hittin
 | 1 | red, orange, green | top |
 | 2 | purple | |
 | 3 | gold | bottom |
+
+*(Superseded 2026-09-11: red was split out into its own tier 1, making four tiers — red → orange/green → purple → gold. See [that entry](#closed-section-red-split-into-its-own-tier-2026-09-11). The rest of this item is unchanged.)*
 
 A gold client can never appear above any other tier; a purple one never above tier 1, always above gold. **Within a tier:** `last_modified_at` DESC (most recently modified first), then last name A→Z, then first name for identical last names. A null `last_modified_at` sorts to the bottom of **its own** tier and alphabetically among the other nulls there — nulls are never pooled across tiers.
 
@@ -1688,7 +1721,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 ### Client List (`/`)
 - Fetches all clients from Supabase via `useClients` hook
 - Two sections: **Active** (`relieved_closed = false`) and **Closed** (`relieved_closed = true`) — header text rendered as "CLOSED" via CSS `text-transform: uppercase`
-- **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — `sortClosed()` takes no mode argument. As of **2026-09-02** it sorts by **indigent-colour tier** (red/orange/green → purple → gold), then `last_modified_at` DESC within each tier, then last name / first name; it no longer uses `closed_at`. See the 2026-09-02 entry.
+- **Sort toggle** (badge above the Active header) controls the **Active** section only: "Sorting by: Name" = alphabetical by last name; "Sorting by: Next Event" = ascending by combined event date+time (no-event clients grouped at the bottom alphabetically). Mode persisted in `localStorage`. The **Closed** section ignores the toggle — `sortClosed()` takes no mode argument. As of **2026-09-02** it sorts by **indigent-colour tier**, then `last_modified_at` DESC within each tier, then last name / first name; it no longer uses `closed_at`. Since **2026-09-11** the tiers are **red → orange/green → purple → gold** (four; red was split out of the top tier). See the 2026-09-02 and 2026-09-11 entries.
 - ⚠️ **The Closed section's ORDER is frozen while the view is mounted (2026-09-03)** so that tapping an indigent circle doesn't make the row jump out from under the user's finger. **The dot still recolours instantly — only the position is held.** The row takes its new position on the next load of the list, which includes both a refresh and returning from a client file (ClientList remounts on that path). A client not in the snapshot — newly closed, newly synced — falls back to live values and sorts in normally. Active-section ordering is unaffected.
 - **Scroll position is restored** on the client list (2026-09-02) — both on returning from a client file and across a full page reload, via `sessionStorage`. The client list is the only page that does this. ⚠️ **The Back path was broken on arrival and fixed 2026-09-03**: the effect cleanup re-read `window.scrollY` during teardown, after the route had already changed, and stored `0` over the good value. Refresh was unaffected because a reload never unmounts. The position is now captured synchronously before `navigate()`, and the restore retries until a wall-clock deadline so it can't be clamped by a document that hasn't finished growing.
 - ⚠️ **Every OTHER route resets scroll to the top on mount** (`useScrollToTopOnMount`, 2026-09-03) — `ClientFile`, `CaseView`, `NewClient`, `EditClient`. Mobile Safari carries the previous page's offset across an SPA route change, which was landing users at the *bottom* of a client file opened from a scrolled list. **The client list is deliberately excluded**: forward navigation into a detail page resets, returning to the list restores. Both directions share one driver in `scrollHold.js`, which holds the position for a settle window against Safari's own late scroll handling and abandons instantly on real user input.
