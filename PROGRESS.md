@@ -225,7 +225,7 @@ A red client now sits above everything else in the section regardless of when it
 - **53 assertions on `indigentStatus.js`**, imported directly: cycle order and colours for all five states, the alias resolving to orange for colour and cycle position, `'yellow'` not treated as off-cycle, ten off-cycle shapes landing on red and advancing to orange, no cycle target or colour key being `'yellow'`, five taps from any state returning to it, and prototype keys resolving to red.
 - **10 assertions on `caseStatusForClient`**, its body extracted from `ClientFile.jsx` and asserted byte-identical to the expected two lines before being evaluated against a stub `db`: closed → `'closed'`, active and the four falsy shapes → `'open'`, a missing or null row → `'open'` without throwing, and the invariant that a closed client never yields an open case.
 
-Not yet verified on-device.
+✅ **VERIFIED ON-DEVICE 2026-09-11** — confirmed by the user on the production URL: red clients cluster at the top of the Closed section.
 
 ### Session Summary — 2026-09-02 → 2026-09-04
 
