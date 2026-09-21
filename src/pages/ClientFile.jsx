@@ -1312,6 +1312,15 @@ function PersonalNotesSection({ clientId, initialNote }) {
     if (e.key === 'Escape') { e.preventDefault(); cancelEdit() }
   }
 
+  // Grows the textarea to fit its content instead of scrolling internally —
+  // called on mount (via ref) so an existing long note is fully visible as
+  // soon as edit mode opens, and again on every keystroke as text is added.
+  function autoGrow(el) {
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }
+
   async function confirmDelete() {
     setSaving(true)
     await db.personal_notes.delete(note.id)
@@ -1337,11 +1346,11 @@ function PersonalNotesSection({ clientId, initialNote }) {
           /* Inline editor inside the bar */
           <div className={styles.pnEditWrapper} onClick={e => e.stopPropagation()}>
             <textarea
+              ref={autoGrow}
               className={styles.pnTextarea}
               value={draftText}
               autoFocus
-              rows={3}
-              onChange={e => setDraftText(e.target.value)}
+              onChange={e => { setDraftText(e.target.value); autoGrow(e.target) }}
               onKeyDown={onKeyDown}
               placeholder="Enter a note…"
             />

@@ -2,7 +2,7 @@
 
 ## What This App Is
 
-A mobile-first PWA for a criminal defense attorney to manage clients, cases, hearings, and hours. Built with React + Vite, backed by Supabase. Verified exclusively on the Vercel production URL (`https://general-sessions-app.vercel.app`) — not localhost.
+A mobile-first PWA for a criminal defense attorney to manage clients, cases, hearings, and hours. Built with React + Vite, backed by Supabase. Verified exclusively on the Vercel production URL (`https://general-sessions-app.vercel.app`) — not localhost. Lucas does this verification himself; Claude Code's responsibility ends at a clean build, commit, and push, followed by a report of what to check.
 
 ---
 
@@ -195,6 +195,16 @@ Three reasons, in order of weight:
 ---
 
 ## Completed Features
+
+### Personal Notes Textarea Auto-Grows Instead of Internally Scrolling (2026-09-21)
+
+**Bug:** the Personal Notes field on the client detail page ([`ClientFile.jsx`](src/pages/ClientFile.jsx), between Next Event and Incidents) rendered full-height, uncapped text in view mode, but switching to edit mode swapped in a `rows={3}` textarea with `resize: none` — a small fixed box with its own internal scrollbar. Almost all of the existing text disappeared from view the moment you clicked "edit," confirmed on Helen Mcguire's client (`d8ef421f-1d08-4aeb-8555-03cde64d7de1`), whose notes run a couple hundred words.
+
+**Fix:** added an `autoGrow(el)` helper in `PersonalNotesSection` that sets `el.style.height = 'auto'` then `el.style.height = el.scrollHeight + 'px'`. Wired as the textarea's `ref` (so it fits existing content the instant edit mode mounts) and called again in `onChange` (so it keeps growing as more is typed). Removed `rows={3}`; `.pnTextarea` in `ClientFile.module.css` keeps `resize: none` but gains `min-height: 62px` (matches the old 3-row look for a short note) and `overflow: hidden` (no scrollbar flash while the height is being recalculated). No fixed cap remains — an arbitrarily long note now grows the box to match, the same as the read-only view already did.
+
+**Scope:** the Personal Notes textarea is a bespoke inline `<textarea>`, not a shared component — the app's other two textareas (the inline incident-description field in `ClientFile.jsx` and the case-notes field in `CaseView.jsx`) are separate elements with their own classes and were left untouched, since the report was specific to this field and there's no shared component to fix once for all three.
+
+**Verification:** `npm run build` clean (only the pre-existing >500 kB chunk notice). `npx eslint .` still **20 errors**, unchanged — none in `ClientFile.jsx` or `ClientFile.module.css`. ⚠️ **Not yet verified on-device.**
 
 ### Closed Section — Red Split Into Its Own Tier (2026-09-11, commit `5d15267`)
 
