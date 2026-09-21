@@ -10,13 +10,37 @@ const DATA_TABLES = [
   'courtroom_documents',
 ]
 
+const PAGE_SIZE = 1000
+
+// PostgREST caps a response at 1000 rows, so a plain .select('*') silently
+// truncates any table past that size. Page through with .range() instead,
+// ordered by the unique 'id' column (created_at has duplicate timestamps
+// and would make pages skip/repeat rows) until a page comes back short.
+async function fetchAllRows(supabase, table) {
+  const rows = []
+  let from = 0
+  for (;;) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .order('id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+
+    if (error) return { error }
+    rows.push(...data)
+    if (data.length < PAGE_SIZE) break
+    from += PAGE_SIZE
+  }
+  return { data: rows }
+}
+
 export async function fullSync(supabase) {
   if (!navigator.onLine) return
 
   await processSyncQueue(supabase)
 
   const results = await Promise.all(
-    DATA_TABLES.map(table => supabase.from(table).select('*'))
+    DATA_TABLES.map(table => fetchAllRows(supabase, table))
   )
 
   await Promise.all(
@@ -24,7 +48,9 @@ export async function fullSync(supabase) {
       const table = DATA_TABLES[i]
       // Skip this table on a failed/offline fetch — preserve the existing cache.
       // A successful empty array (data = [], error = null) still clears, which is
-      // how cross-device deletions propagate.
+      // how cross-device deletions propagate. A partial pull (error mid-pagination)
+      // must never wipe good local rows, so the whole table is fetched first and
+      // Dexie is only touched once the complete set is in hand.
       if (error || !Array.isArray(data)) return Promise.resolve()
       return db.transaction('rw', db[table], async () => {
         await db[table].clear()
