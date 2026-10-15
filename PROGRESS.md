@@ -213,9 +213,43 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
+### ⏸ VERIFICATION STATUS — pick up here (as of 10/15/2026)
+
+Lucas stopped for the night here. Two batches are live on production: `2d8dd31` (the six-change batch) and `2a65b89` (its seven follow-up fixes).
+
+#### ✅ Verified by Lucas on production — batch `2d8dd31`
+
+- **Hours description dropdown:** the 11 options, in the correct order, with the correct default hours.
+- **Create CC file, tested for real on Levi Sharpe.** ⚠️ **This is his REAL CC file, not test data — do not delete or "clean it up".** First CC date 10/22/2026; CC case number `2026-I-760`. The file was created correctly, the charges carried over with quiet GS labels, and the affidavits and criminal history open correctly.
+- **PDF independence confirmed in the database by Claude (via Supabase MCP):** all 5 of the CC file's affidavits and its criminal history are stored at paths separate from the GS file's.
+- Lucas reported that **everything in that batch he did not flag worked.** The items he did flag are the seven fixes below.
+
+#### ⏳ NOT YET VERIFIED — batch `2a65b89` (the 7 follow-up fixes)
+
+None of these has been checked on production yet. All pending:
+
+1. **"+" buttons:** position and size — on wide screens, bigger and just right of the label on Personal Notes / Incidents / Hours, lined up in one vertical column.
+2. **Personal Notes / Mailing Address bar heights:** same height and top-aligned on wide screens; the Mailing Address "+" sits right after its own label.
+3. **Hidden dropdown placeholder:** "Pick a common description…" shows in the closed dropdown, not in the opened list.
+4. **Selectable note/address text:** drag- and double-click-select without the tap action firing.
+5. **Muted bronze CC theme:** row tint, "Criminal Court" tag, waiting panel, Create CC file button — Active and Closed sections.
+6. **Slider-only CC row in the client list:** no text; nothing at all when there is no estimate.
+7. **Waiting CC file view and file overwrites:**
+   - the slim Next Event bar, plus the shorter, right-aligned slider for waiting CC files;
+   - Replace Affidavit and criminal history overwriting the record's OWN stored file.
+
+#### ❓ Open questions for Lucas — recorded, NOT resolved
+
+1. **Tap behaviour on the Personal Notes / Mailing Address bar.** A tap currently collapses/expands the bar; the editor opens from the "edit" link. Lucas assumed a tap opens the editor. **He needs to decide whether to keep the current behaviour.**
+2. **iPhone dropdown placeholder.** Safari on iPhone may still show "Pick a common description…" greyed out (unpickable) in the opened list. **Lucas should check whether that is acceptable.**
+3. **Slim empty Next Event bar for GS files too?** It is currently CC files only. Undecided whether GS files with no next event should get it as well.
+4. **Data check — Sharpe's GS file.**
+   - Case GS1126192's `warrant_url` is `warrants/GS1126191.pdf`, while case GS1126191 uses a different file. **Lucas should open GS1126192's affidavit and confirm it is the right document.**
+   - ⚠️ When testing Replace Affidavit on real cases, **re-upload the same correct PDF, never a different file.**
+
 ### Follow-Up Fixes to the 2026-10-15 Batch — "+" Alignment, Placeholder, Selectable Notes, CC Bronze, Slider-Only, Slim Next Event, Affidavit Paths (2026-10-16, commit `2a65b89`)
 
-Seven fixes after Lucas reviewed the 2026-10-15 batch on production. Everything else from that batch was confirmed working and was not touched. **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ⚠️ **Not yet verified on production.**
+Seven fixes after Lucas reviewed the 2026-10-15 batch on production. Everything else from that batch was confirmed working and was not touched. **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ⏳ **NOT YET VERIFIED on production (as of 10/15/2026)** — all seven fixes are pending; see "VERIFICATION STATUS — pick up here" above. *(This entry and the code comments it touched are dated 2026-10-16; the work actually shipped the evening of 2026-10-15.)*
 
 #### 1. The "+" buttons never moved — ROOT CAUSE (two bugs, both read off the built CSS in `dist/`)
 
@@ -282,7 +316,12 @@ Class names were checked in the JSX: `addHeaderLabel` ×3 sites + the `bigAdd` b
 
 **Schema — all applied outside the app via MCP before this work; NO schema change was made from here:** `clients.client_type`, `clients.is_cc_file`, `clients.left_gs_date`, `clients.cc_estimated_first_date`, `clients.cc_case_number`, `cases.gs_case_number`, and the new **`mailing_addresses`** table (see Database Schema). **Dexie v4 → v5**, declaring ONLY `mailing_addresses: 'id, client_id'`; v1–v4 untouched. None of the new columns is indexed, so they needed no Dexie change.
 
-⚠️ **Not verified on production yet** — Lucas checks everything there. Build clean; `npx eslint .` at **19** errors (baseline 20 — the drawer's old `set-state-in-effect` effect is gone; no new error anywhere, all 19 are the long-standing ones).
+✅ **VERIFIED ON PRODUCTION by Lucas (10/15/2026)**, except for the items he flagged, which became the seven fixes in `2a65b89` (still pending). Confirmed:
+- the Hours presets and their defaults;
+- Create CC file, tested on Levi Sharpe's real CC file;
+- PDF path independence, confirmed in the DB via MCP.
+
+See "VERIFICATION STATUS — pick up here" above. Build clean; `npx eslint .` at **19** errors (baseline 20 — the drawer's old `set-state-in-effect` effect is gone; no new error anywhere, all 19 are the long-standing ones).
 
 #### 1. Hours description dropdown + default hours
 
