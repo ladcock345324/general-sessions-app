@@ -12,12 +12,11 @@
   border-bottom: none;
 }
 
-/* ⚠️ CC FILE ROW SHADE — the knob. A Criminal Court file's row is permanently
-   tinted this slightly different blue (page background is #1E2A3A), with or
-   without a CC case number, in both the Active and Closed sections. Change this
-   one value to make it stronger or subtler. */
+/* CC file row shade. A Criminal Court file's row is permanently tinted, with or
+   without a CC case number, in both the Active and Closed sections. The colour
+   is --cc-row-bg in the CC theme block in src/App.css — tweak it there. */
 .rowCc {
-  background-color: #233650;
+  background-color: var(--cc-row-bg);
 }
 
 .info {
@@ -91,22 +90,18 @@
   font-size: 13px;
 }
 
-/* Waiting CC file: "Left GS 9/3 · 12 days · Ripe 11/20" in the next-event
-   line's spot, with a compact slider beneath. Same one-line, nowrap, clipped
-   treatment as .next so it can never push into the case table or the badge. */
+/* Waiting CC file: the compact ripe-date slider alone in the next-event line's
+   spot (the "Left GS · N days · Ripe" text was removed 2026-10-16). Same
+   height as that line on desktop (13px × ~1.3) so the row doesn't change
+   height; the slider itself is a fixed 140px (max 100%), so it can never push
+   into the case table or the badge. Not overflow: hidden — that would clip the
+   knob, which overhangs the 3px track. */
 .ccWaitBlock {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-height: 17px;
   min-width: 0;
-  overflow: hidden;
-}
-
-.ccWait {
-  display: block;
-  font-size: 13px;
-  color: #9fb4cc;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 0 4px;
 }
 
 .caseTable {
@@ -360,8 +355,8 @@
     font-size: 11px;
   }
 
-  .ccWait {
-    font-size: 11px;
+  .ccWaitBlock {
+    min-height: 11px;
   }
 
   .ccCharge {

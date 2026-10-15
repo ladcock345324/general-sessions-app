@@ -137,7 +137,21 @@ function bondReleaseText(bondAmount, releaseStatus) {
 
 // ─── Next Event block ────────────────────────────────────────────────────────
 
-function NextEventBlock({ event, onEdit }) {
+// `slim` (2026-10-16): a CC file with no next event gets a slim bar the height
+// of a section header — just the "NEXT EVENT" label and its "+ Add" control —
+// instead of the full blue block with "No upcoming event". Once a next event
+// exists the full block renders exactly as before; GS files never pass slim.
+function NextEventBlock({ event, onEdit, slim = false }) {
+  if (slim && !event) {
+    return (
+      <div className={`${styles.nextEvent} ${styles.nextEventSlim}`}>
+        <div className={styles.nextEventTopRow}>
+          <span className={styles.nextEventLabel}>Next Event</span>
+          {onEdit && <button className={styles.nextEventEditBtn} onClick={onEdit}>+ Add</button>}
+        </div>
+      </div>
+    )
+  }
   return (
     <div className={styles.nextEvent}>
       <div className={styles.nextEventTopRow}>
@@ -1287,8 +1301,10 @@ function IncidentGroup({ incident: initialIncident, isCcFile = false, onCaseTap,
 // delete — and sharing the code is what keeps the two from drifting apart.
 //
 // `bigAdd` puts the header "+" in the wide-screen fixed-label-column position
-// shared with the Incidents and Hours headers (see .addHeaderBar in the CSS).
-// Only Personal Notes uses it; Mailing Address keeps the plain right-edge "+".
+// shared with the Incidents and Hours headers, at the bigger 32px size (see
+// .addHeaderBar / .addHeaderLabel / .addHeaderBtnBig in the CSS). Only Personal
+// Notes uses it; on wide screens Mailing Address's "+" sits directly after its
+// own label instead.
 function ClientTextBar({ clientId, initialRecord, table, field, title, placeholder, deletePrompt, bigAdd = false }) {
   const [record, setRecord] = useState(initialRecord ?? null)
   // A client who already has content gets the section expanded on load — it is
@@ -1300,10 +1316,45 @@ function ClientTextBar({ clientId, initialRecord, table, field, title, placehold
   const [draftText, setDraftText] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // When a record exists and the bar is clicked (not a button), toggle view/collapsed
-  function handleBarClick() {
-    if (mode !== 'idle') return
-    if (record) setOpen(o => !o)
+  // ── Selection-safe tap (2026-10-16) ──────────────────────────────────────
+  // The displayed note/address must be selectable for copying without the tap
+  // action firing. Same rule the Hours rows use: a tap is suppressed when text
+  // is selected or the pointer moved more than 8px between down and up; on
+  // touch, a press of 300ms or more (the long-press that starts native text
+  // selection) is suppressed too.
+  //
+  // In view mode the toggle also waits out a possible double-click (250ms)
+  // before acting: the first click of a double-click arrives with no selection
+  // yet, so acting on it immediately would collapse the text out from under the
+  // second click. A click with detail > 1 cancels the pending toggle, and the
+  // selection is re-checked when the timer fires.
+  const pressRef = useRef({ x: 0, y: 0, t: 0, touch: false, suppress: false })
+  const clickTimerRef = useRef(null)
+  const selectedText = () => (window.getSelection ? window.getSelection().toString().trim() : '')
+
+  function onBarPointerDown(e) {
+    pressRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), touch: e.pointerType === 'touch', suppress: false }
+  }
+
+  function onBarPointerUp(e) {
+    const p = pressRef.current
+    const moved = Math.abs(e.clientX - p.x) > 8 || Math.abs(e.clientY - p.y) > 8
+    const longPress = p.touch && Date.now() - p.t >= 300
+    if (moved || longPress || selectedText() !== '') p.suppress = true
+  }
+
+  // When a record exists and the bar is clicked (not a button), toggle
+  // view/collapsed — unchanged behaviour, now selection-safe (see above).
+  function handleBarClick(e) {
+    if (mode !== 'idle' || !record) return
+    if (pressRef.current.suppress) { pressRef.current.suppress = false; return }
+    clearTimeout(clickTimerRef.current)
+    if (!open) { setOpen(true); return }   // collapsed bar: no text to select
+    if (e.detail > 1) return                 // part of a double-click: leave it
+    clickTimerRef.current = setTimeout(() => {
+      if (selectedText() !== '') return
+      setOpen(o => !o)
+    }, 250)
   }
 
   function startAdd(e) {
@@ -1372,13 +1423,14 @@ function ClientTextBar({ clientId, initialRecord, table, field, title, placehold
   }
 
   const isAddOrEdit = mode === 'add' || mode === 'edit'
-  const collapsed = !isAddOrEdit && mode !== 'confirmDelete' && !(open && record)
 
   return (
     <div className={styles.personalNotesSection}>
       {/* ── Header bar ── */}
       <div
-        className={`${styles.personalNotesBar}${collapsed && bigAdd ? ` ${styles.addHeaderBar}` : ''}`}
+        className={styles.personalNotesBar}
+        onPointerDown={onBarPointerDown}
+        onPointerUp={onBarPointerUp}
         onClick={handleBarClick}
         style={{ cursor: record && !isAddOrEdit ? 'pointer' : 'default' }}
       >
@@ -1425,23 +1477,23 @@ function ClientTextBar({ clientId, initialRecord, table, field, title, placehold
               <button className={styles.incidentDeleteBtn} onClick={e => { e.stopPropagation(); setMode('confirmDelete') }}>×</button>
             </div>
           </div>
-        ) : bigAdd ? (
-          /* Default collapsed state, wide-screen "+" layout — see .addHeaderBar */
-          <>
-            <span className={`${styles.sectionTitle} ${styles.addHeaderLabel}`}>{title}</span>
-            <span className={styles.addHeaderControls} />
-            {!record && (
-              <button className={`${styles.addBtn} ${styles.addHeaderBtn}`} onClick={startAdd}>+</button>
-            )}
-          </>
         ) : (
-          /* Default collapsed state */
-          <>
-            <span className={styles.sectionTitle}>{title}</span>
+          /* Default collapsed state. .addHeaderBar orders [label][+][controls]
+             explicitly per breakpoint: "+" at the right edge on phones, right
+             after the label on wide screens. Only Personal Notes (bigAdd) gets
+             the fixed label column and the 32px "+", which is what lines it up
+             with the Incidents and Hours "+". The empty controls span carries
+             the auto margin. */
+          <div className={styles.addHeaderBar}>
+            <span className={`${styles.sectionTitle}${bigAdd ? ` ${styles.addHeaderLabel}` : ''}`}>{title}</span>
             {!record && (
-              <button className={styles.addBtn} onClick={startAdd}>+</button>
+              <button
+                className={`${styles.addBtn} ${styles.addHeaderBtn}${bigAdd ? ` ${styles.addHeaderBtnBig}` : ''}`}
+                onClick={startAdd}
+              >+</button>
             )}
-          </>
+            <span className={styles.addHeaderControls} />
+          </div>
         )}
       </div>
     </div>
@@ -1625,7 +1677,7 @@ function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
           value=""
           onChange={e => { if (e.target.value) setForm(f => applyDescriptionPick(f, e.target.value)) }}
         >
-          <option value="">Pick a common description…</option>
+          <option value="" disabled hidden>Pick a common description…</option>
           {DESCRIPTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
@@ -1709,7 +1761,7 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
           value=""
           onChange={e => { if (e.target.value) setForm(f => applyDescriptionPick(f, e.target.value)) }}
         >
-          <option value="">Pick a common description…</option>
+          <option value="" disabled hidden>Pick a common description…</option>
           {DESCRIPTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
@@ -1906,7 +1958,7 @@ function HoursSection({ clientId, hours }) {
             <button className={styles.hoursClearChecks} onClick={clearAllChecks}>clear checks</button>
           )}
         </div>
-        {!showForm && <button className={`${styles.addBtn} ${styles.addHeaderBtn}`} onClick={() => setShowForm(true)}>+</button>}
+        {!showForm && <button className={`${styles.addBtn} ${styles.addHeaderBtn} ${styles.addHeaderBtnBig}`} onClick={() => setShowForm(true)}>+</button>}
       </div>
       {showForm && (
         <AddHoursForm
@@ -1955,6 +2007,22 @@ function HoursSection({ clientId, hours }) {
 
 // ─── Criminal History section ────────────────────────────────────────────────
 
+// The Storage key of a client's criminal-history PDF. clients.criminal_history_url
+// stores the PUBLIC URL (…/object/public/warrants/<key>), so the key is read back
+// out of it: View, Delete, a re-upload and the CC-file copy all act on the file
+// this client's row actually points at (2026-10-16 — the same principle as the
+// affidavit fix in CaseView), never on a path re-derived from the id. Only a
+// client with no stored URL (or one that can't be parsed) derives the original
+// criminal-history/<client id>.pdf. Nothing stored is moved or rewritten.
+function criminalHistoryKey(storedUrl, clientId) {
+  const m = String(storedUrl ?? '').match(/\/object\/public\/warrants\/([^?#]+)/)
+  if (m) {
+    try { return decodeURIComponent(m[1]) } catch { return m[1] }
+  }
+  if (/^criminal-history\//.test(storedUrl ?? '')) return storedUrl
+  return `criminal-history/${clientId}.pdf`
+}
+
 function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
   const [url, setUrl] = useState(initialUrl ?? null)
   const [uploading, setUploading] = useState(false)
@@ -1970,7 +2038,7 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
   async function uploadHistoryFile(file) {
     setUploading(true)
     setUploadError(null)
-    const path = `criminal-history/${clientId}.pdf`
+    const path = criminalHistoryKey(url, clientId)
     const { error: uploadErr } = await supabase.storage
       .from('warrants')
       .upload(path, file, { contentType: 'application/pdf', upsert: true })
@@ -2016,7 +2084,7 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
   }
 
   async function handleView() {
-    const path = `criminal-history/${clientId}.pdf`
+    const path = criminalHistoryKey(url, clientId)
     const { data, error } = await supabase.storage.from('warrants').createSignedUrl(path, 3600)
     if (error) { alert('Could not open file: ' + error.message); return }
     window.open(data.signedUrl, '_blank')
@@ -2024,7 +2092,7 @@ function CriminalHistorySection({ clientId, initialUrl, onDeleted }) {
 
   async function handleDelete() {
     setDeleting(true)
-    const path = `criminal-history/${clientId}.pdf`
+    const path = criminalHistoryKey(url, clientId)
     await supabase.storage.from('warrants').remove([path])
     await db.clients.update(clientId, { criminal_history_url: null })
     await addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, criminal_history_url: null })
@@ -2392,7 +2460,7 @@ function CcWaitingPanel({ client, info }) {
   return (
     <div className={styles.ccPanel}>
       <div className={styles.nextEventTopRow}>
-        <span className={styles.nextEventLabel}>Criminal Court — awaiting case number</span>
+        <span className={styles.ccPanelLabel}>Criminal Court — awaiting case number</span>
       </div>
       <div className={styles.ccPanelLine}>
         <span className={styles.ccPanelKey}>Left General Sessions:</span>{' '}
@@ -2419,7 +2487,8 @@ function CcWaitingPanel({ client, info }) {
           <span className={styles.ccDateValue}>{formatDateDisplay(info.ripe)}</span>
         </div>
       )}
-      {info.pct != null && <CcSlider pct={info.pct} />}
+      {/* ~40% of the panel's width and right-aligned (2026-10-16). */}
+      {info.pct != null && <div className={styles.ccPanelSlider}><CcSlider pct={info.pct} /></div>}
       <CcCaseNumberField clientId={client.id} value={client.cc_case_number} />
     </div>
   )
@@ -2510,11 +2579,12 @@ function CreateCcFile({ client, incidents, personalNote, mailingAddress, onCreat
     const newWarrantPath = new Map()
     try {
       if (client.criminal_history_url) {
-        // Source key is derived from the client id exactly as the criminal-
-        // history section's View/Delete derive it; the destination is the new
-        // client's own path, so the CC file's Replace never touches the GS PDF.
+        // Source key is the file the GS row actually points at (read out of its
+        // stored URL, exactly as the criminal-history section's View/Delete
+        // now resolve it); the destination is the new client's own path, so
+        // the CC file's Replace never touches the GS PDF.
         const to = `criminal-history/${newClientId}.pdf`
-        await copyObject(`criminal-history/${client.id}.pdf`, to)
+        await copyObject(criminalHistoryKey(client.criminal_history_url, client.id), to)
         // Same format CriminalHistorySection's upload writes: the public URL.
         const { data: urlData } = bucket.getPublicUrl(to)
         criminalHistoryUrl = urlData.publicUrl
@@ -2962,6 +3032,7 @@ function ClientFilePage() {
         {!showEventForm && (
           <NextEventBlock
             event={nextEvent}
+            slim={isCcFile}
             onEdit={() => setShowEventForm(true)}
           />
         )}
@@ -2996,7 +3067,7 @@ function ClientFilePage() {
             <AffidavitFirstUpload clientId={id} incidents={sortedIncidents} />
           </div>
           {!showIncidentForm && (
-            <button className={`${styles.addBtn} ${styles.addHeaderBtn}`} onClick={() => setShowIncidentForm(true)}>+</button>
+            <button className={`${styles.addBtn} ${styles.addHeaderBtn} ${styles.addHeaderBtnBig}`} onClick={() => setShowIncidentForm(true)}>+</button>
           )}
         </div>
         {showIncidentForm && (

@@ -4,7 +4,7 @@ import { addToSyncQueue } from '../syncManager'
 import { touchClient } from '../touchClient'
 import { bracketBlocks } from '../caseGrouping'
 import { INDIGENT_CYCLE, INDIGENT_COLOR, normalizeIndigent } from '../indigentStatus'
-import { ccChargeShort, formatMonthDay } from '../ccFile'
+import { ccChargeShort } from '../ccFile'
 import CcSlider from './CcSlider'
 import styles from './ClientRow.module.css'
 
@@ -161,21 +161,15 @@ export default function ClientRow({ client, relieved = false, onClick, onNavigat
               ))}
             </span>
           )
-          : ccWaiting
+          : ccWaiting?.pct != null
             ? (
-              /* A waiting CC file has no next event by definition, so its
-                 waiting summary takes the next-event line's spot. Same one-line
-                 nowrap treatment as .next, plus a compact slider beneath it
-                 (only when there is an estimate to measure to). */
+              /* A waiting CC file has no next event by definition, so the
+                 next-event line's spot holds its compact ripe-date slider —
+                 the slider ONLY, no text (2026-10-16). With no estimate there
+                 is no slider, and the spot is the same empty spacer as any
+                 client without a next event. */
               <span className={styles.ccWaitBlock}>
-                <span className={styles.ccWait}>
-                  {[
-                    ccWaiting.leftGs ? `Left GS ${formatMonthDay(ccWaiting.leftGs)}` : 'Left GS date not set',
-                    ...(ccWaiting.daysSince != null ? [`${ccWaiting.daysSince} ${ccWaiting.daysSince === 1 ? 'day' : 'days'}`] : []),
-                    ccWaiting.ripe ? `Ripe ${formatMonthDay(ccWaiting.ripe)}` : 'no CC estimate',
-                  ].join(' · ')}
-                </span>
-                {ccWaiting.pct != null && <CcSlider pct={ccWaiting.pct} compact />}
+                <CcSlider pct={ccWaiting.pct} compact />
               </span>
             )
             : <span className={styles.nextEmpty}>&nbsp;</span>

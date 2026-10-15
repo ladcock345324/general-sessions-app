@@ -454,6 +454,21 @@
   margin-bottom: 6px;
 }
 
+/* Slim empty Next Event bar — CC files only, while there is no next event.
+   Same blue, but only a section-header's height: one row, no "No upcoming
+   event" line. */
+.nextEventSlim {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 5px 16px;
+}
+
+.nextEventSlim .nextEventTopRow {
+  flex: 1;
+  margin-bottom: 0;
+}
+
 .nextEventLabel {
   font-size: 12px;
   font-weight: 700;
@@ -503,7 +518,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: #7f93ad;
+  color: var(--cc-accent);
   margin-top: 2px;
 }
 
@@ -515,9 +530,10 @@
 }
 
 /* Waiting panel — directly above the Next Event block and in its visual family
-   (same blue, same label type). The bottom rule separates the two blocks. */
+   (same shape and label type), in the CC bronze theme (--cc-* in src/App.css).
+   The bottom rule separates the two blocks. */
 .ccPanel {
-  background: #1E3A5F;
+  background: var(--cc-panel-bg);
   padding: 10px 16px 14px;
   border-bottom: 2px solid #16212F;
 }
@@ -528,13 +544,19 @@
   line-height: 1.6;
 }
 
+/* Waiting-panel slider: ~40% of the panel's width, right-aligned. */
+.ccPanelSlider {
+  width: 40%;
+  margin-left: auto;
+}
+
 .ccPanelKey {
-  color: #9fb4cc;
+  color: var(--cc-accent-soft);
   font-weight: 500;
 }
 
 .ccPanelMuted {
-  color: #9fb4cc;
+  color: var(--cc-accent-soft);
 }
 
 /* One-tap date: the visible text with an invisible native date input laid
@@ -547,13 +569,13 @@
 .ccDateValue {
   font-weight: 600;
   color: #f0f2f5;
-  border-bottom: 1px dashed rgba(91, 159, 212, 0.6);
+  border-bottom: 1px dashed var(--cc-accent-soft);
 }
 
 .ccDateEmpty {
   font-weight: 600;
-  color: #7eb8f7;
-  border-bottom: 1px dashed rgba(126, 184, 247, 0.6);
+  color: var(--cc-accent-soft);
+  border-bottom: 1px dashed var(--cc-accent);
 }
 
 .ccDateInput {
@@ -572,15 +594,24 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #5b9fd4;
+  color: var(--cc-accent);
+}
+
+/* The panel's own heading — .nextEventLabel's type in the CC accent colour. */
+.ccPanelLabel {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--cc-accent);
 }
 
 /* "Create CC file" — same family as Close Case / Delete Client (full-width
-   outline button), in the app's blue. */
+   outline button), in the CC bronze theme. */
 .ccCreateBtn {
   background: none;
-  border: 1px solid rgba(91, 159, 212, 0.35);
-  color: #6b9fd4;
+  border: 1px solid var(--cc-accent-border);
+  color: var(--cc-accent);
   font-size: 14px;
   font-weight: 600;
   padding: 10px 20px;
@@ -591,7 +622,7 @@
 }
 
 .ccCreateBtn:active {
-  background: rgba(91, 159, 212, 0.08);
+  background: var(--cc-accent-press);
 }
 
 /* Create CC file dialog — the charge checklist. */
@@ -656,6 +687,11 @@
   min-width: 0;
   white-space: pre-wrap;
   word-break: break-word;
+  /* The bar itself is user-select: none (so tapping it doesn't highlight the
+     label); the displayed note/address text opts back in so it can be drag- or
+     double-click-selected and copied. The tap handler is selection-safe. */
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .pnViewActions {
@@ -781,20 +817,55 @@
   margin-top: 0;
 }
 
-/* ── Section-header "+" layout (2026-10-15) ────────────────────────────────
-   Used by exactly three header rows: PERSONAL NOTES (collapsed bar), INCIDENTS
-   and HOURS. Criminal History and Courtroom Documents are deliberately NOT on
-   it and keep their old inline headers.
+/* Wide screens (2026-10-16 fix): the two bars are the SAME height and share a
+   top edge. The grid stretches both cells to the taller one, each section
+   becomes a column whose bar fills it, and the bar's content sits at the top
+   (flex-start) — so a short collapsed Mailing Address bar beside a long open
+   note stretches down with it while its label and "+" stay on the top line.
+   Phones are untouched: there the two stack and keep their own heights. */
+@media (min-width: 769px) {
+  .notesRow {
+    align-items: stretch;
+  }
 
-   One flat flex row: [label] [other controls] [+]. On phones it looks exactly
-   as before — the controls wrapper takes margin-left: auto and the "+" is
-   ordered last, so the "+" stays at the right edge after "upload affidavit" /
-   "clear checks". Above 768px the "+" is reordered to sit right after the label
-   and grows to 32px. The LABEL gets a fixed width on wide screens, wide enough
-   for "PERSONAL NOTES" plus a small gap, so the three "+" buttons line up in one
-   vertical column regardless of how long each label is. The other controls stay
-   at the right edge on both breakpoints. The controls wrapper is always
-   rendered (even empty) so there is always something carrying the auto margin. */
+  .notesRow > .personalNotesSection {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .notesRow .personalNotesBar {
+    flex: 1 1 auto;
+    align-items: flex-start;
+    min-height: 42px;
+  }
+}
+
+/* ── Section-header "+" layout ─────────────────────────────────────────────
+   Used by the INCIDENTS and HOURS header rows (.addHeaderRow) and by the
+   collapsed PERSONAL NOTES and MAILING ADDRESS bars (.addHeaderBar, an inner
+   row). Criminal History and Courtroom Documents are deliberately NOT on it and
+   keep their old inline headers.
+
+   Children: [label] [+] [other controls] — but the visual order is set
+   EXPLICITLY with `order` at both breakpoints, never left to DOM order:
+     phones  (base):  label 0 · controls 0 · "+" 1  → "+" at the right edge,
+                      after "upload affidavit" / "clear checks", as always.
+     wide (>768px):   label 0 · "+" 1 · controls 2 → "+" right after the label;
+                      the controls keep margin-left: auto, so they stay at the
+                      far right.
+
+   ⚠️ ROOT CAUSE of the 2026-10-15 bug (the "+" never moved): the desktop rule
+   set the "+" to order: 0, but the controls wrapper also had the default
+   order: 0. Equal orders fall back to DOM order — label, controls, "+" — and
+   the controls' margin-left: auto then pushed the "+" to the far right edge.
+   Giving the controls order: 2 on wide screens is what actually reorders them.
+
+   The fixed-width LABEL column (.addHeaderLabel) is only on Personal Notes,
+   Incidents and Hours, so those three "+" line up in one vertical column. The
+   Mailing Address bar has no fixed label width: its "+" sits directly after its
+   own label instead. The bigger 32px "+" (.addHeaderBtnBig) is likewise only on
+   those three. The controls wrapper is always rendered (even empty) so there is
+   always something carrying the auto margin. */
 .addHeaderRow {
   display: flex;
   align-items: center;
@@ -803,12 +874,17 @@
   padding: 5px 16px;
 }
 
-/* Same treatment applied to the Personal Notes bar while it is collapsed. */
+/* Inner row of a collapsed Personal Notes / Mailing Address bar. */
 .addHeaderBar {
+  display: flex;
+  align-items: center;
   gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .addHeaderControls {
+  order: 0;
   margin-left: auto;
   display: flex;
   align-items: center;
@@ -820,9 +896,23 @@
 }
 
 @media (min-width: 769px) {
-  .addHeaderRow,
-  .addHeaderBar {
+  /* Both 42px tall on wide screens: the header rows directly, the bars via a
+     32px inner row inside their 5px top/bottom padding (border-box). */
+  .addHeaderRow {
     min-height: 42px;
+  }
+
+  .addHeaderBar {
+    min-height: 32px;
+  }
+
+  .addHeaderControls {
+    order: 2;
+  }
+
+  .addHeaderBtn {
+    order: 1;
+    flex-shrink: 0;
   }
 
   /* Knob: the shared label-column width. Must fit "PERSONAL NOTES" (~120px at
@@ -831,13 +921,14 @@
     flex: 0 0 136px;
   }
 
-  .addHeaderBtn {
-    order: 0;
+  /* Compound selector on purpose: .addBtn (24px) is declared LATER in this
+     file at the same single-class specificity, so a plain .addHeaderBtnBig
+     loses to it and the "+" never grows — which is what happened 2026-10-15. */
+  .addBtn.addHeaderBtnBig {
     width: 32px;
     height: 32px;
     font-size: 22px;
     border-radius: 6px;
-    flex-shrink: 0;
   }
 }
 

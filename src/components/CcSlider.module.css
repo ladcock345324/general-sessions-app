@@ -26,11 +26,11 @@
   height: 12px;
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 2px #1E3A5F;
+  box-shadow: 0 0 0 2px var(--cc-panel-bg);   /* ring matches the CC panel (src/App.css) */
 }
 
-/* Client-list version: thin, fixed width, so it fits under the one-line
-   waiting text without widening the row. */
+/* Client-list version: thin and fixed-width, so it fits the next-event line's
+   spot without widening the row. */
 .compact {
   height: 3px;
   width: 140px;

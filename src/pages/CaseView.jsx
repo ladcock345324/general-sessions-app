@@ -292,15 +292,25 @@ export default function CaseView() {
   async function uploadWarrantFile(file) {
     setUploading(true)
     setUploadError(null)
-    // Falls back to the id so a case with no number can't write "null.pdf" and
-    // collide with every other unnumbered case.
-    const path = `warrants/${caseData.case_number || caseData.id}.pdf`
+    // ⚠️ REPLACE OVERWRITES THIS CASE'S OWN FILE (2026-10-16). A case that
+    // already has an affidavit uploads to its EXISTING warrant_url, never to a
+    // path re-derived from the current case number. Real data has cases whose
+    // file is named after a DIFFERENT case number (numbers edited after upload —
+    // e.g. GS1126192's warrant_url is warrants/GS1126191.pdf), so re-deriving
+    // the path would have written over that other case's affidavit. Only a case
+    // with no affidavit yet derives a path, from case_number || id — the id
+    // fallback stops an unnumbered case writing "null.pdf" and colliding with
+    // every other unnumbered case. No existing file is moved or renamed.
+    const path = caseData.warrant_url || `warrants/${caseData.case_number || caseData.id}.pdf`
     const { error: uploadErr } = await supabase.storage
       .from('warrants')
       .upload(path, file, { contentType: 'application/pdf', upsert: true })
     if (uploadErr) { setUploadError(uploadErr.message); setUploading(false); return }
-    await db.cases.update(caseData.id, { warrant_url: path })
-    await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, warrant_url: path })
+    // A replace writes the same path back, so only a first upload records it.
+    if (path !== caseData.warrant_url) {
+      await db.cases.update(caseData.id, { warrant_url: path })
+      await addToSyncQueue('cases', 'UPDATE', caseData.id, { id: caseData.id, warrant_url: path })
+    }
     // Text extraction — offline-first and awaited, same as every other write in
     // the app. This was previously fired unawaited and written straight to
     // Supabase first, so a navigation, an offline moment, or iOS killing the PWA
