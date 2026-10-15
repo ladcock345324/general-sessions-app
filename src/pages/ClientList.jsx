@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient'
 import { useClients } from '../hooks/useClients'
 import { useSyncStatus } from '../SyncContext'
 import { normalizeIndigent } from '../indigentStatus'
+import { ccWaitingInfo, caseSortNumber, caseNumericKey } from '../ccFile'
 import { shouldPersistScroll } from '../scrollRestore'
 import { holdScrollAt, isScrollHoldActive } from '../scrollHold'
 import ClientRow from '../components/ClientRow'
@@ -153,6 +154,20 @@ function useClientListScrollRestoration(ready) {
 }
 
 const byLastName = (a, b) => a.last_name.localeCompare(b.last_name)
+
+// "Show:" toggle cycle — Appointed → Pro Bono → Retained → Appointed. There is
+// deliberately no "Show: All".
+const SHOW_CYCLE = { appointed: 'pro_bono', pro_bono: 'retained', retained: 'appointed' }
+const SHOW_LABEL = { appointed: 'Appointed', pro_bono: 'Pro Bono', retained: 'Retained' }
+
+// clients.client_type is NOT NULL DEFAULT 'appointed', but a row cached before
+// the column existed (or any unrecognised value) is treated as appointed rather
+// than vanishing from every Show view.
+function clientTypeOf(client) {
+  return client.client_type === 'retained' || client.client_type === 'pro_bono'
+    ? client.client_type
+    : 'appointed'
+}
 
 // Parse next_events.event_date ("M/D/YYYY") + event_time ("9:05 AM") into a
 // comparable timestamp. A missing/unparseable time sorts as start of that day,
@@ -316,15 +331,15 @@ function sortClosed(clients, frozen) {
   })
 }
 
-// Strip leading non-digits and parse as integer for numeric sort
-function caseNumericKey(caseNumber) {
-  return parseInt((caseNumber ?? '').replace(/^\D+/, ''), 10) || 0
-}
-
 // Map Supabase row → shape ClientRow expects
 function toRowProps(client) {
+  const isCcFile = client.is_cc_file === true
   const allCases = (client.incidents ?? []).flatMap(inc => inc.cases ?? [])
-  const caseNumbers = [...allCases].sort((a, b) => caseNumericKey(a.case_number) - caseNumericKey(b.case_number))
+  // Numeric on the case number with the prefix stripped. Inside a CC file every
+  // case_number is null, so those sort on the GS number they came from instead.
+  const caseNumbers = [...allCases].sort((a, b) =>
+    caseNumericKey(caseSortNumber(a, isCcFile)) - caseNumericKey(caseSortNumber(b, isCcFile)))
+  const hasNextEvent = (client.next_events?.length ?? 0) > 0
 
   return {
     id: client.id,
@@ -348,6 +363,10 @@ function toRowProps(client) {
     relievedClosed: client.relieved_closed ?? false,
     caseNumbers,
     indigentStatus: client.indigent_status ?? 'red',
+    isCcFile,
+    ccCaseNumber: isCcFile ? (client.cc_case_number?.trim() || null) : null,
+    // Non-null only while the CC file is waiting (no CC number, no next event).
+    ccWaiting: ccWaitingInfo(client, hasNextEvent),
   }
 }
 
@@ -385,6 +404,11 @@ export default function ClientList() {
     localStorage.getItem(SORT_KEY) === 'event' ? 'event' : 'name'
   )
   const [showHours, setShowHours] = useState(false)
+  // "Show:" filter (2026-10-15). ⚠️ React state ONLY — deliberately never written
+  // to localStorage or sessionStorage. Every mount of this list (an app launch,
+  // a reload, returning from a client file) starts back at "Appointed". That is
+  // the intended behaviour; do not "improve" it by persisting the choice.
+  const [showType, setShowType] = useState('appointed')
 
   // Restore only once the rows actually exist — see the hook's own note.
   const captureScrollNow = useClientListScrollRestoration(clients.length > 0)
@@ -422,8 +446,13 @@ export default function ClientList() {
   // undefined, so this can't snapshot an empty list that never fills.
   const frozenClosedOrder = useFrozenClosedOrder(closedClients, !loading)
 
-  const active = sortActive(clients.filter(c => !c.relieved_closed), sortMode).map(toRowProps)
-  const relieved = sortClosed(closedClients, frozenClosedOrder).map(toRowProps)
+  // The Show filter applies to BOTH sections, and the count badges below count
+  // only what is shown. It runs after the frozen snapshot is taken (which still
+  // covers every closed client), so switching the filter never disturbs the
+  // frozen Closed order — it only hides or reveals rows within it.
+  const shown = c => clientTypeOf(c) === showType
+  const active = sortActive(clients.filter(c => !c.relieved_closed && shown(c)), sortMode).map(toRowProps)
+  const relieved = sortClosed(closedClients.filter(shown), frozenClosedOrder).map(toRowProps)
 
   return (
     <div className={styles.screen}>
@@ -451,7 +480,10 @@ export default function ClientList() {
             <button className={styles.sortToggle} onClick={toggleSort}>
               Sorting by: {sortMode === 'event' ? 'Next Event' : 'Name'}
             </button>
-            <button className={styles.sortToggle} onClick={() => setShowHours(true)}>
+            <button className={styles.sortToggle} onClick={() => setShowType(t => SHOW_CYCLE[t])}>
+              Show: {SHOW_LABEL[showType]}
+            </button>
+            <button className={`${styles.sortToggle} ${styles.hoursToggle}`} onClick={() => setShowHours(true)}>
               Hours
             </button>
           </div>

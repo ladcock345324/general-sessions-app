@@ -12,6 +12,14 @@
   border-bottom: none;
 }
 
+/* ⚠️ CC FILE ROW SHADE — the knob. A Criminal Court file's row is permanently
+   tinted this slightly different blue (page background is #1E2A3A), with or
+   without a CC case number, in both the Active and Closed sections. Change this
+   one value to make it stronger or subtler. */
+.rowCc {
+  background-color: #233650;
+}
+
 .info {
   display: flex;
   flex-direction: column;
@@ -81,6 +89,24 @@
 
 .nextEmpty {
   font-size: 13px;
+}
+
+/* Waiting CC file: "Left GS 9/3 · 12 days · Ripe 11/20" in the next-event
+   line's spot, with a compact slider beneath. Same one-line, nowrap, clipped
+   treatment as .next so it can never push into the case table or the badge. */
+.ccWaitBlock {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ccWait {
+  display: block;
+  font-size: 13px;
+  color: #9fb4cc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .caseTable {
@@ -154,6 +180,41 @@
   text-align: left;
   padding-left: 6px;
   white-space: nowrap;
+  line-height: 1.5;
+  user-select: text;
+}
+
+/* A CC file's Criminal Court number, shown once at the top of its case table.
+   Keeps .caseNum's look but drops its fixed 56px column (a CC number like
+   "2026-I-760" is wider) and its tap cursor — it is not a case. */
+.ccCaseNum {
+  width: auto;
+  cursor: default;
+}
+
+/* CC-file charge — the MAIN label and the tap target for that case. */
+.ccCharge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #c8d0db;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  line-height: 1.5;
+  cursor: pointer;
+  user-select: text;
+}
+
+/* The GS case number a CC-file charge came from — a quiet reference: smaller,
+   muted gray, normal weight. Deliberately NOT the blue case-number style. */
+.ccGsNum {
+  font-size: 8.8px;
+  font-weight: 400;
+  color: #6b7a99;
+  padding-left: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
   line-height: 1.5;
   user-select: text;
 }
@@ -299,6 +360,18 @@
     font-size: 11px;
   }
 
+  .ccWait {
+    font-size: 11px;
+  }
+
+  .ccCharge {
+    font-size: 11px;
+  }
+
+  .ccGsNum {
+    font-size: 9px;
+  }
+
   .caseLine {
     display: flex;
     align-items: center;
@@ -409,7 +482,9 @@
 
   .caseNum,
   .caseCharge,
-  .caseClassification {
+  .caseClassification,
+  .ccCharge,
+  .ccGsNum {
     line-height: 1.25;
   }
 }

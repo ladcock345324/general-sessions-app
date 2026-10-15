@@ -95,10 +95,20 @@
 }
 
 /* ── Sort toggle ── */
+/* "Sorting by:" and "Show:" sit together on the left; "Hours" is pushed to the
+   right edge by its own margin-left: auto (it used to get there via
+   space-between, which with three items would centre the middle one). Wraps
+   rather than overflowing on the narrowest phones. */
 .sortToggleRow {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
   padding: 12px 16px 0;
+}
+
+.hoursToggle {
+  margin-left: auto;
 }
 
 .sortToggle {

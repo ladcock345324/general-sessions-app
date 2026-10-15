@@ -5,6 +5,8 @@ import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import { touchClient } from '../touchClient'
 import styles from './NewClient.module.css'
+// Borrowed for the Retained / Pro Bono checkboxes — see the note in NewClient.jsx.
+import checkStyles from './ClientFile.module.css'
 import { useScrollToTopOnMount } from '../scrollHold'
 
 const HOURS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
@@ -48,6 +50,35 @@ function pickerHandlers() {
   return { onClick: open, onFocus: open }
 }
 
+// Retained / Pro Bono — mutually exclusive; both unchecked = 'appointed'.
+// Byte-for-byte the same as the copy in NewClient.jsx (per-file helper
+// convention these two forms already follow).
+function ClientTypeChecks({ value, onChange }) {
+  const toggle = type => onChange(value === type ? 'appointed' : type)
+  return (
+    <div style={{ display: 'flex', gap: 24 }}>
+      <label className={checkStyles.formCheckRow}>
+        <input
+          type="checkbox"
+          className={checkStyles.formCheckbox}
+          checked={value === 'retained'}
+          onChange={() => toggle('retained')}
+        />
+        <span className={checkStyles.formCheckLabel}>Retained</span>
+      </label>
+      <label className={checkStyles.formCheckRow}>
+        <input
+          type="checkbox"
+          className={checkStyles.formCheckbox}
+          checked={value === 'pro_bono'}
+          onChange={() => toggle('pro_bono')}
+        />
+        <span className={checkStyles.formCheckLabel}>Pro Bono</span>
+      </label>
+    </div>
+  )
+}
+
 export default function EditClient() {
   // Same hole as the other detail routes — reached from a scrolled client file.
   // See scrollHold.js.
@@ -79,6 +110,13 @@ export default function EditClient() {
       booking_period: parseTime(liveClient.booking_time).period,
       oca: liveClient.oca ?? '',
       custody_status: liveClient.custody_status ?? 'in_custody',
+      // A missing/unknown value is treated as appointed, the column default.
+      client_type: ['retained', 'pro_bono'].includes(liveClient.client_type) ? liveClient.client_type : 'appointed',
+      // Criminal Court file fields — only rendered/saved when is_cc_file.
+      is_cc_file: liveClient.is_cc_file === true,
+      left_gs_date: liveClient.left_gs_date ?? '',
+      cc_estimated_first_date: liveClient.cc_estimated_first_date ?? '',
+      cc_case_number: liveClient.cc_case_number ?? '',
     })
   }, [liveClient])
 
@@ -103,6 +141,14 @@ export default function EditClient() {
       booking_time: combineTime(form.booking_hour, form.booking_period),
       oca: form.oca.trim() || null,
       custody_status: form.custody_status,
+      client_type: form.client_type,
+      // The three CC columns are written only for a CC file; a GS file never
+      // carries them, so its payload is left exactly as it was.
+      ...(form.is_cc_file ? {
+        left_gs_date: form.left_gs_date.trim() || null,
+        cc_estimated_first_date: form.cc_estimated_first_date.trim() || null,
+        cc_case_number: form.cc_case_number.trim() || null,
+      } : {}),
     }
 
     await db.clients.update(id, changes)
@@ -239,6 +285,43 @@ export default function EditClient() {
             <option value="no_bond_held">No Bond/Held</option>
           </select>
         </div>
+
+        <ClientTypeChecks value={form.client_type} onChange={v => set('client_type', v)} />
+
+        {form.is_cc_file && (
+          <>
+            <div className={styles.row}>
+              <label className={styles.label}>Date left General Sessions</label>
+              <input
+                className={styles.input}
+                type="date"
+                value={toDateInput(form.left_gs_date)}
+                onChange={e => set('left_gs_date', fromDateInput(e.target.value))}
+                {...pickerHandlers()}
+              />
+            </div>
+            <div className={styles.row}>
+              <label className={styles.label}>Estimated first CC date</label>
+              <input
+                className={styles.input}
+                type="date"
+                value={toDateInput(form.cc_estimated_first_date)}
+                onChange={e => set('cc_estimated_first_date', fromDateInput(e.target.value))}
+                {...pickerHandlers()}
+              />
+            </div>
+            <div className={styles.row}>
+              <label className={styles.label}>CC case number</label>
+              <input
+                className={styles.input}
+                type="text"
+                value={form.cc_case_number}
+                onChange={e => set('cc_case_number', e.target.value)}
+                placeholder="e.g. 2026-I-760"
+              />
+            </div>
+          </>
+        )}
 
         {error && <div className={styles.error}>{error}</div>}
 

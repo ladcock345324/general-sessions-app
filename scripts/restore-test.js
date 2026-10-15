@@ -18,7 +18,7 @@ const DB_DIR = join(BACKUP_DIR, 'db')
 const STORAGE_DIR = join(BACKUP_DIR, 'storage')
 
 // FK-safe insert order: parents before children.
-const TABLE_ORDER = ['clients', 'incidents', 'cases', 'hours', 'next_events', 'personal_notes', 'courtroom_documents']
+const TABLE_ORDER = ['clients', 'incidents', 'cases', 'hours', 'next_events', 'personal_notes', 'mailing_addresses', 'courtroom_documents']
 
 function fail(message) {
   console.error(`[restore-test] FATAL: ${message}`)

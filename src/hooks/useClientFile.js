@@ -6,12 +6,13 @@ export function useClientFile(clientId) {
   const data = useLiveQuery(async () => {
     if (!clientId) return null
 
-    const [client, nextEvent, allIncidents, allHours, personalNote] = await Promise.all([
+    const [client, nextEvent, allIncidents, allHours, personalNote, mailingAddress] = await Promise.all([
       db.clients.get(clientId),
       db.next_events.where('client_id').equals(clientId).first(),
       db.incidents.where('client_id').equals(clientId).toArray(),
       db.hours.where('client_id').equals(clientId).toArray(),
       db.personal_notes.where('client_id').equals(clientId).first(),
+      db.mailing_addresses.where('client_id').equals(clientId).first(),
     ])
 
     if (!client) return null
@@ -42,7 +43,7 @@ export function useClientFile(clientId) {
       return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
     })
 
-    return { client, incidents, nextEvent: nextEvent ?? null, hours: allHours, personalNote: personalNote ?? null }
+    return { client, incidents, nextEvent: nextEvent ?? null, hours: allHours, personalNote: personalNote ?? null, mailingAddress: mailingAddress ?? null }
   }, [clientId])
 
   const refetch = useCallback(() => {}, [])
@@ -53,6 +54,7 @@ export function useClientFile(clientId) {
     nextEvent: data?.nextEvent ?? null,
     hours: data?.hours ?? [],
     personalNote: data?.personalNote ?? null,
+    mailingAddress: data?.mailingAddress ?? null,
     loading: data === undefined,
     error: null,
     refetch,

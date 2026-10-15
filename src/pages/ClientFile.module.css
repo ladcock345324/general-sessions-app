@@ -495,6 +495,134 @@
   color: #3a6ea8;
 }
 
+/* ── Criminal Court (CC) files (2026-10-15) ─────────────────────────────── */
+
+/* Small muted "Criminal Court" tag under the name of a CC file. */
+.ccLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #7f93ad;
+  margin-top: 2px;
+}
+
+/* "CC Case: 2026-I-760" — under the OCA line, once the number is known. */
+.ccCaseLine {
+  color: #9faab8;
+  font-size: 0.85em;
+  margin-top: 2px;
+}
+
+/* Waiting panel — directly above the Next Event block and in its visual family
+   (same blue, same label type). The bottom rule separates the two blocks. */
+.ccPanel {
+  background: #1E3A5F;
+  padding: 10px 16px 14px;
+  border-bottom: 2px solid #16212F;
+}
+
+.ccPanelLine {
+  font-size: 14px;
+  color: #f0f2f5;
+  line-height: 1.6;
+}
+
+.ccPanelKey {
+  color: #9fb4cc;
+  font-weight: 500;
+}
+
+.ccPanelMuted {
+  color: #9fb4cc;
+}
+
+/* One-tap date: the visible text with an invisible native date input laid
+   exactly over it (the Daily Hours drawer's header-date technique). */
+.ccDateTap {
+  position: relative;
+  display: inline-block;
+}
+
+.ccDateValue {
+  font-weight: 600;
+  color: #f0f2f5;
+  border-bottom: 1px dashed rgba(91, 159, 212, 0.6);
+}
+
+.ccDateEmpty {
+  font-weight: 600;
+  color: #7eb8f7;
+  border-bottom: 1px dashed rgba(126, 184, 247, 0.6);
+}
+
+.ccDateInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.ccFieldLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5b9fd4;
+}
+
+/* "Create CC file" — same family as Close Case / Delete Client (full-width
+   outline button), in the app's blue. */
+.ccCreateBtn {
+  background: none;
+  border: 1px solid rgba(91, 159, 212, 0.35);
+  color: #6b9fd4;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  width: 100%;
+}
+
+.ccCreateBtn:active {
+  background: rgba(91, 159, 212, 0.08);
+}
+
+/* Create CC file dialog — the charge checklist. */
+.ccPickList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding-top: 2px;
+}
+
+.ccPickText {
+  font-size: 13px;
+  color: #c8d0dc;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.ccPickNum {
+  margin-left: 8px;
+  font-size: 11px;
+  color: #6b7a99;
+  white-space: nowrap;
+}
+
+.ccPickEmpty {
+  font-size: 13px;
+  color: #6b7a99;
+}
+
 /* Personal Notes */
 .personalNotesSection {
   margin-top: 8px;
@@ -632,6 +760,85 @@
 .pnConfirmActions {
   display: flex;
   gap: 8px;
+}
+
+/* Personal Notes + Mailing Address row (2026-10-15). Wide screens: side by side,
+   80% notes / 20% address (4fr / 1fr). Phones (≤768px): one column, notes first
+   and the address full width directly beneath — see the mobile block. The row
+   carries the 8px top margin the notes section used to carry on its own. Both
+   cells keep their own dark bar, so each reads as its own bar. minmax(0, …) lets
+   a long unbroken line wrap instead of forcing the column wider. */
+.notesRow {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 8px;
+  align-items: start;
+}
+
+.notesRow > .personalNotesSection {
+  margin-top: 0;
+}
+
+/* ── Section-header "+" layout (2026-10-15) ────────────────────────────────
+   Used by exactly three header rows: PERSONAL NOTES (collapsed bar), INCIDENTS
+   and HOURS. Criminal History and Courtroom Documents are deliberately NOT on
+   it and keep their old inline headers.
+
+   One flat flex row: [label] [other controls] [+]. On phones it looks exactly
+   as before — the controls wrapper takes margin-left: auto and the "+" is
+   ordered last, so the "+" stays at the right edge after "upload affidavit" /
+   "clear checks". Above 768px the "+" is reordered to sit right after the label
+   and grows to 32px. The LABEL gets a fixed width on wide screens, wide enough
+   for "PERSONAL NOTES" plus a small gap, so the three "+" buttons line up in one
+   vertical column regardless of how long each label is. The other controls stay
+   at the right edge on both breakpoints. The controls wrapper is always
+   rendered (even empty) so there is always something carrying the auto margin. */
+.addHeaderRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #0f1820;
+  padding: 5px 16px;
+}
+
+/* Same treatment applied to the Personal Notes bar while it is collapsed. */
+.addHeaderBar {
+  gap: 12px;
+}
+
+.addHeaderControls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.addHeaderBtn {
+  order: 1;
+}
+
+@media (min-width: 769px) {
+  .addHeaderRow,
+  .addHeaderBar {
+    min-height: 42px;
+  }
+
+  /* Knob: the shared label-column width. Must fit "PERSONAL NOTES" (~120px at
+     11px bold uppercase with 0.09em tracking) with a little room to spare. */
+  .addHeaderLabel {
+    flex: 0 0 136px;
+  }
+
+  .addHeaderBtn {
+    order: 0;
+    width: 32px;
+    height: 32px;
+    font-size: 22px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
 }
 
 /* Incidents */
@@ -790,6 +997,22 @@
 .incidentCaseNum.caseNumberPending {
   font-style: italic;
   color: #6b7a99;
+}
+
+/* CC-file case line: the CHARGE is the main label (in the light text colour,
+   not the blue case-number link style) and the GS number is a quiet muted
+   reference after it. Compound selectors so they beat .incidentCaseNum
+   regardless of source order; the hit-area padding is inherited unchanged. */
+.incidentCaseNum.incidentCcCharge {
+  color: #c8d0dc;
+  letter-spacing: normal;
+}
+
+.incidentCcGsNum {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6b7a99;
+  letter-spacing: normal;
 }
 
 /* charge_abbrev, sitting inside the case-number span so it shares its click
@@ -1644,6 +1867,11 @@
        → chose 15px (17px margin, same comfort level as previous round) */
   .badgeStack {
     flex-shrink: 0;
+  }
+
+  /* Personal Notes, then Mailing Address full width directly beneath. */
+  .notesRow {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .badge {

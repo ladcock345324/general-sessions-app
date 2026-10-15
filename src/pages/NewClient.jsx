@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import db from '../localDB'
 import { addToSyncQueue } from '../syncManager'
 import styles from './NewClient.module.css'
+// Borrowed for the Retained / Pro Bono checkboxes so they use the app's one
+// existing checkbox vocabulary (.formCheckRow / .formCheckbox / .formCheckLabel,
+// first built for the Add Incident form's PV toggle) instead of a near-copy.
+import checkStyles from './ClientFile.module.css'
 import { useScrollToTopOnMount } from '../scrollHold'
 
 const EMPTY = {
@@ -14,6 +18,9 @@ const EMPTY = {
   booking_period: '',
   oca: '',
   custody_status: 'in_custody',
+  // 'appointed' | 'retained' | 'pro_bono'. Every client is assumed appointed;
+  // the Retained / Pro Bono checkboxes are the only way off that default.
+  client_type: 'appointed',
 }
 
 const HOURS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
@@ -50,6 +57,36 @@ function pickerHandlers() {
   return { onClick: open, onFocus: open }
 }
 
+// Retained / Pro Bono — mutually exclusive: checking one unchecks the other, and
+// unchecking the checked one falls back to 'appointed'. Both unchecked IS
+// appointed; there is no third box for it. Duplicated in EditClient.jsx per the
+// per-file helper convention those two forms already follow.
+function ClientTypeChecks({ value, onChange }) {
+  const toggle = type => onChange(value === type ? 'appointed' : type)
+  return (
+    <div style={{ display: 'flex', gap: 24 }}>
+      <label className={checkStyles.formCheckRow}>
+        <input
+          type="checkbox"
+          className={checkStyles.formCheckbox}
+          checked={value === 'retained'}
+          onChange={() => toggle('retained')}
+        />
+        <span className={checkStyles.formCheckLabel}>Retained</span>
+      </label>
+      <label className={checkStyles.formCheckRow}>
+        <input
+          type="checkbox"
+          className={checkStyles.formCheckbox}
+          checked={value === 'pro_bono'}
+          onChange={() => toggle('pro_bono')}
+        />
+        <span className={checkStyles.formCheckLabel}>Pro Bono</span>
+      </label>
+    </div>
+  )
+}
+
 export default function NewClient() {
   // Same hole as the other detail routes. See scrollHold.js.
   useScrollToTopOnMount()
@@ -82,6 +119,7 @@ export default function NewClient() {
       booking_time: combineTime(form.booking_hour, form.booking_period),
       oca: form.oca.trim() || null,
       custody_status: form.custody_status,
+      client_type: form.client_type,
       relieved_closed: false,
       // The ONE place last_modified_at is set without going through
       // touchClient(): there is no prior row to update, so it rides the INSERT
@@ -214,6 +252,8 @@ export default function NewClient() {
             <option value="no_bond_held">No Bond/Held</option>
           </select>
         </div>
+
+        <ClientTypeChecks value={form.client_type} onChange={v => set('client_type', v)} />
 
         {error && <div className={styles.error}>{error}</div>}
 

@@ -1,6 +1,6 @@
 // Nightly Supabase backup — run by .github/workflows/backup.yml, NOT locally.
 //
-// Dumps all 7 tables to backup/db/<table>.json and downloads every file in the
+// Dumps all 8 tables to backup/db/<table>.json and downloads every file in the
 // `warrants` Storage bucket to backup/storage/<same path>, then writes
 // backup/manifest.json with an integrity summary. Fails loudly (non-zero exit)
 // on any error so a broken backup can never report success.
@@ -15,7 +15,7 @@ import { dirname, join } from 'node:path'
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://afhzkqjrciyoeizrpaxt.supabase.co'
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-const TABLES = ['clients', 'incidents', 'cases', 'hours', 'next_events', 'personal_notes', 'courtroom_documents']
+const TABLES = ['clients', 'incidents', 'cases', 'hours', 'next_events', 'personal_notes', 'mailing_addresses', 'courtroom_documents']
 const BUCKET = 'warrants'
 
 const OUT_DIR = 'backup'

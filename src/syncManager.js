@@ -7,6 +7,7 @@ const DATA_TABLES = [
   'next_events',
   'hours',
   'personal_notes',
+  'mailing_addresses',
   'courtroom_documents',
 ]
 

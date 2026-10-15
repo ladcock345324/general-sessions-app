@@ -16,6 +16,8 @@ import rowStyles from '../components/ClientRow.module.css'
 import { bracketBlocks } from '../caseGrouping'
 import { INDIGENT_CYCLE, INDIGENT_COLOR, normalizeIndigent } from '../indigentStatus'
 import TextViewerDrawer from '../components/TextViewerDrawer'
+import CcSlider from '../components/CcSlider'
+import { ccWaitingInfo, ccChargeLabel, caseSortNumber, caseNumericKey } from '../ccFile'
 import { toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, todayString, dateKey } from '../dateUtils'
 import {
   DndContext,
@@ -657,7 +659,12 @@ const EMPTY_CASE = { case_number: '', charge: '', charge_abbrev: '', classificat
 // last_modified_at. It comes straight off the incident this form is nested
 // under (incident.client_id) — one prop from the immediate parent, not a value
 // plumbed down through the page.
-function AddCaseForm({ incidentId, clientId, onSaved, onCancel }) {
+//
+// Inside a CC file (isCcFile) the number field is "GS case number (if any)" and
+// writes cases.gs_case_number instead; case_number stays null, because Criminal
+// Court's single number identifies no charge. Charges added in CC may well have
+// no GS number at all, so it is optional like everything else here.
+function AddCaseForm({ incidentId, clientId, isCcFile = false, onSaved, onCancel }) {
   const [form, setForm] = useState(EMPTY_CASE)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -673,7 +680,8 @@ function AddCaseForm({ incidentId, clientId, onSaved, onCancel }) {
     const record = {
       id: newId,
       incident_id: incidentId,
-      case_number: form.case_number.trim() || null,
+      case_number: isCcFile ? null : (form.case_number.trim() || null),
+      ...(isCcFile ? { gs_case_number: form.case_number.trim() || null } : {}),
       charge: form.charge.trim() || null,
       charge_abbrev: form.charge_abbrev.trim() || null,
       classification: form.classification || null,
@@ -693,8 +701,8 @@ function AddCaseForm({ incidentId, clientId, onSaved, onCancel }) {
   return (
     <div className={styles.inlineForm}>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Case Number</label>
-        <input className={styles.formInput} value={form.case_number} onChange={e => set('case_number', e.target.value)} placeholder="e.g. GS1041482" />
+        <label className={styles.formLabel}>{isCcFile ? 'GS case number (if any)' : 'Case Number'}</label>
+        <input className={styles.formInput} value={form.case_number} onChange={e => set('case_number', e.target.value)} placeholder={isCcFile ? 'Optional — e.g. GS1041482' : 'e.g. GS1041482'} />
       </div>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Charge</label>
@@ -933,7 +941,7 @@ function AffidavitFirstUpload({ clientId, incidents }) {
 
 // ─── Incident group ──────────────────────────────────────────────────────────
 
-function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDeleted }) {
+function IncidentGroup({ incident: initialIncident, isCcFile = false, onCaseTap, onCaseAdded, onDeleted }) {
   const [incident, setIncident] = useState(initialIncident)
   const [showAddCase, setShowAddCase] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -1034,9 +1042,11 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
   const undescribed = !date && !loc && !desc
 
   // case_number is nullable, so the sort must not call localeCompare on null (it
-  // would throw during render and take the whole client file down).
+  // would throw during render and take the whole client file down). Inside a CC
+  // file case_number is ALWAYS null, so those sort on gs_case_number instead —
+  // caseSortNumber() picks the column and supplies the same '' guard.
   const cases = [...(initialIncident.cases ?? [])]
-    .sort((a, b) => (a.case_number ?? '').localeCompare(b.case_number ?? ''))
+    .sort((a, b) => caseSortNumber(a, isCcFile).localeCompare(caseSortNumber(b, isCcFile)))
 
   // A probation-violation incident (2026-08-19). It has no date, location or
   // description by construction and holds exactly ONE case, so the whole
@@ -1145,6 +1155,32 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
               const affidavit = !!c.warrant_url
               // Both the number and the line below it go to the same case.
               const open = () => onCaseTap(c.case_number || c.id)
+              const meta = (bond || affidavit) && (
+                /* Also navigates — a second, much larger target for the
+                   same case. Styling is deliberately unchanged: it should
+                   not read as a link, only behave as one. */
+                <div className={styles.incidentCaseMeta} {...tapHandlers(open)}>
+                  {bond}
+                  {bond && affidavit && ' | '}
+                  {affidavit && <span className={styles.affidavitTag}>Affidavit</span>}
+                </div>
+              )
+              if (isCcFile && !c.is_pv) {
+                // CC file: the CHARGE is the main label (full charge, falling
+                // back to the abbreviation) and the GS case number it came from
+                // is a quiet muted reference after it — not the blue number
+                // style, and never "Case # pending". Same tap target and the
+                // same id-based navigation (case_number is null in a CC file).
+                return (
+                  <div key={c.id} className={styles.incidentCaseItem}>
+                    <span className={`${styles.incidentCaseNum} ${styles.incidentCcCharge}`} {...tapHandlers(open)}>
+                      {ccChargeLabel(c)}
+                      {c.gs_case_number && <span className={styles.incidentCcGsNum}>{' '}{c.gs_case_number}</span>}
+                    </span>
+                    {meta}
+                  </div>
+                )
+              }
               return (
                 <div key={c.id} className={styles.incidentCaseItem}>
                   {/* Cases are addressed by case_number in the URL; one without
@@ -1179,16 +1215,7 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
                       <span className={styles.incidentCaseAbbrev}>{' '}{c.charge_abbrev}</span>
                     )}
                   </span>
-                  {(bond || affidavit) && (
-                    /* Also navigates — a second, much larger target for the
-                       same case. Styling is deliberately unchanged: it should
-                       not read as a link, only behave as one. */
-                    <div className={styles.incidentCaseMeta} {...tapHandlers(open)}>
-                      {bond}
-                      {bond && affidavit && ' | '}
-                      {affidavit && <span className={styles.affidavitTag}>Affidavit</span>}
-                    </div>
-                  )}
+                  {meta}
                 </div>
               )
             })}
@@ -1239,6 +1266,7 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
           <AddCaseForm
             incidentId={incident.id}
             clientId={incident.client_id}
+            isCcFile={isCcFile}
             onSaved={() => { setShowAddCase(false); onCaseAdded() }}
             onCancel={() => setShowAddCase(false)}
           />
@@ -1248,23 +1276,34 @@ function IncidentGroup({ incident: initialIncident, onCaseTap, onCaseAdded, onDe
   )
 }
 
-// ─── Personal Notes section ──────────────────────────────────────────────────
+// ─── Personal Notes / Mailing Address sections ───────────────────────────────
 
-function PersonalNotesSection({ clientId, initialNote }) {
-  const [note, setNote] = useState(initialNote ?? null)
-  // A client who already has a note gets the section expanded on load — the note
-  // is worth reading without a tap. An empty/absent note keeps the collapsed
+// One tap-to-edit text bar backed by a one-row-per-client table. Personal Notes
+// (personal_notes.note) and Mailing Address (mailing_addresses.address, added
+// 2026-10-15) are the SAME component, deliberately: the mailing address is
+// specified to behave exactly like the note in every way — tap-to-edit,
+// Save/Cancel/Delete, the auto-growing textarea, expanded-on-load when it has
+// content, offline-first insert/update/delete, and touchClient on save and
+// delete — and sharing the code is what keeps the two from drifting apart.
+//
+// `bigAdd` puts the header "+" in the wide-screen fixed-label-column position
+// shared with the Incidents and Hours headers (see .addHeaderBar in the CSS).
+// Only Personal Notes uses it; Mailing Address keeps the plain right-edge "+".
+function ClientTextBar({ clientId, initialRecord, table, field, title, placeholder, deletePrompt, bigAdd = false }) {
+  const [record, setRecord] = useState(initialRecord ?? null)
+  // A client who already has content gets the section expanded on load — it is
+  // worth reading without a tap. An empty/absent record keeps the collapsed
   // default. Click-to-toggle behavior itself is unchanged. The parent holds this
-  // render behind its own loading guard, so initialNote is already resolved here.
-  const [open, setOpen] = useState(() => !!initialNote?.note?.trim())
+  // render behind its own loading guard, so initialRecord is already resolved.
+  const [open, setOpen] = useState(() => !!initialRecord?.[field]?.trim())
   const [mode, setMode] = useState('idle') // 'idle' | 'add' | 'edit' | 'confirmDelete'
   const [draftText, setDraftText] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // When a note exists and the bar is clicked (not a button), toggle view/collapsed
+  // When a record exists and the bar is clicked (not a button), toggle view/collapsed
   function handleBarClick() {
     if (mode !== 'idle') return
-    if (note) setOpen(o => !o)
+    if (record) setOpen(o => !o)
   }
 
   function startAdd(e) {
@@ -1276,32 +1315,32 @@ function PersonalNotesSection({ clientId, initialNote }) {
 
   function startEdit(e) {
     e.stopPropagation()
-    setDraftText(note.note ?? '')
+    setDraftText(record[field] ?? '')
     setMode('edit')
   }
 
   function cancelEdit() {
-    setMode(note ? 'idle' : 'idle')
-    if (!note) setOpen(false)
+    setMode('idle')
+    if (!record) setOpen(false)
   }
 
-  async function saveNote() {
+  async function save() {
     const text = draftText.trim()
     if (!text) return
     setSaving(true)
     if (mode === 'add') {
       const newId = crypto.randomUUID()
-      const record = { id: newId, client_id: clientId, note: text, updated_at: new Date().toISOString() }
-      await db.personal_notes.put(record)
-      await addToSyncQueue('personal_notes', 'INSERT', newId, record)
-      setNote(record)
+      const newRecord = { id: newId, client_id: clientId, [field]: text, updated_at: new Date().toISOString() }
+      await db[table].put(newRecord)
+      await addToSyncQueue(table, 'INSERT', newId, newRecord)
+      setRecord(newRecord)
       setOpen(true)
     } else {
       const updated_at = new Date().toISOString()
-      const changes = { note: text, updated_at }
-      await db.personal_notes.update(note.id, changes)
-      await addToSyncQueue('personal_notes', 'UPDATE', note.id, { id: note.id, client_id: clientId, note: text, updated_at })
-      setNote(prev => ({ ...prev, note: text, updated_at }))
+      const changes = { [field]: text, updated_at }
+      await db[table].update(record.id, changes)
+      await addToSyncQueue(table, 'UPDATE', record.id, { id: record.id, client_id: clientId, [field]: text, updated_at })
+      setRecord(prev => ({ ...prev, [field]: text, updated_at }))
     }
     await touchClient(clientId)
     setSaving(false)
@@ -1313,8 +1352,8 @@ function PersonalNotesSection({ clientId, initialNote }) {
   }
 
   // Grows the textarea to fit its content instead of scrolling internally —
-  // called on mount (via ref) so an existing long note is fully visible as
-  // soon as edit mode opens, and again on every keystroke as text is added.
+  // called on mount (via ref) so existing long text is fully visible as soon as
+  // edit mode opens, and again on every keystroke as text is added.
   function autoGrow(el) {
     if (!el) return
     el.style.height = 'auto'
@@ -1323,24 +1362,25 @@ function PersonalNotesSection({ clientId, initialNote }) {
 
   async function confirmDelete() {
     setSaving(true)
-    await db.personal_notes.delete(note.id)
-    await addToSyncQueue('personal_notes', 'DELETE', note.id, { id: note.id })
+    await db[table].delete(record.id)
+    await addToSyncQueue(table, 'DELETE', record.id, { id: record.id })
     await touchClient(clientId)
-    setNote(null)
+    setRecord(null)
     setOpen(false)
     setMode('idle')
     setSaving(false)
   }
 
   const isAddOrEdit = mode === 'add' || mode === 'edit'
+  const collapsed = !isAddOrEdit && mode !== 'confirmDelete' && !(open && record)
 
   return (
     <div className={styles.personalNotesSection}>
       {/* ── Header bar ── */}
       <div
-        className={styles.personalNotesBar}
+        className={`${styles.personalNotesBar}${collapsed && bigAdd ? ` ${styles.addHeaderBar}` : ''}`}
         onClick={handleBarClick}
-        style={{ cursor: note && !isAddOrEdit ? 'pointer' : 'default' }}
+        style={{ cursor: record && !isAddOrEdit ? 'pointer' : 'default' }}
       >
         {isAddOrEdit ? (
           /* Inline editor inside the bar */
@@ -1352,10 +1392,10 @@ function PersonalNotesSection({ clientId, initialNote }) {
               autoFocus
               onChange={e => { setDraftText(e.target.value); autoGrow(e.target) }}
               onKeyDown={onKeyDown}
-              placeholder="Enter a note…"
+              placeholder={placeholder}
             />
             <div className={styles.pnEditActions}>
-              <button className={styles.pnSaveBtn} onClick={saveNote} disabled={saving}>
+              <button className={styles.pnSaveBtn} onClick={save} disabled={saving}>
                 {saving ? 'Saving…' : 'Save'}
               </button>
               <button className={styles.pnCancelBtn} onClick={cancelEdit} disabled={saving}>
@@ -1365,7 +1405,7 @@ function PersonalNotesSection({ clientId, initialNote }) {
           </div>
         ) : mode === 'confirmDelete' ? (
           <div className={styles.pnConfirmRow} onClick={e => e.stopPropagation()}>
-            <span className={styles.pnConfirmText}>Delete this note?</span>
+            <span className={styles.pnConfirmText}>{deletePrompt}</span>
             <div className={styles.pnConfirmActions}>
               <button className={styles.hoursConfirmYes} onClick={confirmDelete} disabled={saving}>
                 {saving ? '…' : 'Yes, delete'}
@@ -1375,26 +1415,65 @@ function PersonalNotesSection({ clientId, initialNote }) {
               </button>
             </div>
           </div>
-        ) : open && note ? (
-          /* View mode — note text + edit + delete */
+        ) : open && record ? (
+          /* View mode — text + edit + delete. .pnNoteText is pre-wrap, so a
+             multi-line mailing address displays with its line breaks. */
           <div className={styles.pnViewRow}>
-            <span className={styles.pnNoteText}>{note.note}</span>
+            <span className={styles.pnNoteText}>{record[field]}</span>
             <div className={styles.pnViewActions} onClick={e => e.stopPropagation()}>
               <button className={styles.pnEditBtn} onClick={startEdit}>edit</button>
               <button className={styles.incidentDeleteBtn} onClick={e => { e.stopPropagation(); setMode('confirmDelete') }}>×</button>
             </div>
           </div>
+        ) : bigAdd ? (
+          /* Default collapsed state, wide-screen "+" layout — see .addHeaderBar */
+          <>
+            <span className={`${styles.sectionTitle} ${styles.addHeaderLabel}`}>{title}</span>
+            <span className={styles.addHeaderControls} />
+            {!record && (
+              <button className={`${styles.addBtn} ${styles.addHeaderBtn}`} onClick={startAdd}>+</button>
+            )}
+          </>
         ) : (
           /* Default collapsed state */
           <>
-            <span className={styles.sectionTitle}>Personal Notes</span>
-            {!note && (
+            <span className={styles.sectionTitle}>{title}</span>
+            {!record && (
               <button className={styles.addBtn} onClick={startAdd}>+</button>
             )}
           </>
         )}
       </div>
     </div>
+  )
+}
+
+function PersonalNotesSection({ clientId, initialNote }) {
+  return (
+    <ClientTextBar
+      clientId={clientId}
+      initialRecord={initialNote}
+      table="personal_notes"
+      field="note"
+      title="Personal Notes"
+      placeholder="Enter a note…"
+      deletePrompt="Delete this note?"
+      bigAdd
+    />
+  )
+}
+
+function MailingAddressSection({ clientId, initialAddress }) {
+  return (
+    <ClientTextBar
+      clientId={clientId}
+      initialRecord={initialAddress}
+      table="mailing_addresses"
+      field="address"
+      title="Mailing Address"
+      placeholder="Add a mailing address…"
+      deletePrompt="Delete this address?"
+    />
   )
 }
 
@@ -1425,60 +1504,45 @@ function toHoursOption(value) {
 
 // Common descriptions offered as a dropdown; picking one fills the (still
 // editable) description text field. Shared by AddHoursForm and EditHoursForm.
+//
+// Replaced wholesale 2026-10-15 with exactly these 11, in exactly this order.
+// ⚠️ The order is deliberate and NOT alphabetical — do not "tidy" it into sort
+// order. Every entry now carries a default in DEFAULT_HOURS_BY_DESCRIPTION.
 const DESCRIPTION_OPTIONS = [
-  // Pinned to the TOP of the list by request (2026-08-19), ahead of every other
-  // option — it is the one picked most often. Deliberately outside the
-  // alphabetical run that follows; do not "restore" it to sort order. It
-  // carries no entry in DEFAULT_HOURS_BY_DESCRIPTION, so picking it leaves the
-  // Hours field alone.
-  'Courtroom wait time',
-  'Opened file',
-  'Reviewed () affidavits 0. ; Reviewed criminal history 0. ; TOTAL:',
-  'Jail visit with client',
-  'Initial client meeting',
+  'Texts with client',
+  'Phone call with client',
   'Met with ADA',
-  'Met, negotiated with ADA',
-  'Rescheduled Appearance',
-  'Draft, send letter to client',
+  'Met with client',
+  'Courtroom wait time',
+  'Rescheduled appearance',
+  'Plea taken by judge',
   'Draft, send email requesting client zoom visit',
   'Client zoom visit',
-  'Met with client',
-  'Research, investigate',
-  'Read, review',
-  'Draft, send email to ADA re: bond motion',
-  'Draft, file bond reduction motion',
-  'Prepared defense',
-  'Prepared for trial',
-  'Prepared for preliminary hearing',
-  'Met with client; updated client re:',
-  'Arrange BWC viewing appointment, obtain & sign form',
-  'Reviewed file',
-  'Guilty plea taken by judge',
-  'Case dismissed',
+  'Opened file',
   'Closed file',
 ]
 
 // Descriptions that carry a conventional time value. Picking one of these from
 // the dropdown pre-fills the Hours field; the field stays editable afterward,
-// exactly as before. A description NOT listed here — including "Courtroom wait
-// time" and anything typed by hand — leaves Hours untouched, so there is no
-// forced default outside this map.
+// exactly as before. A description typed by hand is not looked up here, so there
+// is no forced default for free text.
 //
 // Keys must match the DESCRIPTION_OPTIONS strings byte for byte: the lookup is a
 // plain case-sensitive property hit, not a fuzzy match. Values are strings so
 // they equal the HOURS_OPTIONS <option> values and the <select> stays controlled.
+// Existing stored hours rows are never touched by changing this map.
 const DEFAULT_HOURS_BY_DESCRIPTION = {
+  'Texts with client': '0.1',
+  'Phone call with client': '0.1',
+  'Met with ADA': '0.1',
+  'Met with client': '0.1',
+  'Courtroom wait time': '0.1',
+  'Rescheduled appearance': '0.1',
+  'Plea taken by judge': '0.1',
+  'Draft, send email requesting client zoom visit': '0.2',
+  'Client zoom visit': '0.5',
   'Opened file': '0.5',
   'Closed file': '0.5',
-  'Jail visit with client': '0.4',
-  'Initial client meeting': '0.3',
-  'Met with ADA': '0.1',
-  'Met, negotiated with ADA': '0.1',
-  'Rescheduled Appearance': '0.1',
-  'Draft, send email requesting client zoom visit': '0.2',
-  'Client zoom visit': '0.3',
-  'Guilty plea taken by judge': '0.2',
-  'Case dismissed': '0.1',
 }
 
 // Shared by AddHoursForm and EditHoursForm. Applies a dropdown pick as ONE state
@@ -1834,14 +1898,15 @@ function HoursSection({ clientId, hours }) {
 
   return (
     <div className={styles.section}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
-        <span className={styles.sectionTitle}>Hours</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* .addHeaderRow — see the Incidents header and the CSS. */}
+      <div className={styles.addHeaderRow}>
+        <span className={`${styles.sectionTitle} ${styles.addHeaderLabel}`}>Hours</span>
+        <div className={styles.addHeaderControls}>
           {anyChecked && (
             <button className={styles.hoursClearChecks} onClick={clearAllChecks}>clear checks</button>
           )}
-          {!showForm && <button className={styles.addBtn} onClick={() => setShowForm(true)}>+</button>}
         </div>
+        {!showForm && <button className={`${styles.addBtn} ${styles.addHeaderBtn}`} onClick={() => setShowForm(true)}>+</button>}
       </div>
       {showForm && (
         <AddHoursForm
@@ -2223,9 +2288,414 @@ function CourtroomDocsSection({ clientId }) {
   )
 }
 
+// ─── Criminal Court (CC) files ───────────────────────────────────────────────
+//
+// When a client's charges leave General Sessions for Criminal Court, Lucas makes
+// a SEPARATE CC client file (its own appointment order, its own billing claim).
+// The GS file and its CC copy are fully independent records: nothing done in one
+// may ever change the other, and the GS file is NEVER modified by anything in
+// this section. Shared helpers (the waiting rule, the ripe-date math, the slider
+// colour ramp, charge labels) live in src/ccFile.js.
+
+// Writes one clients column for a CC file — offline-first like every other
+// client field (Dexie, then one sync-queue UPDATE), then stamps the client.
+async function saveCcClientField(clientId, column, value) {
+  await db.clients.update(clientId, { [column]: value })
+  await addToSyncQueue('clients', 'UPDATE', clientId, { id: clientId, [column]: value })
+  await touchClient(clientId)
+}
+
+// A date that opens the native picker in ONE tap and saves on change — the
+// commit-on-change convention of CaseView's PvField date variant (a picker pick
+// is a discrete action, and a native mobile picker doesn't reliably blur). The
+// <input type="date"> is laid invisibly over the visible text, the same
+// technique the Daily Hours drawer's header date uses, so tapping the text IS
+// tapping the input. Clearing the picker saves null.
+function CcDateTap({ value, emptyText, onCommit }) {
+  return (
+    <span className={styles.ccDateTap}>
+      <span className={value ? styles.ccDateValue : styles.ccDateEmpty}>
+        {value ? formatDateDisplay(value) : emptyText}
+      </span>
+      <input
+        type="date"
+        className={styles.ccDateInput}
+        value={toDateInput(value)}
+        onChange={e => {
+          const mdy = fromDateInput(e.target.value) || null
+          if (mdy !== (value ?? null)) onCommit(mdy)
+        }}
+        {...pickerHandlers()}
+      />
+    </span>
+  )
+}
+
+// CC case number entry — PvField's text convention: commits on blur and on
+// Enter, Escape restores the stored value. Entering a number ends the waiting
+// state, so the whole panel (this field included) disappears on commit.
+function CcCaseNumberField({ clientId, value }) {
+  const [draft, setDraft] = useState(value ?? '')
+  const skipBlur = useRef(false)
+  const inFlight = useRef(false)
+
+  // Re-seed from the stored value when it changes underneath — React's "adjust
+  // state while rendering" pattern, as in PvField (an effect would trip the
+  // repo's set-state-in-effect lint rule). Typing changes only `draft`, so this
+  // can't clobber an edit in progress.
+  const [seededFrom, setSeededFrom] = useState(value ?? '')
+  if ((value ?? '') !== seededFrom) {
+    setSeededFrom(value ?? '')
+    setDraft(value ?? '')
+  }
+
+  async function commit() {
+    if (inFlight.current) return
+    const normalized = draft.trim() || null
+    if (normalized === (value ?? null)) return
+    inFlight.current = true
+    await saveCcClientField(clientId, 'cc_case_number', normalized)
+    inFlight.current = false
+  }
+
+  return (
+    <div className={styles.formRow} style={{ marginTop: 10 }}>
+      <label className={styles.ccFieldLabel}>CC case number</label>
+      <input
+        className={styles.formInput}
+        value={draft}
+        placeholder="e.g. 2026-I-760"
+        onChange={e => setDraft(e.target.value)}
+        onBlur={() => {
+          if (skipBlur.current) { skipBlur.current = false; return }
+          commit()
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() }
+          if (e.key === 'Escape') {
+            setDraft(value ?? '')
+            skipBlur.current = true
+            e.currentTarget.blur()
+          }
+        }}
+      />
+    </div>
+  )
+}
+
+// Shown directly above the Next Event block while the CC file is WAITING (no
+// CC case number and no next event — see isCcWaiting). Derived at render, never
+// stored: as soon as a CC number is entered or a next event is added this is no
+// longer rendered, and it comes back if both are cleared again.
+function CcWaitingPanel({ client, info }) {
+  const save = (column, value) => saveCcClientField(client.id, column, value)
+  return (
+    <div className={styles.ccPanel}>
+      <div className={styles.nextEventTopRow}>
+        <span className={styles.nextEventLabel}>Criminal Court — awaiting case number</span>
+      </div>
+      <div className={styles.ccPanelLine}>
+        <span className={styles.ccPanelKey}>Left General Sessions:</span>{' '}
+        <CcDateTap value={client.left_gs_date} emptyText="Add date" onCommit={v => save('left_gs_date', v)} />
+        {info.daysSince != null && (
+          <span className={styles.ccPanelMuted}>
+            {' '}({info.daysSince === 0 ? 'today' : `${info.daysSince} ${Math.abs(info.daysSince) === 1 ? 'day' : 'days'} ago`})
+          </span>
+        )}
+      </div>
+      {info.estimate ? (
+        <div className={styles.ccPanelLine}>
+          <span className={styles.ccPanelKey}>Estimated first CC date:</span>{' '}
+          <CcDateTap value={client.cc_estimated_first_date} onCommit={v => save('cc_estimated_first_date', v)} />
+        </div>
+      ) : (
+        <div className={styles.ccPanelLine}>
+          <CcDateTap value={null} emptyText="Add estimated CC date" onCommit={v => save('cc_estimated_first_date', v)} />
+        </div>
+      )}
+      {info.ripe && (
+        <div className={styles.ccPanelLine}>
+          <span className={styles.ccPanelKey}>Ripe date:</span>{' '}
+          <span className={styles.ccDateValue}>{formatDateDisplay(info.ripe)}</span>
+        </div>
+      )}
+      {info.pct != null && <CcSlider pct={info.pct} />}
+      <CcCaseNumberField clientId={client.id} value={client.cc_case_number} />
+    </div>
+  )
+}
+
+// "Create CC file" — builds a brand-new, independent Criminal Court client file
+// from this GS file. Requires network: it copies PDFs in Supabase Storage.
+//
+// ⚠️ ORDER OF OPERATIONS. Every Storage copy happens FIRST; if any copy fails,
+// nothing is written (and the copies already made are removed, best-effort), so
+// a failure never leaves a half-made CC file. Only then are the rows written,
+// Dexie-first, and enqueued in FK-safe order — client, incidents, cases,
+// personal note, mailing address — so the FIFO sync queue can never push a
+// child row ahead of its parent.
+//
+// ⚠️ The GS file is only ever READ here. No GS row is updated, and no GS
+// Storage object is written: copy() writes only to the new paths.
+function CreateCcFile({ client, incidents, personalNote, mailingAddress, onCreated }) {
+  const [open, setOpen] = useState(false)
+  const [leftDate, setLeftDate] = useState('')
+  const [checked, setChecked] = useState(() => new Set())
+  const [working, setWorking] = useState(false)
+  const [error, setError] = useState(null)
+
+  // Every non-PV charge on the GS file (probation violations don't go to
+  // Criminal Court), in the header mini-list's order.
+  const pickable = incidents
+    .filter(inc => !inc.is_pv)
+    .flatMap(inc => inc.cases ?? [])
+    .filter(c => !c.is_pv)
+    .sort((a, b) => caseNumericKey(a.case_number) - caseNumericKey(b.case_number))
+
+  function openDialog() {
+    if (!navigator.onLine) {
+      setError('Creating a CC file needs an internet connection (it copies the PDFs). Try again when you are online.')
+      setOpen(false)
+      return
+    }
+    setError(null)
+    setLeftDate(todayString())
+    setChecked(new Set(pickable.map(c => c.id)))   // all checked by default
+    setOpen(true)
+  }
+
+  function toggle(caseId) {
+    setChecked(prev => {
+      const next = new Set(prev)
+      if (next.has(caseId)) next.delete(caseId)
+      else next.add(caseId)
+      return next
+    })
+  }
+
+  function cancel() {
+    if (working) return
+    setOpen(false)
+    setError(null)
+  }
+
+  async function create() {
+    if (!navigator.onLine) {
+      setError('You are offline — creating a CC file needs an internet connection.')
+      return
+    }
+    setWorking(true)
+    setError(null)
+
+    const bucket = supabase.storage.from('warrants')
+    const newClientId = crypto.randomUUID()
+    const casesToCopy = pickable.filter(c => checked.has(c.id))
+
+    // Plan every new id up front so the Storage paths are known before any row.
+    const newIncidentIdFor = new Map()
+    for (const c of casesToCopy) {
+      if (!newIncidentIdFor.has(c.incident_id)) newIncidentIdFor.set(c.incident_id, crypto.randomUUID())
+    }
+    const newCaseIdFor = new Map(casesToCopy.map(c => [c.id, crypto.randomUUID()]))
+
+    // ── 1. Storage copies, all of them, before any row ─────────────────────
+    const copied = []
+    async function copyObject(from, to) {
+      const { error: copyErr } = await bucket.copy(from, to)
+      if (copyErr) throw new Error(`Could not copy ${from}: ${copyErr.message}`)
+      copied.push(to)
+    }
+
+    let criminalHistoryUrl = null
+    const newWarrantPath = new Map()
+    try {
+      if (client.criminal_history_url) {
+        // Source key is derived from the client id exactly as the criminal-
+        // history section's View/Delete derive it; the destination is the new
+        // client's own path, so the CC file's Replace never touches the GS PDF.
+        const to = `criminal-history/${newClientId}.pdf`
+        await copyObject(`criminal-history/${client.id}.pdf`, to)
+        // Same format CriminalHistorySection's upload writes: the public URL.
+        const { data: urlData } = bucket.getPublicUrl(to)
+        criminalHistoryUrl = urlData.publicUrl
+      }
+      for (const c of casesToCopy) {
+        if (!c.warrant_url) continue
+        // warrants/[new case id].pdf — exactly the path CaseView's upload uses
+        // for a case with no case_number (case_number || id), and every CC-file
+        // case has a null case_number. So a later Replace Affidavit inside the
+        // CC file overwrites this copy only, never the GS file's PDF.
+        const to = `warrants/${newCaseIdFor.get(c.id)}.pdf`
+        await copyObject(c.warrant_url, to)
+        newWarrantPath.set(c.id, to)
+      }
+    } catch (err) {
+      if (copied.length) await bucket.remove(copied).catch(() => {})
+      setError(`${err.message}. Nothing was created.`)
+      setWorking(false)
+      return
+    }
+
+    // ── 2. Rows: Dexie first, enqueued parent-before-child ─────────────────
+    const now = new Date().toISOString()
+    const clientRecord = {
+      id: newClientId,
+      last_name: client.last_name,
+      first_name: client.first_name,
+      gender: client.gender,
+      oca: client.oca ?? null,
+      custody_status: client.custody_status,
+      booking_date: client.booking_date ?? null,
+      booking_time: client.booking_time ?? null,
+      client_type: client.client_type ?? 'appointed',
+      criminal_history_text: client.criminal_history_text ?? null,
+      criminal_history_url: criminalHistoryUrl,
+      is_cc_file: true,
+      left_gs_date: leftDate || null,
+      cc_estimated_first_date: null,
+      cc_case_number: null,
+      indigent_status: 'red',
+      relieved_closed: false,
+      closed_at: null,
+      // Inline stamp, the same way NewClient sets it on INSERT (no prior row to
+      // touchClient()). Dormant columns (age, bond_amount) are deliberately not
+      // copied.
+      last_modified_at: now,
+    }
+    await db.clients.put(clientRecord)
+    await addToSyncQueue('clients', 'INSERT', newClientId, clientRecord)
+
+    for (const inc of incidents) {
+      const newIncId = newIncidentIdFor.get(inc.id)
+      if (!newIncId) continue   // no checked charge under it (PV incidents never qualify)
+      const incidentRecord = {
+        id: newIncId,
+        client_id: newClientId,
+        incident_date: inc.incident_date ?? null,
+        location: inc.location ?? null,
+        incident_description: inc.incident_description ?? null,
+      }
+      await db.incidents.put(incidentRecord)
+      await addToSyncQueue('incidents', 'INSERT', newIncId, incidentRecord)
+    }
+
+    for (const c of casesToCopy) {
+      const newCaseId = newCaseIdFor.get(c.id)
+      const caseRecord = {
+        id: newCaseId,
+        incident_id: newIncidentIdFor.get(c.incident_id),
+        charge: c.charge ?? null,
+        charge_abbrev: c.charge_abbrev ?? null,
+        classification: c.classification ?? null,
+        bond_amount: c.bond_amount ?? null,
+        release_status: c.release_status ?? null,
+        notes: c.notes ?? null,
+        warrant_text: c.warrant_text ?? null,
+        warrant_url: newWarrantPath.get(c.id) ?? null,
+        // Criminal Court's number identifies no charge, so case_number stays
+        // null; the GS number is kept as a quiet reference instead.
+        case_number: null,
+        gs_case_number: c.case_number ?? null,
+        status: 'open',
+        disposition: null,
+        is_pv: false,
+      }
+      await db.cases.put(caseRecord)
+      await addToSyncQueue('cases', 'INSERT', newCaseId, caseRecord)
+    }
+
+    if (personalNote?.note?.trim()) {
+      const noteId = crypto.randomUUID()
+      const noteRecord = { id: noteId, client_id: newClientId, note: personalNote.note, updated_at: now }
+      await db.personal_notes.put(noteRecord)
+      await addToSyncQueue('personal_notes', 'INSERT', noteId, noteRecord)
+    }
+
+    if (mailingAddress?.address?.trim()) {
+      const addrId = crypto.randomUUID()
+      const addrRecord = { id: addrId, client_id: newClientId, address: mailingAddress.address, updated_at: now }
+      await db.mailing_addresses.put(addrRecord)
+      await addToSyncQueue('mailing_addresses', 'INSERT', addrId, addrRecord)
+    }
+
+    setWorking(false)
+    setOpen(false)
+    onCreated(newClientId)
+  }
+
+  return (
+    <>
+      <button className={styles.ccCreateBtn} onClick={openDialog}>Create CC file</button>
+      {!open && error && <div className={styles.formError}>{error}</div>}
+
+      {open && (
+        <div className={styles.affidavitOverlay} onClick={cancel}>
+          <div className={styles.affidavitDialog} onClick={e => e.stopPropagation()}>
+            <div className={styles.affidavitDialogTitle}>Create Criminal Court file</div>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel}>Date case left General Sessions</label>
+              <input
+                type="date"
+                className={styles.formInput}
+                value={toDateInput(leftDate)}
+                onChange={e => setLeftDate(fromDateInput(e.target.value))}
+                disabled={working}
+                {...pickerHandlers()}
+              />
+            </div>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel}>Charges going to Criminal Court</label>
+              {pickable.length === 0 && <div className={styles.ccPickEmpty}>No charges on this file.</div>}
+              <div className={styles.ccPickList}>
+                {pickable.map(c => (
+                  <label key={c.id} className={styles.formCheckRow}>
+                    <input
+                      type="checkbox"
+                      className={styles.formCheckbox}
+                      checked={checked.has(c.id)}
+                      onChange={() => toggle(c.id)}
+                      disabled={working}
+                    />
+                    <span className={styles.ccPickText}>
+                      {ccChargeLabel(c)}
+                      <span className={styles.ccPickNum}>{c.case_number || 'no GS case #'}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            {error && <div className={styles.formError}>{error}</div>}
+            <div className={styles.formActions}>
+              <button className={styles.formSave} onClick={create} disabled={working}>
+                {working ? 'Creating…' : 'Create'}
+              </button>
+              <button className={styles.formCancel} onClick={cancel} disabled={working}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ─── Main page ───────────────────────────────────────────────────────────────
 
+// Keyed on the client id so moving from one client file straight to another —
+// which "Create CC file" does, /client/<GS id> → /client/<CC id> — remounts the
+// whole page instead of reusing it. <Routes> keeps the same element mounted when
+// only :id changes, and several sections seed local state from their first
+// props (the Personal Notes / Mailing Address bars hold the record they edit,
+// Criminal History holds its URL). Without a remount the CC file would open
+// still holding the GS file's note/address rows, and an edit there would write
+// to the GS records — exactly what the GS/CC independence rule forbids.
 export default function ClientFile() {
+  const { id } = useParams()
+  return <ClientFilePage key={id} />
+}
+
+function ClientFilePage() {
   // Forward navigation must land at the top. Nothing else in the app does this
   // for us on mobile Safari, which carries the client list's scroll position
   // into this shorter page and clamps it to the end. See scrollHold.js.
@@ -2233,7 +2703,7 @@ export default function ClientFile() {
 
   const { id } = useParams()
   const navigate = useNavigate()
-  const { client, incidents, nextEvent, hours, personalNote, loading, error, refetch } = useClientFile(id)
+  const { client, incidents, nextEvent, hours, personalNote, mailingAddress, loading, error, refetch } = useClientFile(id)
 
   const [showEventForm, setShowEventForm] = useState(false)
   const [showIncidentForm, setShowIncidentForm] = useState(false)
@@ -2246,10 +2716,11 @@ export default function ClientFile() {
     setDeleting(true)
 
     // Gather all related records before deleting
-    const [hourRows, nextEventRows, personalNoteRows, incidentRows] = await Promise.all([
+    const [hourRows, nextEventRows, personalNoteRows, mailingAddressRows, incidentRows] = await Promise.all([
       db.hours.where('client_id').equals(id).toArray(),
       db.next_events.where('client_id').equals(id).toArray(),
       db.personal_notes.where('client_id').equals(id).toArray(),
+      db.mailing_addresses.where('client_id').equals(id).toArray(),
       db.incidents.where('client_id').equals(id).toArray(),
     ])
     const incidentIds = incidentRows.map(r => r.id)
@@ -2262,6 +2733,7 @@ export default function ClientFile() {
       db.hours.where('client_id').equals(id).delete(),
       db.next_events.where('client_id').equals(id).delete(),
       db.personal_notes.where('client_id').equals(id).delete(),
+      db.mailing_addresses.where('client_id').equals(id).delete(),
     ])
     await Promise.all(incidentIds.map(iid => db.cases.where('incident_id').equals(iid).delete()))
     await db.incidents.where('client_id').equals(id).delete()
@@ -2272,6 +2744,7 @@ export default function ClientFile() {
       ...hourRows.map(r => addToSyncQueue('hours', 'DELETE', r.id, { id: r.id })),
       ...nextEventRows.map(r => addToSyncQueue('next_events', 'DELETE', r.id, { id: r.id })),
       ...personalNoteRows.map(r => addToSyncQueue('personal_notes', 'DELETE', r.id, { id: r.id })),
+      ...mailingAddressRows.map(r => addToSyncQueue('mailing_addresses', 'DELETE', r.id, { id: r.id })),
       ...caseRows.map(r => addToSyncQueue('cases', 'DELETE', r.id, { id: r.id })),
       ...incidentRows.map(r => addToSyncQueue('incidents', 'DELETE', r.id, { id: r.id })),
       addToSyncQueue('clients', 'DELETE', id, { id }),
@@ -2377,14 +2850,21 @@ export default function ClientFile() {
   const totalBond = bondCases.reduce((sum, c) => sum + Number(c.bond_amount), 0)
   const sortedIncidents = [...incidents].sort(compareIncidentsByDate)
 
+  // Criminal Court file? Its charges carry no case_number of their own (CC gives
+  // one number for the whole matter), so they display charge-first and sort on
+  // the GS number they came from. See src/ccFile.js.
+  const isCcFile = client.is_cc_file === true
+  const ccCaseNumber = isCcFile ? (client.cc_case_number?.trim() || null) : null
+  // Non-null only while the CC file is waiting: no CC number and no next event.
+  const ccWaiting = ccWaitingInfo(client, !!nextEvent)
+
   // Header case mini-list: every case across every incident, ordered the same way
   // the client list orders them (numeric, ignoring the letter prefix) so the two
-  // views read identically. case_number is nullable, hence the ?? '' guard.
+  // views read identically. Both numbers are nullable — caseNumericKey guards.
   const headerCases = incidents
     .flatMap(inc => inc.cases ?? [])
     .sort((a, b) =>
-      (parseInt((a.case_number ?? '').replace(/^\D+/, ''), 10) || 0) -
-      (parseInt((b.case_number ?? '').replace(/^\D+/, ''), 10) || 0)
+      caseNumericKey(caseSortNumber(a, isCcFile)) - caseNumericKey(caseSortNumber(b, isCcFile))
     )
 
   return (
@@ -2405,9 +2885,11 @@ export default function ClientFile() {
               <h1 className={styles.name}>{nameCore}</h1>
               <IndigentCircle clientId={id} status={client.indigent_status} />
             </div>
+            {isCcFile && <div className={styles.ccLabel}>Criminal Court</div>}
             {client.oca && (
               <div style={{ color: '#9faab8', fontSize: '0.85em', marginTop: 2 }}>{client.oca}</div>
             )}
+            {ccCaseNumber && <div className={styles.ccCaseLine}>CC Case: {ccCaseNumber}</div>}
             {showTotalBond && (
               <div className={styles.bondLine}>Total Bond: ${totalBond.toLocaleString()}</div>
             )}
@@ -2430,7 +2912,16 @@ export default function ClientFile() {
                 and only when all of an incident's cases land consecutively in
                 this flat, number-sorted list. Sort order is untouched. */}
             {bracketBlocks(headerCases).map(block => {
-              const rows = block.items.map(c => (
+              const rows = block.items.map(c => isCcFile && !c.is_pv ? (
+                /* CC file: the charge is the main label, the GS number it came
+                   from a quiet muted reference — never "—"/pending. Same borrowed
+                   classes as the client list's CC rows. */
+                <div key={c.id} className={rowStyles.caseTableRow}>
+                  <span className={rowStyles.ccCharge} style={{ cursor: 'default' }}>{ccChargeLabel(c)}</span>
+                  {c.classification && <>{' '}<span className={rowStyles.caseClassification}>({c.classification})</span></>}
+                  {c.gs_case_number && <span className={rowStyles.ccGsNum}>{c.gs_case_number}</span>}
+                </div>
+              ) : (
                 <div key={c.id} className={rowStyles.caseTableRow}>
                   <span className={rowStyles.caseNum} style={{ cursor: 'default' }}>{c.case_number || '—'}</span>
                   {/* PV stands in for charge + classification here too — same
@@ -2464,8 +2955,10 @@ export default function ClientFile() {
         </div>
       </div>
 
-      {/* ── Next Event ── */}
+      {/* ── Next Event ── (with the CC waiting panel directly above it while a
+          CC file has neither a CC case number nor a next event) */}
       <div className={styles.nextEventWrapper}>
+        {ccWaiting && <CcWaitingPanel client={client} info={ccWaiting} />}
         {!showEventForm && (
           <NextEventBlock
             event={nextEvent}
@@ -2483,21 +2976,28 @@ export default function ClientFile() {
         )}
       </div>
 
-      {/* ── Personal Notes ── */}
-      <PersonalNotesSection clientId={id} initialNote={personalNote} />
+      {/* ── Personal Notes + Mailing Address ── side by side 80/20 above 768px,
+          stacked (notes first, address full width beneath) at 768px and below. */}
+      <div className={styles.notesRow}>
+        <PersonalNotesSection clientId={id} initialNote={personalNote} />
+        <MailingAddressSection clientId={id} initialAddress={mailingAddress} />
+      </div>
 
       {/* ── Incidents ── */}
       <div className={styles.incidentsWrapper}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1820', padding: '5px 16px' }}>
-          <span className={styles.sectionTitle}>Incidents</span>
-          {/* Same two-control header pattern the Hours section uses: a text
-              control beside the square "+", which stays the primary affordance. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Same two-control header pattern the Hours section uses: a text
+            control beside the square "+", which stays the primary affordance.
+            .addHeaderRow puts the "+" right of a fixed-width label column on
+            wide screens (flush with the Personal Notes and Hours "+") and keeps
+            it at the right edge on phones — see the CSS. */}
+        <div className={styles.addHeaderRow}>
+          <span className={`${styles.sectionTitle} ${styles.addHeaderLabel}`}>Incidents</span>
+          <div className={styles.addHeaderControls}>
             <AffidavitFirstUpload clientId={id} incidents={sortedIncidents} />
-            {!showIncidentForm && (
-              <button className={styles.addBtn} onClick={() => setShowIncidentForm(true)}>+</button>
-            )}
           </div>
+          {!showIncidentForm && (
+            <button className={`${styles.addBtn} ${styles.addHeaderBtn}`} onClick={() => setShowIncidentForm(true)}>+</button>
+          )}
         </div>
         {showIncidentForm && (
           <AddIncidentForm
@@ -2510,6 +3010,7 @@ export default function ClientFile() {
           <IncidentGroup
             key={incident.id}
             incident={incident}
+            isCcFile={isCcFile}
             onCaseTap={num => navigate(`/case/${num}`)}
             onCaseAdded={refetch}
             onDeleted={refetch}
@@ -2529,9 +3030,18 @@ export default function ClientFile() {
       {/* ── Courtroom Documents ── */}
       <CourtroomDocsSection clientId={id} />
 
-      {/* ── Close / Reopen ── */}
+      {/* ── Close / Reopen ── (plus "Create CC file" on a GS file only) */}
       <div className={styles.closeCaseSection}>
         <div className={styles.closeCaseBtnRow}>
+          {!isCcFile && !showCloseConfirm && (
+            <CreateCcFile
+              client={client}
+              incidents={incidents}
+              personalNote={personalNote}
+              mailingAddress={mailingAddress}
+              onCreated={newId => navigate(`/client/${newId}`)}
+            />
+          )}
           {!showCloseConfirm && (
             <button className={styles.closeCaseBtn} onClick={() => setShowCloseConfirm(true)}>
               {isClosed ? 'Reopen Case' : 'Close Case'}

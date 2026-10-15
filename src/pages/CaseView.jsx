@@ -10,6 +10,7 @@ import { touchClient } from '../touchClient'
 import styles from './CaseView.module.css'
 import TextViewerDrawer from '../components/TextViewerDrawer'
 import { useScrollToTopOnMount } from '../scrollHold'
+import { ccChargeLabel } from '../ccFile'
 
 // Charge classification, most-serious → least-serious. Blank = unset (stored
 // null) and stays first — it's the placeholder, not a severity level.
@@ -33,9 +34,15 @@ function bondStatusText(bondAmount, releaseStatus) {
 
 // clientId comes from the page's own live query, which already walks
 // case → incident → client for the header name — no extra lookup needed.
-function EditCaseForm({ caseData, clientId, onSaved, onCancel }) {
+//
+// isCcFile: inside a Criminal Court file the number field is relabelled "GS case
+// number (reference)" and reads/writes cases.gs_case_number instead. case_number
+// is never sent from that form, so it stays null and the case keeps being
+// addressed — and its affidavit stored — by id.
+function EditCaseForm({ caseData, clientId, isCcFile = false, onSaved, onCancel }) {
+  const numberColumn = isCcFile ? 'gs_case_number' : 'case_number'
   const [form, setForm] = useState({
-    case_number:    caseData.case_number    ?? '',
+    case_number:    caseData[numberColumn]  ?? '',
     charge:         caseData.charge         ?? '',
     charge_abbrev:  caseData.charge_abbrev  ?? '',
     classification: caseData.classification ?? '',
@@ -57,7 +64,7 @@ function EditCaseForm({ caseData, clientId, onSaved, onCancel }) {
     // "$0 bond". This is the root of the ticket — never coerce blank to 0.
     const bondRaw = form.bond_amount.trim()
     const changes = {
-      case_number:    form.case_number.trim() || null,
+      [numberColumn]: form.case_number.trim() || null,
       charge:         form.charge.trim() || null,
       charge_abbrev:  form.charge_abbrev.trim() || null,
       classification: form.classification || null,
@@ -69,13 +76,14 @@ function EditCaseForm({ caseData, clientId, onSaved, onCancel }) {
     await touchClient(clientId)
     // The URL is keyed on case_number; with none, fall back to the id so the
     // page we navigate to still resolves.
+    // (In a CC file changes.case_number is undefined, so this is always the id.)
     onSaved(changes.case_number || caseData.id)
   }
 
   return (
     <div className={styles.editForm}>
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>Case Number</label>
+        <label className={styles.formLabel}>{isCcFile ? 'GS case number (reference)' : 'Case Number'}</label>
         <input className={styles.formInput} value={form.case_number} onChange={e => set('case_number', e.target.value)} />
       </div>
       <div className={styles.formRow}>
@@ -378,6 +386,10 @@ export default function CaseView() {
   // Back, Delete Case, and Disposition (still useful for recording a PV outcome).
   // Every branch below is gated on this flag — a normal case is untouched.
   const isPv = !!caseData.is_pv
+  // A case inside a Criminal Court file: the charge is the main label and the GS
+  // case number it came from is a quiet muted reference (cases.case_number is
+  // always null there — Criminal Court's one number identifies no charge).
+  const isCcCase = clientName?.is_cc_file === true && !isPv
 
   // One column per call, so a field only ever writes its own value.
   async function savePvField(column, value) {
@@ -410,7 +422,9 @@ export default function CaseView() {
         </header>
         {/* Both nullable — a lone dash keeps the header from collapsing to an
             empty strip when the case has no number yet. */}
-        <div className={styles.caseNumberLabel}>{caseData.case_number || '—'}</div>
+        {isCcCase
+          ? (caseData.gs_case_number && <div className={styles.ccGsNumberLabel}>{caseData.gs_case_number}</div>)
+          : <div className={styles.caseNumberLabel}>{caseData.case_number || '—'}</div>}
         {/* PV replaces the charge line, matching the "[case number] - PV" the
             client list and both mini-lists show. The leading "[case number] -"
             is dropped HERE ONLY: the number is already the large label directly
@@ -418,7 +432,9 @@ export default function CaseView() {
             token, same slot, no stutter. */}
         {isPv
           ? <div className={styles.charge}>PV</div>
-          : caseData.charge && <div className={styles.charge}>{caseData.charge}</div>}
+          : isCcCase
+            ? <div className={styles.charge}>{ccChargeLabel(caseData)}</div>
+            : caseData.charge && <div className={styles.charge}>{caseData.charge}</div>}
         {!isPv && (
           <div className={styles.meta}>
             {hasAffidavit && <span className={styles.affidavitTag}>Affidavit</span>}
@@ -432,6 +448,7 @@ export default function CaseView() {
         <EditCaseForm
           caseData={caseData}
           clientId={clientName?.id}
+          isCcFile={isCcCase}
           onSaved={handleSaved}
           onCancel={() => setEditing(false)}
         />

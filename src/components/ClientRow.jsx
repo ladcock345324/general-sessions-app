@@ -4,6 +4,8 @@ import { addToSyncQueue } from '../syncManager'
 import { touchClient } from '../touchClient'
 import { bracketBlocks } from '../caseGrouping'
 import { INDIGENT_CYCLE, INDIGENT_COLOR, normalizeIndigent } from '../indigentStatus'
+import { ccChargeShort, formatMonthDay } from '../ccFile'
+import CcSlider from './CcSlider'
 import styles from './ClientRow.module.css'
 
 // Returns pointer event props that fire `handler` on tap but not on:
@@ -122,7 +124,8 @@ export default function ClientRow({ client, relieved = false, onClick, onNavigat
   // 2026-08-10. The clients.booking_date and clients.booking_time COLUMNS are
   // retained, as are their New/Edit Client form fields — only the countdown is
   // gone. See PROGRESS.md.
-  const { id, lastName, firstName, gender, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers, indigentStatus } = client
+  const { id, lastName, firstName, gender, oca, custodyStatus, nextHearing, relievedClosed, caseNumbers, indigentStatus, isCcFile, ccCaseNumber, ccWaiting } = client
+  const hasCases = caseNumbers && caseNumbers.length > 0
 
   let nextSegments = null
   let nextOverdue = false
@@ -141,7 +144,7 @@ export default function ClientRow({ client, relieved = false, onClick, onNavigat
   }
 
   return (
-    <div className={styles.row} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
+    <div className={`${styles.row}${isCcFile ? ` ${styles.rowCc}` : ''}`} {...tapHandlers(onClick)} style={onClick ? { cursor: 'pointer', userSelect: 'text' } : undefined}>
       <div className={styles.info}>
         <div className={styles.nameLine}>
           <span className={styles.name}>
@@ -158,13 +161,39 @@ export default function ClientRow({ client, relieved = false, onClick, onNavigat
               ))}
             </span>
           )
-          : <span className={styles.nextEmpty}>&nbsp;</span>
+          : ccWaiting
+            ? (
+              /* A waiting CC file has no next event by definition, so its
+                 waiting summary takes the next-event line's spot. Same one-line
+                 nowrap treatment as .next, plus a compact slider beneath it
+                 (only when there is an estimate to measure to). */
+              <span className={styles.ccWaitBlock}>
+                <span className={styles.ccWait}>
+                  {[
+                    ccWaiting.leftGs ? `Left GS ${formatMonthDay(ccWaiting.leftGs)}` : 'Left GS date not set',
+                    ...(ccWaiting.daysSince != null ? [`${ccWaiting.daysSince} ${ccWaiting.daysSince === 1 ? 'day' : 'days'}`] : []),
+                    ccWaiting.ripe ? `Ripe ${formatMonthDay(ccWaiting.ripe)}` : 'no CC estimate',
+                  ].join(' · ')}
+                </span>
+                {ccWaiting.pct != null && <CcSlider pct={ccWaiting.pct} compact />}
+              </span>
+            )
+            : <span className={styles.nextEmpty}>&nbsp;</span>
         }
       </div>
       <div className={styles.caseLine}>
-        {caseNumbers && caseNumbers.length > 0 && (
+        {(hasCases || ccCaseNumber) && (
           <div className={styles.caseTable}>
-            {bracketBlocks(caseNumbers).map(block => {
+            {/* A CC file's Criminal Court number, once known: shown ONCE, first,
+                in the normal case-number style. Non-interactive — it is the
+                whole matter's number, not a case — so no tap handlers and no
+                fixed 56px column (it is wider than a GS number). */}
+            {ccCaseNumber && (
+              <div className={styles.caseTableRow}>
+                <span className={`${styles.caseNum} ${styles.ccCaseNum}`}>{ccCaseNumber}</span>
+              </div>
+            )}
+            {bracketBlocks(caseNumbers ?? []).map(block => {
               const rows = block.items.map(c => {
                 const start = { x: 0, y: 0 }
                 const charge = c.charge_abbrev || c.charge || ''
@@ -178,6 +207,20 @@ export default function ClientRow({ client, relieved = false, onClick, onNavigat
                   if (Math.abs(e.clientX - start.x) >= 5 || Math.abs(e.clientY - start.y) >= 5) return
                   onNavigateAway?.()
                   navigate(`/case/${c.case_number || c.id}`)
+                }
+                if (isCcFile && !c.is_pv) {
+                  // Inside a CC file the CHARGE is the main label and the tap
+                  // target (case_number is always null there, and the id keeps
+                  // the URL resolvable). The GS number it came from is a quiet
+                  // reference after it — never the blue link style, and never a
+                  // "pending" placeholder.
+                  return (
+                    <div key={c.id} className={styles.caseTableRow}>
+                      <span className={styles.ccCharge} onPointerDown={pd} onPointerUp={pu}>{ccChargeShort(c)}</span>
+                      {c.classification && <>{' '}<span className={styles.caseClassification}>({c.classification})</span></>}
+                      {c.gs_case_number && <span className={styles.ccGsNum}>{c.gs_case_number}</span>}
+                    </div>
+                  )
                 }
                 return (
                   <div key={c.id} className={styles.caseTableRow}>

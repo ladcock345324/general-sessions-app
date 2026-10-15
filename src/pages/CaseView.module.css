@@ -74,6 +74,19 @@
   margin-bottom: 4px;
 }
 
+/* Criminal Court file case: the GS case number the charge came from, shown as a
+   quiet reference in the case-number slot — smaller, muted gray, normal weight,
+   deliberately NOT the blue case-number style. The charge below is the main
+   label. */
+.ccGsNumberLabel {
+  font-size: 12px;
+  font-weight: 400;
+  color: #6b7a99;
+  letter-spacing: 0.04em;
+  padding: 0 16px;
+  margin-bottom: 4px;
+}
+
 .charge {
   font-size: 22px;
   font-weight: 700;

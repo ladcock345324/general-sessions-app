@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import db from '../localDB'
 import { toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, todayString, dateKey, shiftDate } from '../dateUtils'
@@ -17,16 +17,6 @@ function sortEntries(a, b) {
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
 }
 
-function mostRecentHoursDate(hours) {
-  let best = null
-  let bestKey = -Infinity
-  for (const h of hours) {
-    const k = dateKey(h.entry_date)
-    if (k > bestKey) { bestKey = k; best = h.entry_date }
-  }
-  return best
-}
-
 // Read-only, cross-client view of every hours entry logged on a given day.
 // Never writes to Dexie or Supabase — no edit/delete/reorder controls here.
 export default function DailyHoursDrawer({ isOpen, onClose }) {
@@ -35,20 +25,21 @@ export default function DailyHoursDrawer({ isOpen, onClose }) {
     return { hours, clients }
   }, [])
 
-  const [selectedDate, setSelectedDate] = useState(null)
-  const wasOpenRef = useRef(false)
-
-  // On each fresh open, forget the prior date so the effect below recomputes
-  // "most recent day with entries" rather than reusing whatever was last shown.
-  useEffect(() => {
-    if (isOpen && !wasOpenRef.current) setSelectedDate(null)
-    wasOpenRef.current = isOpen
-  }, [isOpen])
-
-  useEffect(() => {
-    if (!isOpen || selectedDate !== null || data === undefined) return
-    setSelectedDate(mostRecentHoursDate(data.hours) ?? todayString())
-  }, [isOpen, selectedDate, data])
+  // EVERY open lands on today (2026-10-15). This replaced the old default of
+  // "the most recent date with any hours entry", which could land on a future
+  // date. todayString() is re-read on each closed→open transition, so a drawer
+  // reopened after midnight shows the new day. While it sits open, the arrows
+  // and the date picker move it freely and nothing resets it.
+  //
+  // React's "adjust state while rendering" pattern (as in CaseView's PvField)
+  // rather than an effect: setState inside an effect body trips the repo's
+  // react-hooks/set-state-in-effect lint rule.
+  const [selectedDate, setSelectedDate] = useState(() => todayString())
+  const [wasOpen, setWasOpen] = useState(isOpen)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) setSelectedDate(todayString())
+  }
 
   const allHours = data?.hours ?? []
   const clientById = new Map((data?.clients ?? []).map(c => [c.id, c]))
@@ -134,7 +125,9 @@ export default function DailyHoursDrawer({ isOpen, onClose }) {
               const clientTotal = entries.reduce((sum, e) => sum + Number(e.hours), 0)
               return (
                 <div key={client.id} className={styles.clientGroup}>
-                  <div className={styles.clientName}>{client.last_name}, {client.first_name}</div>
+                  {/* " (CC)" keeps a GS file and its Criminal Court copy apart —
+                      they carry the same name. */}
+                  <div className={styles.clientName}>{client.last_name}, {client.first_name}{client.is_cc_file ? ' (CC)' : ''}</div>
                   {entries.map(entry => (
                     <div key={entry.id} className={styles.entryRow}>
                       <span className={styles.entryDescription}>{entry.description}</span>
