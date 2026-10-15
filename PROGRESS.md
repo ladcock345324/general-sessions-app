@@ -52,6 +52,11 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `criminal_history_text` | text | extracted text from criminal history PDF — populated on upload |
 | `booking_date` | text | "M/D/YYYY" — date booked / initial appearance before magistrate; optional. Added 2026-06-24 via MCP. Originally added to compute the in-custody prelim-hearing cutoff; **that countdown was removed 2026-08-10 and this column was deliberately KEPT** — still written by the New/Edit Client forms, still a useful fact on its own, and retained so the countdown can be rebuilt without data loss. **Do not drop.** |
 | `booking_time` | text | "h:MM AM/PM" (same format as `next_events.event_time`) — time of booking; optional, hour-only in the UI. Added 2026-06-24 via MCP. **Kept deliberately** when the prelim countdown was removed 2026-08-10, same reasoning as `booking_date`. **Do not drop.** |
+| `client_type` | text | **NOT NULL, default `'appointed'`, CHECK in (`'appointed'`, `'retained'`, `'pro_bono'`).** Added outside the app via MCP, wired up 2026-10-15. Every existing client is `'appointed'`. Set by the **Retained** / **Pro Bono** checkboxes on New + Edit Client (mutually exclusive; both unchecked = appointed). Drives the client list's **"Show:"** filter. Not indexed. |
+| `is_cc_file` | boolean | **NOT NULL, default `false`.** 2026-10-15. True on a **Criminal Court file** — a separate client row made from a GS file by "Create CC file". See the 2026-10-15 entry for the CC rules. Not indexed. |
+| `left_gs_date` | text | nullable, "M/D/YYYY". **CC files only** — date the case left General Sessions. Set by the Create CC file dialog; editable in Edit Client and (one tap) in the waiting panel. The 0% end of the ripe-date slider. |
+| `cc_estimated_first_date` | text | nullable, "M/D/YYYY". **CC files only** — estimated first Criminal Court date. Ripe date = this − 30 days. Edit Client + one tap in the waiting panel. |
+| `cc_case_number` | text | nullable, e.g. `"2026-I-760"`. **CC files only** — Criminal Court's ONE number for the whole matter (it identifies no specific charge). Setting it ends the "waiting" state. Shown as the first line of the client-list case table and as "CC Case: …" in the header. |
 
 ### `next_events`
 | Column | Type | Notes |
@@ -105,6 +110,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `pv_crime` | text | nullable — free text, what the client was convicted of (e.g. "DUI (MIS)"). Added via MCP 2026-08-20. **Line 2** of the Incidents right-cell PV block. |
 | `pv_probation_length` | text | nullable — free text, the length of probation (e.g. "11 months 29 days"). Added via MCP 2026-08-20. **Line 3** of the Incidents right-cell PV block, joined to `pv_special_info` with `" · "` when both are set. |
 | `pv_special_info` | text | nullable — free text, probation conditions / notes. Explicitly optional. Added via MCP 2026-08-20. Shares **line 3** with `pv_probation_length`. **This is what replaced Notes for PV cases** — `cases.notes` is not shown on a PV Case View. |
+| `gs_case_number` | text | nullable. **Charges inside CC files only** (2026-10-15): the GS case number the charge came from, kept as a quiet reference. ⚠️ **Every CC-file case has `case_number` NULL** — Criminal Court's single number identifies no charge — so a CC case is addressed (URL, affidavit path) by its `id`, and everywhere a CC file's charges sort, they sort on `gs_case_number` instead (`caseSortNumber()` in `src/ccFile.js`). Written by Create CC file, by the Add Case form inside a CC file ("GS case number (if any)") and by CaseView's edit form for a CC case ("GS case number (reference)"). Not indexed. |
 
 > Affidavit status is derived purely from `warrant_url`: "Affidavit on File" if set, "No Affidavit" if null.
 
@@ -142,6 +148,16 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 > One row per client. Read in `useClientFile` as `db.personal_notes.where('client_id').equals(id).first()`. *("maybeSingle query" until 2026-09-02 — Supabase-era language predating the Dexie migration; the shape is unchanged.)*
 
+### `mailing_addresses` (new 2026-10-15)
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | default `gen_random_uuid()`; the app generates ids client-side |
+| `client_id` | uuid FK → clients | **NOT NULL, UNIQUE** — one address per client; `ON DELETE CASCADE` |
+| `address` | text | free text, multi-line (street, then city/state/zip) — displayed with its line breaks |
+| `updated_at` | timestamptz | default `now()`; set on save |
+
+> Created outside the app via MCP with RLS enabled and the same user-scoped policy as every other table. **Same shape and behaviour as `personal_notes`** — rendered by the same `ClientTextBar` component. Dexie **v5** adds `mailing_addresses: 'id, client_id'`. Wired into `fullSync` (`DATA_TABLES`), `useClientFile` (`mailingAddress`), Delete Client, `scripts/backup.js` and `scripts/restore-test.js`.
+
 ---
 
 ## Supabase Storage
@@ -152,6 +168,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `warrants` | `criminal-history/[client_id].pdf` | Criminal history PDFs |
 | `warrants` | `courtroom-docs/[client_id]/[timestamp]_[filename]` | Courtroom document PDFs |
 
+> **CC files (2026-10-15):** "Create CC file" COPIES (never moves or overwrites) the GS file's PDFs with `storage.copy()` — criminal history to `criminal-history/[new CC client id].pdf`, each copied affidavit to `warrants/[new CC case id].pdf`. Both are exactly the paths the existing upload code derives for the CC records (client id; `case_number || id` with a null case_number), so Replace inside a CC file overwrites the CC copy only.
 > Bucket is named `warrants` but serves all three use cases via path prefixes.
 > Files are uploaded with `upsert: true` (replace on re-upload).
 > Viewed via `createSignedUrl` (1-hour TTL) opened in a new tab — not public URLs.
@@ -195,6 +212,86 @@ Three reasons, in order of weight:
 ---
 
 ## Completed Features
+
+### Six-Change Batch — Hours Presets, Daily Hours = Today, Retained/Pro Bono + "Show", Mailing Address, Bigger "+", Criminal Court Files (2026-10-15, commit `2d8dd31`)
+
+**Schema — all applied outside the app via MCP before this work; NO schema change was made from here:** `clients.client_type`, `clients.is_cc_file`, `clients.left_gs_date`, `clients.cc_estimated_first_date`, `clients.cc_case_number`, `cases.gs_case_number`, and the new **`mailing_addresses`** table (see Database Schema). **Dexie v4 → v5**, declaring ONLY `mailing_addresses: 'id, client_id'`; v1–v4 untouched. None of the new columns is indexed, so they needed no Dexie change.
+
+⚠️ **Not verified on production yet** — Lucas checks everything there. Build clean; `npx eslint .` at **19** errors (baseline 20 — the drawer's old `set-state-in-effect` effect is gone; no new error anywhere, all 19 are the long-standing ones).
+
+#### 1. Hours description dropdown + default hours
+
+`DESCRIPTION_OPTIONS` replaced wholesale with exactly 11 presets, **in this deliberate, non-alphabetical order**, each with a default in `DEFAULT_HOURS_BY_DESCRIPTION`:
+
+| Preset | Hours |
+|---|---|
+| Texts with client | 0.1 |
+| Phone call with client | 0.1 |
+| Met with ADA | 0.1 |
+| Met with client | 0.1 |
+| Courtroom wait time | 0.1 |
+| Rescheduled appearance | 0.1 |
+| Plea taken by judge | 0.1 |
+| Draft, send email requesting client zoom visit | 0.2 |
+| Client zoom visit | 0.5 |
+| Opened file | 0.5 |
+| Closed file | 0.5 |
+
+Everything else about the forms is unchanged (blank first option, pick fills description + hours, both editable, typed text gets no default). Keys verified byte-for-byte against the options and every value verified to be a `HOURS_OPTIONS` string. **No stored hours row was touched.** "Courtroom wait time" is no longer pinned first and now DOES carry a default (0.1) — both by request.
+
+#### 2. Daily Hours drawer always opens to TODAY
+
+`mostRecentHoursDate()` and its two effects are gone. Every closed→open transition sets the date to `todayString()` (re-read each open, so it rolls over at midnight), via React's "adjust state while rendering" pattern rather than an effect. Arrows, date picker and entry order unchanged. A client group belonging to a CC file shows **" (CC)"** after the name.
+
+#### 3. Retained / Pro Bono + the "Show:" button
+
+- **New + Edit Client:** "Retained" and "Pro Bono" checkboxes (the existing `.formCheckRow` / `.formCheckbox` / `.formCheckLabel`, imported from `ClientFile.module.css`). Mutually exclusive; both unchecked = `'appointed'`. Written into the existing offline-first INSERT/UPDATE payloads (Edit Client already `touchClient`s; New Client's inline stamp covers it).
+- **Client list:** a **"Show:"** pill right of "Sorting by:", same `.sortToggle` style, cycling **Appointed → Pro Bono → Retained → Appointed** (no "All"). "Hours" stays at the right edge (`.hoursToggle { margin-left: auto }`; the row now wraps on the narrowest phones).
+- ⚠️ **Held in React state ONLY — never localStorage/sessionStorage.** Every mount (launch, reload, returning from a client file) starts at "Show: Appointed". **Deliberate; do not persist it.**
+- Applies to both Active and Closed; the count badges count only shown clients. The frozen Closed snapshot is still taken over every closed client, so flipping the filter hides/reveals rows without disturbing the frozen order. Sorting and scroll restoration otherwise unchanged. A missing/unknown `client_type` is treated as appointed. Indigent circles unchanged. The daily hours drawer is NOT filtered.
+
+#### 4. Mailing Address section
+
+Personal Notes' component was generalised into **`ClientTextBar`** (table + column + labels as props) and both sections now render through it, so Mailing Address behaves *exactly* like Personal Notes: tap-to-edit, Save/Cancel/Delete, auto-growing textarea, expanded-on-load when non-empty, offline-first INSERT/UPDATE/DELETE on `mailing_addresses`, `touchClient` on save and delete. Label "MAILING ADDRESS" (same `.sectionTitle`), textarea placeholder "Add a mailing address…", and `.pnNoteText`'s `pre-wrap` keeps the line breaks. Personal Notes' own behaviour is unchanged by the refactor.
+- **Above 768px:** `.notesRow` grid, `4fr / 1fr` (80/20) side by side. **≤768px:** one column, notes first, address full width beneath.
+- Like Personal Notes, the label is shown in the collapsed bar; once open, the bar shows the text itself (judgment call: mirrored exactly rather than adding a label Personal Notes doesn't have).
+
+#### 5. Bigger "+" on wide screens
+
+New `.addHeaderRow` / `.addHeaderBar` / `.addHeaderLabel` / `.addHeaderControls` / `.addHeaderBtn` in `ClientFile.module.css`, used by exactly **Personal Notes (collapsed), Incidents and Hours**. One flat flex row `[label][controls][+]`: on phones the controls take `margin-left: auto` and the "+" is `order: 1`, so it looks exactly as before. **Above 768px** the label gets a fixed **136px** column (the knob — fits "PERSONAL NOTES" + a gap), the "+" moves right after it and grows to **32px** with a 22px glyph, so the three "+" line up in one vertical column; "upload affidavit" / "clear checks" stay at the right edge. Criminal History and Courtroom Documents are untouched.
+
+#### 6. Criminal Court (CC) files
+
+**Why:** when charges leave General Sessions, Lucas makes a separate CC client file (own appointment order, own billing claim). ⚠️ **The GS file and its CC copy are fully independent. Nothing in this feature ever writes to the GS file** — no GS row is updated and no GS Storage object is written; `copy()` only writes new paths.
+
+**6a. "Create CC file"** — a full-width blue outline button above Close Case on any NON-CC file. Opens a modal (the affidavit-picker modal's classes): "Date case left General Sessions" (native date, defaults to today) and "Charges going to Criminal Court" — every non-PV case, labelled charge → abbrev → "(no charge entered)" plus its GS number, all checked by default. Offline (`navigator.onLine` false) → short message, nothing happens.
+
+**6b. What it creates** (all ids `crypto.randomUUID()`):
+- **Storage copies FIRST, all of them** — criminal history (`criminal-history/[GS id].pdf` → `criminal-history/[CC id].pdf`) and each checked case's affidavit (its `warrant_url` → `warrants/[new case id].pdf`). Any failure → copies already made are removed (best-effort), an error is shown, and **no row is written**.
+- Then rows, Dexie-first, enqueued in FK-safe order: **client → incidents → cases → personal note → mailing address**.
+- **Client:** copies last/first name, gender, oca, custody_status, booking date/time, client_type, criminal_history_text; `is_cc_file` true, `left_gs_date` from the modal, CC estimate/number null, `indigent_status 'red'`, not closed, inline `last_modified_at` (as NewClient does). `criminal_history_url` = the new path's **public URL**, the same format `CriminalHistorySection`'s upload writes (`getPublicUrl`). Dormant `age` / `bond_amount` not copied.
+- **Incidents:** one per GS incident with ≥1 checked charge; PV incidents skipped. **Cases:** charge, abbrev, classification, bond, release status, notes, warrant_text copied; `case_number` NULL, `gs_case_number` = GS `case_number`, status open, disposition null, is_pv false.
+- **Affidavit path confirmed against CaseView:** its upload writes `warrants/${case_number || id}.pdf`; a CC case's `case_number` is always null, so Replace Affidavit in the CC file writes `warrants/[CC case id].pdf` — the CC copy — never the GS PDF. Same for criminal history (keyed by client id).
+- **Not copied:** hours, next event, courtroom documents, PV entries, dispositions.
+- Then navigates to the new file. ⚠️ **`ClientFile` is now keyed on `:id`** (`export default function ClientFile` → `<ClientFilePage key={id} />`): `<Routes>` keeps the element mounted when only `:id` changes, and the notes/address bars hold the record they edit in local state — without the remount the CC file would open still holding the GS rows and an edit would write to the GS note.
+
+**6c. Appearance** (helpers shared in **`src/ccFile.js`**):
+- **Client-list row tint:** `.rowCc` in `ClientRow.module.css` — **`#233650`**, one commented value (the knob). Permanent, Active and Closed alike.
+- **Header:** small muted "Criminal Court" tag under the name; "CC Case: [number]" under the OCA line once set.
+- **Charges:** at all four sites (client-list case table, header mini-list, Incidents left cell, CaseView header) the **charge is the main label** and the GS number a quiet muted reference — never blue, never "Case # pending" / "—". Taps still open the case by id. Sorting uses `gs_case_number` via `caseSortNumber()` with null guards (client list, header mini-list, Incidents cell). PV cases inside a CC file keep the normal PV rendering.
+- **Client-list case table:** once `cc_case_number` is set it is the first line, normal blue case-number style, non-interactive, no fixed 56px column.
+- **Forms:** CaseView edit form for a CC case → "GS case number (reference)" reading/writing `gs_case_number` (never sends `case_number`). Add Case inside a CC file → "GS case number (if any)", optional, writes `gs_case_number`. Edit Client for a CC file adds "Date left General Sessions", "Estimated first CC date", "CC case number".
+
+**6d. Waiting panel + ripe-date slider.** **Waiting** = `is_cc_file` AND blank `cc_case_number` AND no `next_events` row — `isCcWaiting()`, derived at render, never stored (clear either later and the panel returns).
+- **Ripe date** = estimate − 30 calendar days. **Days since left GS** = whole calendar days to today (UTC day numbers from local Y/M/D, so DST can't shave a day). All parsing is numeric `Date(y, m, d)`.
+- **Slider** (`src/components/CcSlider.jsx`): 0% at left-GS date, 100% at ripe date, linear by day, clamped; past ripe or ripe ≤ left → 100%. No estimate → no ripe date, no slider. Colour ramp **`CC_SLIDER_STOPS`** in `src/ccFile.js` (the knob): muted red → orange → yellow → lime → bright green, RGB-interpolated. Display only.
+- **Single client view:** a blue panel directly above Next Event — "Left General Sessions: [date] (N days ago)", "Estimated first CC date: [date]" (or "Add estimated CC date"), "Ripe date", the slider, and a "CC case number" field. Both dates are **one tap**: an invisible native date input laid over the text (the drawer's technique), committing on change like PvField's date variant. The CC number commits on blur/Enter, Escape restores. All writes Dexie + sync queue + `touchClient`.
+- **Client list:** in the empty next-event spot, "Left GS 9/15 · 30 days · Ripe 11/14" (or "· no CC estimate") with a compact 140px slider beneath; nowrap + ellipsis at both breakpoints.
+- Entering a CC number or adding a next event removes the panel and line everywhere; the tint and "Criminal Court" tag stay.
+
+**Verification:** `npm run build` clean (pre-existing >500 kB notice only). Lint 19, all pre-existing. 38 assertions against the shipped `src/ccFile.js`: the waiting rule (incl. blank-space CC number and next event), ripe date incl. month/year rollover, 50% midpoint, past-ripe and ripe-≤-left → 100%, future left → 0%, no estimate / no left date / garbage dates, a DST-spanning day count, the colour ramp's ends/clamping/NaN and monotone green channel, labels and sort keys. The 11 presets and defaults checked against `HOURS_OPTIONS`.
+
+**`touchClient` call sites added:** Mailing Address save + delete (same component as Personal Notes), CC panel date and CC-number commits. Create CC file stamps the NEW client inline and deliberately touches nothing on the GS file.
 
 ### Supabase RLS — Stray Backup Table Secured + All Policies Rewritten to User-Scoped (2026-09-21)
 
@@ -672,6 +769,8 @@ An **unparseable** `last_modified_at` is treated as null rather than becoming `N
 | **Cases** | add (`AddCaseForm`) · edit (CaseView) · delete (CaseView) · PV field edits (CaseView `PvField`) · affidavit-first creation · PV incident+case creation |
 | **Next Event** | save · clear |
 | **Personal Notes** | save (add and edit branches) · delete |
+| **Mailing Address** (2026-10-15) | save (add and edit branches) · delete — same `ClientTextBar` code path as Personal Notes |
+| **CC waiting panel** (2026-10-15) | left-GS date · estimated CC date · CC case number (`saveCcClientField`) |
 | **Client** | New Client save · Edit Client save · Close · Reopen |
 | **Criminal History** | upload · delete |
 | **Courtroom Documents** | upload · rename · delete |
@@ -1308,7 +1407,7 @@ New read-only feature: a day-by-day view of every hours entry logged across **al
 
 **`src/components/DailyHoursDrawer.jsx` + `.module.css`** — modeled on `TextViewerDrawer.jsx`'s overlay/slide-up-drawer shell (handle, header, `×` close, click-overlay-to-close) but **full viewport height** (`100vh`, `100dvh` override) with its own internal `.body` scroll, since a day's entries across several clients can run long.
 - **Header:** `‹`/`›` buttons step the shown date ±1 day via the new `shiftDate()` helper (see below). The date text itself is a tap target — a `<input type="date">` is absolutely positioned over it at `opacity: 0` (not `display: none`, which would block pointer events), so tapping the visible date opens the native picker directly via `pickerHandlers()`, same convention as every other date field in the app. Both arrows are disabled while the date is still resolving (`selectedDate == null`, the brief window before the default-date effect below resolves).
-- **Default date on open:** the most recent date with any hours entry across the whole `db.hours` table (scanned via `dateKey()`, not `new Date()`), falling back to `todayString()` if the table is empty. Recomputed **fresh each time the drawer transitions closed→open** (tracked via a `wasOpenRef`), not on every Dexie update while it's sitting open — otherwise a background sync mid-session could yank the user back to a different day while they're browsing. Two effects: one resets `selectedDate` to `null` on the open transition, a second (guarded on `selectedDate === null`) computes the actual default once the live data is ready.
+- ⚠️ **SUPERSEDED 2026-10-15: the drawer now ALWAYS opens to today** (`todayString()`, re-read on every open); the most-recent-date logic below is gone. ~~**Default date on open:** the most recent date with any hours entry across the whole `db.hours` table (scanned via `dateKey()`, not `new Date()`), falling back to `todayString()` if the table is empty. Recomputed **fresh each time the drawer transitions closed→open** (tracked via a `wasOpenRef`), not on every Dexie update while it's sitting open — otherwise a background sync mid-session could yank the user back to a different day while they're browsing. Two effects: one resets `selectedDate` to `null` on the open transition, a second (guarded on `selectedDate === null`) computes the actual default once the live data is ready.~~
 - **Body:** reads `db.hours` and `db.clients` via a single `useLiveQuery` (reactive, offline-first, same as the rest of the app), filters entries to the selected date by comparing `dateKey()` values (not string equality — a date can be written in more than one literal form), groups by `client_id`, and joins each group's client name. Groups are sorted alphabetically by last name (`byLastName` — a local equivalent of `ClientList.jsx`'s comparator, deliberately **not imported** from there to avoid a component→page circular import, since `ClientList` is what renders this drawer). Within a group, entries are ordered by `sort_order` ascending with the same id tiebreak `useClientFile.js` uses, so the order matches that client's own Hours section exactly.
 - **Totals:** a grand total for the day sits in a highlighted band at the **top** of the body (more prominent placement than the per-client subtotals, since it's the headline number for a day-review workflow), plus a per-client subtotal row under each group. Both reuse the exact `total % 1 === 0 ? total : total.toFixed(1)` formatting from `HoursSection` in `ClientFile.jsx`, and the subtotal/value styling is modeled on that section's `.hoursTotal`/`.hoursValue` classes (same colors — green `#5ecf90` bold values, muted uppercase subtotal label) rather than inventing a new visual language, adapted from `HoursSection`'s 6-column drag/checkbox/delete grid to a plain flex row since none of those controls exist here.
 - **Empty state:** "No hours logged for [date]." with no error styling — this is an expected, common case when stepping through days, not a fault condition.
@@ -1563,7 +1662,7 @@ Free ($0/month) self-built nightly backup that covers the gap Supabase's own bac
 **The script (`scripts/backup.js`)** — Node, ESM, run by the workflow (not locally):
 - Reads the service role key **only** from `process.env.SUPABASE_SERVICE_ROLE_KEY`; if missing, errors and exits non-zero **without printing the key**. The key is never logged, printed, or written to disk anywhere.
 - Creates a service-role `@supabase/supabase-js` client (bypasses RLS by design, so it can read every row and file).
-- **DB dump:** all 7 tables (`clients`, `incidents`, `cases`, `hours`, `next_events`, `personal_notes`, `courtroom_documents`) → `backup/db/<table>.json`, **paginated via `.range()`** (1000/page) so it never truncates at the supabase-js 1000-row default.
+- **DB dump:** all 7 tables (`clients`, `incidents`, `cases`, `hours`, `next_events`, `personal_notes`, `courtroom_documents`) — **8 as of 2026-10-15, `mailing_addresses` added** → `backup/db/<table>.json`, **paginated via `.range()`** (1000/page) so it never truncates at the supabase-js 1000-row default.
 - **Storage dump:** walks the `warrants` bucket recursively from the root — `.list()` is non-recursive and paginated (100/page), so each level is paginated and subfolders are recursed — covering `warrants/`, `criminal-history/`, and the nested `courtroom-docs/<client_id>/<timestamp>_<filename>`. Every file's bytes are saved under `backup/storage/<same path>` (skips the `.emptyFolderPlaceholder` markers).
 - **`backup/manifest.json`:** UTC ISO timestamp, per-table row counts, total file count, total bytes — a quick integrity summary.
 - **Fails loudly** (non-zero exit) on any select/list/download error, so a broken backup can never report success.
@@ -1749,7 +1848,9 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - ⚠️ **The Closed section's ORDER is frozen while the view is mounted (2026-09-03)** so that tapping an indigent circle doesn't make the row jump out from under the user's finger. **The dot still recolours instantly — only the position is held.** The row takes its new position on the next load of the list, which includes both a refresh and returning from a client file (ClientList remounts on that path). A client not in the snapshot — newly closed, newly synced — falls back to live values and sorts in normally. Active-section ordering is unaffected.
 - **Scroll position is restored** on the client list (2026-09-02) — both on returning from a client file and across a full page reload, via `sessionStorage`. The client list is the only page that does this. ⚠️ **The Back path was broken on arrival and fixed 2026-09-03**: the effect cleanup re-read `window.scrollY` during teardown, after the route had already changed, and stored `0` over the good value. Refresh was unaffected because a reload never unmounts. The position is now captured synchronously before `navigate()`, and the restore retries until a wall-clock deadline so it can't be clamped by a document that hasn't finished growing.
 - ⚠️ **Every OTHER route resets scroll to the top on mount** (`useScrollToTopOnMount`, 2026-09-03) — `ClientFile`, `CaseView`, `NewClient`, `EditClient`. Mobile Safari carries the previous page's offset across an SPA route change, which was landing users at the *bottom* of a client file opened from a scrolled list. **The client list is deliberately excluded**: forward navigation into a detail page resets, returning to the list restores. Both directions share one driver in `scrollHold.js`, which holds the position for a settle window against Safari's own late scroll handling and abandons instantly on real user input.
-- Each section header shows a count badge (e.g. "Active 12")
+- Each section header shows a count badge (e.g. "Active 12") — counting only the clients the **"Show:"** filter is showing (2026-10-15)
+- **"Show:" pill (2026-10-15)** right of "Sorting by:" — cycles Appointed → Pro Bono → Retained on `clients.client_type`, applies to both sections. ⚠️ React state only: every mount starts at "Show: Appointed" — deliberate, do not persist it
+- **CC files (2026-10-15)** have a permanent blue-tinted row (`.rowCc`), charge-first case table with muted GS numbers, the CC case number as the first line once set, and — while waiting — "Left GS · N days · Ripe" + compact slider in the next-event spot
 - Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge. **No prelim-hearing countdown** — that two-line block above the badge was removed 2026-08-10, so the badge is now centred for every client
 - **Same-incident bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a `[` in `#6b9fd4` (the case-number colour) drawn in the gutter to the left of the case table. ⚠️ The list is sorted purely on the numeric part of the case number with **no incident component**, so same-incident cases can interleave; a non-contiguous group is deliberately left unbracketed rather than drawn across a foreign case. See the 2026-08-10 entry and Open Items.
 - **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), right-anchored so all case number left edges are flush. **As of 2026-08-09 it is an in-flow flex item on desktop, not `position: absolute`** — the absolute version was out of flow, so a row never grew and a client with 5+ cases bled into the neighbouring rows (see the 2026-08-09 entry; mobile was always in-flow and is unchanged). `charge_abbrev` shown if set, falls back to `charge`; if `classification` is set, it follows in parens (e.g. `Sex Offender Registration Viol (A MIS)`), styled to match the next-event info line (`#6b9fd4`, normal weight, 13px desktop / 11px mobile)
@@ -1770,6 +1871,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Next Event block** (blue `#1E3A5F`): "NEXT EVENT" label + Edit button integrated into blue block
   - Docket type, reason (if set), date/time, courtroom (prefixed "Courtroom"), judge, and ADA (shown as "ADA: [name]" only when `ada_name` is set — single-client view only, never in the client list)
   - **Clear button** in the edit form — deletes the `next_events` row for this client, returns block to empty state
+- **Mailing Address (2026-10-15)** beside Personal Notes (80/20 above 768px, stacked beneath on phones) — the same `ClientTextBar` component, backed by `mailing_addresses`
 - **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table. **Renders already expanded on load when the note is non-empty** (2026-08-09); an empty/absent note still starts collapsed. Click-to-toggle itself is unchanged
 - **Incidents** section — **two-column grid, one row per incident, nothing collapsible** (2026-08-10; replaced the click-to-expand accordion):
   - Section header carries two controls (2026-08-10): an **"upload affidavit"** text control (affidavit-first creation — see the 2026-08-10 entry) and the existing `+` button, in that order. The `+` still creates a bare incident with no affidavit — needed for things like probation violations that have no incident date
@@ -1798,7 +1900,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - **Check-off toggle** per row (left of ×) grays a reviewed row — **session-only** local state (a Set of ids in `HoursSection`), **not persisted**; resets on reload. A "clear checks" control appears on the Hours header when any row is checked. Purely visual — no effect on total/sort/delete
   - Tap a row to edit — **except** while selecting text or click-dragging (so descriptions can be copied out for ACAP)
   - **Add/Edit Hours form field order is date → description → hours (2026-08-19)**, in both forms. Hours moved *below* description because picking a common description can now fill Hours in, so the field it drives has to come after it. Date and Hours no longer share a `formTwoCol` row — that pairing is what the reorder breaks; all three are full-width `formRow`s now.
-  - **"Courtroom wait time" is pinned FIRST in `DESCRIPTION_OPTIONS`** (2026-08-19), ahead of every other option — the most-picked entry. Deliberately outside the alphabetical run that follows it; do not "restore" it to sort order
+  - ⚠️ **SUPERSEDED 2026-10-15 — `DESCRIPTION_OPTIONS` and `DEFAULT_HOURS_BY_DESCRIPTION` were replaced wholesale with 11 presets, every one with a default; see the 2026-10-15 entry for the current list. The two bullets below are the old state, kept for history.**
+  - ~~**"Courtroom wait time" is pinned FIRST in `DESCRIPTION_OPTIONS`** (2026-08-19), ahead of every other option — the most-picked entry. Deliberately outside the alphabetical run that follows it; do not "restore" it to sort order~~
   - **Description → default hours (2026-08-19).** Shared `DEFAULT_HOURS_BY_DESCRIPTION` map: picking one of these from the dropdown also sets the Hours field — Opened file `0.5`, Closed file `0.5`, Jail visit with client `0.4`, Initial client meeting `0.3`, Met with ADA `0.1`, Met, negotiated with ADA `0.1`, Rescheduled Appearance `0.1`, Draft, send email requesting client zoom visit `0.2`, Client zoom visit `0.3`, Guilty plea taken by judge `0.2`, Case dismissed `0.1`. **The field stays manually overridable**, exactly as before. Any description *not* in the map — including "Courtroom wait time" and anything typed by hand — gets **no forced default** and leaves Hours untouched. Keys must match the `DESCRIPTION_OPTIONS` strings **byte for byte** (plain case-sensitive lookup, not fuzzy); values are strings so they equal the `HOURS_OPTIONS` `<option>` values and the `<select>` stays controlled. Applied via a shared `applyDescriptionPick()` used by both forms, which sets description and hours in **one** state update.
 - **Section headers** (Incidents, Hours, Personal Notes, Criminal History, Courtroom Documents) use inline styles (`background: #0f1820`)
 - **Criminal History** section: Upload/Replace/View Criminal History PDF; drag-and-drop supported
@@ -1943,10 +2046,11 @@ src/
   RequireAuth.jsx          # Route guard — redirects to /login if no session
   supabaseClient.js        # Supabase client singleton
   SyncContext.jsx          # Provides isOnline, isSyncing, lastSyncedAt, triggerSync via React context
-  localDB.js               # Dexie IndexedDB schema — mirrors 7 Supabase tables + sync_queue
+  localDB.js               # Dexie IndexedDB schema — mirrors 8 Supabase tables + sync_queue (v5 added mailing_addresses, 2026-10-15)
   syncManager.js           # fullSync, processSyncQueue, addToSyncQueue, startBackgroundSync
   extractPdfText.js        # PDF text extraction utility — pdfjs-dist v6 + CDN worker
   caseGrouping.js          # bracketBlocks() — same-incident "[" grouping + contiguity guard, shared by ClientRow and ClientFile
+  ccFile.js                # Criminal Court file helpers (2026-10-15) — isCcWaiting, ccWaitingInfo (ripe date / days / slider %), CC_SLIDER_STOPS colour ramp + ccSliderColor, ccChargeLabel/ccChargeShort, caseSortNumber, caseNumericKey, formatMonthDay
   dateUtils.js             # Shared "M/D/YYYY" helpers — dateKey, todayString, toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, shiftDate
   indigentStatus.js        # INDIGENT_CYCLE / INDIGENT_COLOR / INDIGENT_ALIAS + normalizeIndigent() — shared by ClientRow, ClientFile and ClientList's tier sort (2026-09-02)
   touchClient.js           # touchClient() — the ONLY writer of clients.last_modified_at (2026-09-02). Never import from the sync layer
@@ -1956,7 +2060,7 @@ src/
 
   hooks/
     useClients.js          # Reads all clients + next_events + cases from Dexie via useLiveQuery
-    useClientFile.js       # Reads client + incidents + cases + hours + nextEvent + personalNote from Dexie
+    useClientFile.js       # Reads client + incidents + cases + hours + nextEvent + personalNote + mailingAddress from Dexie
 
   pages/
     Login.jsx / .module.css
@@ -1970,7 +2074,8 @@ src/
     ClientRow.jsx / .module.css         # Single row in client list; mobile-responsive
     OfflineStatus.jsx / .module.css     # Shared offline-readiness status line; rendered on Login and ClientList
     TextViewerDrawer.jsx / .module.css  # Slide-up drawer for viewing extracted PDF text; used in CaseView and ClientFile
-    DailyHoursDrawer.jsx / .module.css  # Full-height, read-only cross-client daily hours viewer; opened from ClientList
+    DailyHoursDrawer.jsx / .module.css  # Full-height, read-only cross-client daily hours viewer; opened from ClientList; always opens to today (2026-10-15)
+    CcSlider.jsx / .module.css          # Display-only CC ripe-date slider (full + compact); colour from ccFile.js (2026-10-15)
 
   assets/                  # hero.png, react.svg, vite.svg — Vite-template leftovers, tracked in git, imported by nothing
   data/                    # (contents deleted 2026-06-09 — static sample files; the empty directory is still on disk, untracked)
