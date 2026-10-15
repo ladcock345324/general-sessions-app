@@ -97,7 +97,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 | `charge` | text | **NULLABLE as of 2026-07-28** (was required). |
 | `charge_abbrev` | text | optional short label shown in client list and case rows |
 | `classification` | text | optional charge classification — one of "MIS", "C MIS", "B MIS", "A MIS", "E FEL", "D FEL", "C FEL", "B FEL", "A FEL", "CAPITAL" (all uppercase); null = unset. Added 2026-06-24 via MCP; generic "MIS" option added 2026-06-25 (front-end only — same existing text column). **Dropdown order reversed to most→least serious 2026-08-09** (CAPITAL first, MIS last, blank still on top) — display order only, no value strings changed. Shown in parens after the charge abbrev (client list) / charge (single view). |
-| `warrant_url` | text | Supabase Storage path for affidavit PDF (e.g. `warrants/GS1041482.pdf`) — signed URL generated on demand |
+| `warrant_url` | text | Supabase Storage path for affidavit PDF (e.g. `warrants/GS1041482.pdf`) — signed URL generated on demand. ⚠️ **The file name is NOT guaranteed to match this case's current number** (numbers edited after upload — e.g. GS1126192 → `warrants/GS1126191.pdf`). Since 2026-10-16 Replace Affidavit overwrites the path stored HERE; only a case with no affidavit derives `warrants/${case_number || id}.pdf`. |
 | `bond_amount` | int4 | **integer**, not numeric — cents are not storable. Nullable: `null` = unset (no bond figure); an explicit `0` is a real value and displays "$0 bond". The edit form saves `null` on a blank field, never `0` (see 2026-07-23 feature entry). |
 | `release_status` | text | nullable release condition for **this specific case**: `"held_without_bond"` \| `"pretrial_released"` \| `"ror"`; `null` = unset. Added 2026-07-23 via MCP (no in-repo migration). Displays "Held without bond" / "Pretrial Released" / "ROR'd". **Independent of the client-level `clients.custody_status`** — this is the condition on the case; custody_status is where the client physically is, net of all cases. |
 | `notes` | text | free-text, editable on case view with Save button |
@@ -164,7 +164,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 | Bucket | Path pattern | Used for |
 |---|---|---|
-| `warrants` | `warrants/[case_number].pdf` | Case warrant PDFs |
+| `warrants` | `warrants/[case_number].pdf` | Case warrant PDFs — the name is set at FIRST upload; replaces overwrite the stored `warrant_url` path (2026-10-16) |
 | `warrants` | `criminal-history/[client_id].pdf` | Criminal history PDFs |
 | `warrants` | `courtroom-docs/[client_id]/[timestamp]_[filename]` | Courtroom document PDFs |
 
@@ -212,6 +212,71 @@ Three reasons, in order of weight:
 ---
 
 ## Completed Features
+
+### Follow-Up Fixes to the 2026-10-15 Batch — "+" Alignment, Placeholder, Selectable Notes, CC Bronze, Slider-Only, Slim Next Event, Affidavit Paths (2026-10-16, commit `2a65b89`)
+
+Seven fixes after Lucas reviewed the 2026-10-15 batch on production. Everything else from that batch was confirmed working and was not touched. **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ⚠️ **Not yet verified on production.**
+
+#### 1. The "+" buttons never moved — ROOT CAUSE (two bugs, both read off the built CSS in `dist/`)
+
+- **Ordering.** The header rows' children are `[label][controls][+]` in the DOM. The wide-screen rule set the "+" to `order: 0`, but the controls wrapper also had the default `order: 0`. **Equal `order` values fall back to DOM order**, so the controls still came before the "+", and their `margin-left: auto` pushed the "+" to the far right edge. The phone rule (`order: 1` on the "+") had been doing all the visible work. **Fix:** order is now explicit at both breakpoints: phones `label 0 · controls 0 · + 1`; wide `label 0 · + 1 · controls 2`.
+- **Size.** `.addHeaderBtn`'s 32px wide-screen size was overridden by `.addBtn` (24px). That rule is declared LATER in `ClientFile.module.css` at the same single-class specificity, so the later one wins. The "+" never actually grew either. **Fix:** the size lives in `.addBtn.addHeaderBtnBig` (two classes), confirmed in `dist/` to out-specify `.addBtn`.
+- Result above 768px: Personal Notes, Incidents and Hours each have the 136px label column (`.addHeaderLabel`) and the 32px "+" right after it, so all three line up in one column at the same x (16px padding + 136 + 12 gap). "upload affidavit" / "clear checks" stay at the far right. The **Mailing Address** bar uses the same ordering but no fixed label width, so its own "+" sits directly after its own label. Phones are unchanged.
+- The collapsed Personal Notes / Mailing Address content is now an inner row (`.addHeaderBar`, min-height 32px wide) rather than classes on the bar itself.
+- **Equal bar heights (wide only):** `.notesRow` stretches both cells; each section is a flex column whose bar fills it, with content top-aligned (`align-items: flex-start`, `min-height: 42px`). Both bars are always the same height, and a collapsed address bar beside a long open note stretches with it while its label stays on the top line.
+
+#### 2. Hours description placeholder
+
+`<option value="" disabled hidden>Pick a common description…</option>` in both Add and Edit hours forms. The select is still controlled at `""`, so it shows the placeholder closed and resets to it after every pick. Picking still fills description + default hours exactly as before. *(iOS Safari historically ignores `hidden` on `<option>`; there it shows greyed out and can't be picked.)*
+
+#### 3. Selectable text in Personal Notes / Mailing Address
+
+`.pnNoteText` is `user-select: text` (the bar stays `none`). The bar's tap is now selection-safe, using the Hours rows' rule:
+- suppressed when text is selected, or the pointer moved more than 8px between down and up;
+- suppressed for a 300ms+ touch hold (native long-press selection);
+- in view mode, the toggle waits 250ms so a double-click can select a word without the first click collapsing the text out from under it. A click with `detail > 1` cancels it, and the selection is re-checked when the timer fires.
+
+A plain tap does exactly what it did before. ⚠️ **That is a collapse/expand toggle. The editor opens from the "edit" link, not from a tap on the bar.** The request said "a plain tap still opens the editor as now". I kept the existing behaviour rather than changing it.
+
+#### 4. CC theme: muted bronze, one set of knobs
+
+Every CC accent now reads from **`--cc-*` custom properties in a commented `:root` block in `src/App.css`**:
+
+| Variable | Value | Use |
+|---|---|---|
+| `--cc-row-bg` | `#302e29` | client-list row tint (Active and Closed) |
+| `--cc-panel-bg` | `#36322a` | waiting-panel background (+ the slider knob ring) |
+| `--cc-accent` | `#a68a62` | "Criminal Court" tag, panel heading, CC-number field label, Create CC file text |
+| `--cc-accent-soft` | `#c2ad8c` | panel line keys, the date values' dashed underline |
+| `--cc-accent-border` / `--cc-accent-press` | `#a68a62` @ 40% / 10% | Create CC file outline / pressed |
+
+Desaturated and dark, kept clear of the indigent gold `#FFD700` and the Close/Reopen yellow `#c8a84b`. The CC case number in the client-list case table deliberately keeps the normal blue case-number style, because that was the spec for it.
+
+#### 5. Client list: slider only
+
+For a waiting CC file the "Left GS … · N days · Ripe …" / "no CC estimate" text is gone. Only the compact slider shows (`.ccWaitBlock`, 17px desktop / 11px phone, not `overflow: hidden` so the knob isn't clipped). With no estimate there's no slider, and the spot is the same empty spacer any client without a next event gets.
+
+#### 6. Waiting CC file — single client view
+
+- **(a)** `NextEventBlock` gets `slim` (passed only for CC files). A CC file with no next event renders `.nextEventSlim`: the "NEXT EVENT" label and "+ Add" on one row, 34px min-height, no "No upcoming event" line. Once an event exists, the full block renders exactly as before. GS files never get it.
+- **(b)** The panel slider sits in `.ccPanelSlider`: 40% of the panel width, right-aligned. Ramp and behaviour unchanged.
+
+#### 7. Replace Affidavit overwrites the case's OWN file
+
+Real data has cases whose `warrant_url` names a different case number (numbers edited after upload). For example, GS1126192 → `warrants/GS1126191.pdf`. The old upload re-derived `warrants/${case_number || id}.pdf` every time, so replacing GS1126191's affidavit would have silently overwritten GS1126192's.
+
+- **CaseView now uploads to the case's existing `warrant_url` when it has one.** Only a case with no affidavit derives a path (`case_number || id`, unchanged).
+- A replace writes the same path back, so `warrant_url` is now only written on a first upload.
+- **Criminal history, same principle:** new `criminalHistoryKey(storedUrl, clientId)` in `ClientFile.jsx` reads the Storage key back out of the stored public URL (`…/object/public/warrants/<key>`, URL-decoded). It falls back to `criminal-history/<client id>.pdf` only when there is no stored URL or it can't be parsed. View, Delete, upload and the Create-CC-file copy source all use it.
+- No existing file was moved or renamed, and no stored data was changed.
+- The other upload sites always write brand-new paths, so they needed nothing: affidavit-first (new case id), courtroom documents (timestamped), and the CC copy destinations (new ids).
+
+**Verification:** build clean; lint 19, all pre-existing. Read back from `dist/` CSS:
+- the wide-screen `order` values (controls 2, "+" 1);
+- the compound `.addBtn.addHeaderBtnBig` rule;
+- all six `--cc-*` variables and their uses, with no CC blue left in CC-only rules.
+
+Class names were checked in the JSX: `addHeaderLabel` ×3 sites + the `bigAdd` branch; `addHeaderBtnBig` on PN/Incidents/Hours only. `criminalHistoryKey` passes 7 assertions (public URL, a URL naming a different file, URL-encoded + query string, a bare key, null / empty / garbage → id fallback).
 
 ### Six-Change Batch — Hours Presets, Daily Hours = Today, Retained/Pro Bono + "Show", Mailing Address, Bigger "+", Criminal Court Files (2026-10-15, commit `2d8dd31`)
 
@@ -276,7 +341,7 @@ New `.addHeaderRow` / `.addHeaderBar` / `.addHeaderLabel` / `.addHeaderControls`
 - Then navigates to the new file. ⚠️ **`ClientFile` is now keyed on `:id`** (`export default function ClientFile` → `<ClientFilePage key={id} />`): `<Routes>` keeps the element mounted when only `:id` changes, and the notes/address bars hold the record they edit in local state — without the remount the CC file would open still holding the GS rows and an edit would write to the GS note.
 
 **6c. Appearance** (helpers shared in **`src/ccFile.js`**):
-- **Client-list row tint:** `.rowCc` in `ClientRow.module.css` — **`#233650`**, one commented value (the knob). Permanent, Active and Closed alike.
+- **Client-list row tint:** `.rowCc` in `ClientRow.module.css` — ~~**`#233650`**, one commented value (the knob)~~ **now `var(--cc-row-bg)`, muted bronze — all CC accents moved to the `--cc-*` block in `src/App.css` on 2026-10-16.** Permanent, Active and Closed alike.
 - **Header:** small muted "Criminal Court" tag under the name; "CC Case: [number]" under the OCA line once set.
 - **Charges:** at all four sites (client-list case table, header mini-list, Incidents left cell, CaseView header) the **charge is the main label** and the GS number a quiet muted reference — never blue, never "Case # pending" / "—". Taps still open the case by id. Sorting uses `gs_case_number` via `caseSortNumber()` with null guards (client list, header mini-list, Incidents cell). PV cases inside a CC file keep the normal PV rendering.
 - **Client-list case table:** once `cc_case_number` is set it is the first line, normal blue case-number style, non-interactive, no fixed 56px column.
@@ -286,7 +351,7 @@ New `.addHeaderRow` / `.addHeaderBar` / `.addHeaderLabel` / `.addHeaderControls`
 - **Ripe date** = estimate − 30 calendar days. **Days since left GS** = whole calendar days to today (UTC day numbers from local Y/M/D, so DST can't shave a day). All parsing is numeric `Date(y, m, d)`.
 - **Slider** (`src/components/CcSlider.jsx`): 0% at left-GS date, 100% at ripe date, linear by day, clamped; past ripe or ripe ≤ left → 100%. No estimate → no ripe date, no slider. Colour ramp **`CC_SLIDER_STOPS`** in `src/ccFile.js` (the knob): muted red → orange → yellow → lime → bright green, RGB-interpolated. Display only.
 - **Single client view:** a blue panel directly above Next Event — "Left General Sessions: [date] (N days ago)", "Estimated first CC date: [date]" (or "Add estimated CC date"), "Ripe date", the slider, and a "CC case number" field. Both dates are **one tap**: an invisible native date input laid over the text (the drawer's technique), committing on change like PvField's date variant. The CC number commits on blur/Enter, Escape restores. All writes Dexie + sync queue + `touchClient`.
-- **Client list:** in the empty next-event spot, "Left GS 9/15 · 30 days · Ripe 11/14" (or "· no CC estimate") with a compact 140px slider beneath; nowrap + ellipsis at both breakpoints.
+- **Client list:** ~~in the empty next-event spot, "Left GS 9/15 · 30 days · Ripe 11/14" (or "· no CC estimate") with a compact 140px slider beneath~~ — **since 2026-10-16 the compact slider ONLY, no text; nothing at all with no estimate.**
 - Entering a CC number or adding a next event removes the panel and line everywhere; the tint and "Criminal Court" tag stay.
 
 **Verification:** `npm run build` clean (pre-existing >500 kB notice only). Lint 19, all pre-existing. 38 assertions against the shipped `src/ccFile.js`: the waiting rule (incl. blank-space CC number and next event), ripe date incl. month/year rollover, 50% midpoint, past-ripe and ripe-≤-left → 100%, future left → 0%, no estimate / no left date / garbage dates, a DST-spanning day count, the colour ramp's ends/clamping/NaN and monotone green channel, labels and sort keys. The 11 presets and defaults checked against `HOURS_OPTIONS`.
@@ -2030,6 +2095,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 | Section headers (client list) | background `#0f1820`, text `#c8d0db` |
 | Delete buttons | muted red `#7a3a30` border / `#c97060` text |
 | Close/Reopen Case button | yellow `#c8a84b` |
+| CC file accents (2026-10-16) | muted bronze — `--cc-row-bg #302e29`, `--cc-panel-bg #36322a`, `--cc-accent #a68a62`, `--cc-accent-soft #c2ad8c`; all in the `:root` block in `src/App.css` |
 
 ---
 
