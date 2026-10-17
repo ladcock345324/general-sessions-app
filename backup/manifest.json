@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-10-17T11:58:31.982Z",
+  "supabaseUrl": "https://afhzkqjrciyoeizrpaxt.supabase.co",
+  "tables": {
+    "clients": 76,
+    "incidents": 99,
+    "cases": 171,
+    "hours": 1450,
+    "next_events": 22,
+    "personal_notes": 47,
+    "mailing_addresses": 4,
+    "courtroom_documents": 2
+  },
+  "storage": {
+    "fileCount": 225,
+    "totalBytes": 80570835
+  }
+}
