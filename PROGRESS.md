@@ -24,7 +24,7 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 
 - **URL:** `https://afhzkqjrciyoeizrpaxt.supabase.co`
 - **Client file:** `src/supabaseClient.js`
-- **RLS:** Enabled on all 8 tables (the 7 documented ones plus the stray `hours_backup_causey_20260916` backup table, secured the same day it was discovered — see Known Issues). ~~Each table has an "authenticated users only" policy applied to all commands. The policy expression was updated **2026-06-24 via MCP** to wrap the auth call in a subquery — `USING ((select auth.role()) = 'authenticated')` (was `USING (auth.role() = 'authenticated')`) — so Postgres evaluates `auth.role()` once per query instead of once per row.~~ **SUPERSEDED 2026-09-21:** all 8 tables' policies were rewritten again, this time from role-scoped to **user-scoped** — `USING ((select auth.uid()) = 'ea7ec416-3d46-4714-a188-c0f50a63ddcb')`, Lucas's account UUID. See [Supabase RLS — Stray Backup Table Secured + All Policies Rewritten to User-Scoped (2026-09-21)](#supabase-rls-stray-backup-table-secured-all-policies-rewritten-to-user-scoped-2026-09-21) for the full change and its trade-off. This cleared the "Auth RLS Initialization Plan" performance advisor on the original 7 tables back on 2026-06-24 (see Known Issues) and remains true under the new policy expression. RLS was applied to `clients`, `incidents`, `cases`, `hours`, `next_events` at some prior point; applied to `courtroom_documents` and `personal_notes` on 2026-06-17 via Supabase migration (see `supabase_migration_enable_rls_courtroom_personal_notes.sql`).
+- **RLS:** Enabled on all 9 tables — **`mailing_addresses` (created 2026-10-15) was created with RLS on and the same user-scoped policy as every other table** — plus the original 8 (the 7 documented ones plus the stray `hours_backup_causey_20260916` backup table, secured the same day it was discovered — see Known Issues). ~~Each table has an "authenticated users only" policy applied to all commands. The policy expression was updated **2026-06-24 via MCP** to wrap the auth call in a subquery — `USING ((select auth.role()) = 'authenticated')` (was `USING (auth.role() = 'authenticated')`) — so Postgres evaluates `auth.role()` once per query instead of once per row.~~ **SUPERSEDED 2026-09-21:** all 8 tables' policies were rewritten again, this time from role-scoped to **user-scoped** — `USING ((select auth.uid()) = 'ea7ec416-3d46-4714-a188-c0f50a63ddcb')`, Lucas's account UUID. See [Supabase RLS — Stray Backup Table Secured + All Policies Rewritten to User-Scoped (2026-09-21)](#supabase-rls-stray-backup-table-secured-all-policies-rewritten-to-user-scoped-2026-09-21) for the full change and its trade-off. This cleared the "Auth RLS Initialization Plan" performance advisor on the original 7 tables back on 2026-06-24 (see Known Issues) and remains true under the new policy expression. RLS was applied to `clients`, `incidents`, `cases`, `hours`, `next_events` at some prior point; applied to `courtroom_documents` and `personal_notes` on 2026-06-17 via Supabase migration (see `supabase_migration_enable_rls_courtroom_personal_notes.sql`).
 - **Auth:** Email/password. One user account. **Self-signup DISABLED (2026-07-23)** — "Allow new users to sign up" is OFF in Auth → Sign In / Providers. This was originally a load-bearing security control because RLS policies were role-scoped (`(select auth.role()) = 'authenticated'`), so ANY authenticated account would have had full read/write on all tables. ~~With the anon key public in the client bundle, leaving signup enabled would allow anyone to self-register and read all client data.~~ **As of 2026-09-21 the RLS policies are `auth.uid()`-scoped to Lucas's account specifically**, not merely role-scoped — see the entry linked above — so a second signed-up account would no longer inherit data access by default. Self-signup stays OFF regardless: this app has exactly one intended user. Do not re-enable. New accounts, if ever needed, are created manually via Auth → Users → Add user.
 
 ---
@@ -63,12 +63,12 @@ A mobile-first PWA for a criminal defense attorney to manage clients, cases, hea
 |---|---|---|
 | `id` | uuid PK | auto |
 | `client_id` | uuid FK → clients | |
-| `docket_type` | text | edited as a preset `<select>` ("Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket", "Criminal Court", **"PV"** — PV added 2026-08-19) + an optional append-text input; the two are combined into this single column on save (e.g. "Jail Docket Judge Smith covering") and split back on load (2026-06-24, revised from the broken datalist combobox). *(This row listed only the first four presets until 2026-08-19; "Criminal Court" had been live since 2026-07-23.)* |
+| `docket_type` | text | *(Since 2026-10-19 a GS file is not offered "Criminal Court"; a CC file is, and a new CC event defaults to it. Stored values unchanged.)* Edited as a preset `<select>` ("Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket", "Criminal Court", **"PV"** — PV added 2026-08-19) + an optional append-text input; the two are combined into this single column on save (e.g. "Jail Docket Judge Smith covering") and split back on load (2026-06-24, revised from the broken datalist combobox). *(This row listed only the first four presets until 2026-08-19; "Criminal Court" had been live since 2026-07-23.)* |
 | `reason` | text | optional — blank, "Review", "Trial", "Settlement", "Discussion", or "PV Hearing". Free text, no enum: the `<select>` is the only constraint, so options are added front-end with no migration. *(This row previously read "Trial, Settlement, or blank" — stale since 2026-07-23; corrected 2026-08-10.)* |
 | `event_date` | text | e.g. "6/7/2026" |
 | `event_time` | text | e.g. "9:05 AM" |
 | `courtroom` | text | e.g. "4B" — displayed as "Courtroom 4B" |
-| `judge` | text | selected from dropdown or custom "Other" value. **Free text — no enum**, so a label change in the dropdown does NOT migrate rows already saved with the old string. The dropdown entry for Judge Holt was corrected from "J. Holt" to **"A. Holt"** (first name Aaron) on 2026-08-19; the live table was checked first and held **zero** rows matching `%holt%`, so nothing needed migrating. |
+| `judge` | text | ⚠️ **Stores the SHORT name** (e.g. "J. Bell"); since 2026-10-19 it is DISPLAYED as full name + division ("Jodie Bell (VI)") via `src/judges.js`, and a CC file's dropdown lists only the Criminal Court judges. The legacy stored "R. Hayes (PRESIDING)" still resolves (to "Robin Hayes (V)"). Originally: selected from dropdown or custom "Other" value. **Free text — no enum**, so a label change in the dropdown does NOT migrate rows already saved with the old string. The dropdown entry for Judge Holt was corrected from "J. Holt" to **"A. Holt"** (first name Aaron) on 2026-08-19; the live table was checked first and held **zero** rows matching `%holt%`, so nothing needed migrating. |
 | ~~`subpoenas`~~ | — | **DROPPED 2026-06-24 via MCP.** Previously deprecated (data cleared, all app code references removed); the column itself has now been dropped from `next_events`. No app code reads or writes it; kept here struck-through for history only. |
 | `ada_name` | text | Assistant DA name — displayed in the single-client Next Event block only ("ADA: [name]"), never in the client list. ⚠️ **The input was REMOVED from the Next Event form 2026-08-19** and the column deliberately KEPT: the form no longer holds state for it and **omits the key entirely on save**, so existing values survive an edit instead of being nulled. **There is currently no UI to set or clear an ADA name** — re-adding one means re-adding the input. *(This row read "entered in the Next Event form" until 2026-08-20.)* |
 
@@ -213,78 +213,100 @@ Three reasons, in order of weight:
 
 ## Completed Features
 
-### ⏸ VERIFICATION STATUS — pick up here (as of 10/19/2026)
+### ✅ VERIFICATION STATUS (as of 10/19/2026) — nothing pending
 
-Four batches are live on production: `2d8dd31` (the six-change batch), `2a65b89` (its seven follow-up fixes), `ca7d334` (nine further changes) and `4cc4e7e` (eight follow-ups to those), the last two on 2026-10-19. Everything up to and including `4cc4e7e` is verified, except its CC-seam change, which was replaced by `abca80d` (pending).
+**Every commit of the 2026-10-15 → 2026-10-19 arc is VERIFIED on production by Lucas (10/19/2026).** That includes the final CC seam line: 5px, `var(--cc-seam)` `#957a55`, in `db4f327`. **There is no pending verification.**
 
-#### ✅ Verified by Lucas on production
+**All four open questions raised on 10/15 are resolved:**
+1. Tapping the Personal Notes / Mailing Address bar keeps collapsing/expanding it; the editor opens from the "edit" link.
+2. The iPhone description placeholder is fixed (`ca7d334`) and confirmed on Lucas's iPhone.
+3. There is no slim Next Event bar anywhere — it was removed in `4cc4e7e`.
+4. Sharpe's GS1126192 affidavit is the correct document. Its `warrant_url` is `warrants/GS1126191.pdf` — a file named after a different case number, but holding the right PDF. Leave it.
 
-**Batch `2d8dd31` (verified 10/15/2026):**
-- **Hours description dropdown:** the 11 options in the correct order, with the correct default hours.
-- **Create CC file, tested for real on Levi Sharpe.** ⚠️ **This is his REAL CC file, not test data — do not delete or "clean it up".**
-  - First CC date 10/22/2026; CC case number `2026-I-760`.
-  - The file was created correctly, the charges carried over with quiet GS labels, and the affidavits and criminal history open correctly.
-- **PDF independence confirmed in the database by Claude (via Supabase MCP):** all 5 of the CC file's affidavits and its criminal history are stored at paths separate from the GS file's.
-- Everything else in the batch that Lucas didn't flag also worked. The items he did flag became `2a65b89`.
+Standing notes that outlive the arc:
+- ⚠️ **Levi Sharpe's CC file is REAL client data, not a test** (first CC date 10/22/2026, CC case number `2026-I-760`). Do not delete or "clean it up".
+- ⚠️ When testing Replace Affidavit on real cases, **re-upload the same correct PDF, never a different file.**
 
-**Batch `2a65b89` — ALL 7 fixes verified (reported 10/19/2026):**
-1. The "+" buttons (position, size, one column).
-2. The Personal Notes / Mailing Address bar heights.
-3. The hidden description placeholder **on desktop**.
-4. Selectable note/address text.
-5. The bronze CC row and "Criminal Court" tag.
-6. The slider-only client-list row.
-7. The slim Next Event bar *(since removed — see `4cc4e7e`)* and the waiting-panel behaviour.
+### Session Summary — 2026-10-15 → 2026-10-19
 
-**Data check:** Lucas confirmed **GS1126192's affidavit is the correct document**. Its `warrant_url` is `warrants/GS1126191.pdf` — a file named after a different case number, but holding the right PDF. Leave it.
+Everything that shipped across this arc, in commit order. Detail lives in the individual entries below — this is the index. **All of it is verified on production by Lucas.** (Doc-only commits are omitted.)
 
-#### ✅ Batch `ca7d334` — VERIFIED (reported 10/19/2026), except the items changed again in `4cc4e7e`
+- [`2d8dd31`](https://github.com/ladcock345324/general-sessions-app/commit/2d8dd31) — the six-change batch:
+  - the 11 hours presets with default hours;
+  - the daily-hours drawer opens to today;
+  - Retained / Pro Bono + the "Show:" filter;
+  - the Mailing Address section (new table, Dexie v5);
+  - the bigger "+" (first attempt);
+  - **Criminal Court files.**
 
-Verified:
-- the CC bronze header row;
-- the CC case number input;
-- the slider sizes;
-- the CC judge list and the CC docket default;
-- the moved "Show:" button;
-- phone-collapsed notes and address.
+  See [that entry](#six-change-batch--hours-presets-daily-hours--today-retainedpro-bono--show-mailing-address-bigger--criminal-court-files-2026-10-15-commit-2d8dd31).
+- [`2a65b89`](https://github.com/ladcock345324/general-sessions-app/commit/2a65b89) — seven follow-up fixes:
+  - the "+" alignment, with the root cause found in the built CSS;
+  - equal note/address bar heights;
+  - the hidden placeholder;
+  - selectable note text;
+  - the CC bronze theme;
+  - the slider-only list row;
+  - the slim bar (since removed);
+  - **Replace Affidavit / criminal history overwrite the record's own stored file.**
 
-**iPhone hours dropdown — works as Lucas wants.** No "Done" button appears. With nothing picked it stays "Pick a common description…" and won't save, which he considers correct.
+  See [that entry](#follow-up-fixes-to-the-2026-10-15-batch---alignment-placeholder-selectable-notes-cc-bronze-slider-only-slim-next-event-affidavit-paths-2026-10-15-commit-2a65b89).
+- [`ca7d334`](https://github.com/ladcock345324/general-sessions-app/commit/ca7d334) — nine changes:
+  - the CC bronze header + Next Event;
+  - the CC case number field;
+  - one elongated slider size;
+  - the iPhone-safe description picker;
+  - judge divisions (`src/judges.js`), the CC judge list and the CC docket default;
+  - "Show:" moved;
+  - phone-collapsed notes;
+  - plus the date correction for `2a65b89`.
 
-The items that changed again (panel underlines, slider position, "Show:" size, the CC header/Next Event seam, the slim bar, judge order and labels, the GS docket list) are now batch `4cc4e7e`, pending below.
+  See [that entry](#cc-bronze-headernext-event-elongated-slider-iphone-placeholder-judge-divisions-cc-judges--docket-show-moved-phone-collapsed-notes-2026-10-19-commit-ca7d334).
+- [`4cc4e7e`](https://github.com/ladcock345324/general-sessions-app/commit/4cc4e7e) — panel polish:
+  - no date underlines, and the slider nudged down;
+  - "Show:" +15%;
+  - GS files not offered the "Criminal Court" docket type;
+  - the slim Next Event bar removed;
+  - the GS judges in division order, and full judge names.
 
-#### ✅ Batch `4cc4e7e` — VERIFIED (reported 10/19/2026), except item 5 (the CC seam)
+  See [that entry](#panel-polish-show-15-gs-docket-list-slim-bar-removed-judge-full-names-2026-10-19-commit-4cc4e7e).
+- [`abca80d`](https://github.com/ladcock345324/general-sessions-app/commit/abca80d) — a CC divider line between the header and Next Event (8px, `--cc-accent`). See [that entry](#cc-divider-line-between-header-and-next-event-2026-10-19-commit-abca80d).
+- [`db4f327`](https://github.com/ladcock345324/general-sessions-app/commit/db4f327) — the final CC seam: 5px in a new `--cc-seam` `#957a55`, plus 3px of bronze beneath it. See [that entry](#cc-seam-thinner--darker-2026-10-19-commit-db4f327).
 
-Item 5 made the 8px gap between the bronze header and the bronze Next Event row bronze, so the rows met with no line. Lucas does want a line there, just not navy, so it was replaced by `abca80d` below.
+#### The things worth remembering — each spans more than one entry
 
-#### ⏳ NOT YET VERIFIED — `abca80d` (one change, 2026-10-19)
+**1. CC files and GS files are fully independent records.** "Create CC file" copies rows and PDFs. It never moves them, and never writes anything to the GS file.
+- Every CC-file case has a NULL `case_number`. Its GS number is a quiet reference in `cases.gs_case_number`.
+- So a CC case is addressed by its `id`, and its affidavit lives at `warrants/[case id].pdf`.
+- PDF independence was confirmed in the DB via MCP on Sharpe's real CC file (all 5 affidavits + criminal history at separate paths).
 
-- **CC divider line:** on a CC file, an **8px line in `var(--cc-accent)`** (the "CRIMINAL COURT" tag's colour) sits exactly where the old navy gap was, between the header row and the Next Event row. GS files are unchanged.
+**2. Replace overwrites the record's OWN stored file** (`2a65b89`). A stored `warrant_url` can name a different case number, so CaseView uploads to the existing `warrant_url`; only a case with no affidavit derives `case_number || id`. Criminal history resolves its key from the stored URL via `criminalHistoryKey()`.
 
-The items of `4cc4e7e`, all verified except item 5:
+**3. The "+" bug was CSS `order` tie-breaking plus specificity, not the label width.**
+- Equal `order` values fall back to DOM order.
+- `.addBtn`, declared later at the same specificity, beat the 32px size.
+- Both were found by reading the built CSS in `dist/`. Orders are now explicit per breakpoint, and the size is `.addBtn.addHeaderBtnBig`.
 
-1. **Waiting-panel dates:** no dashed underline under the date values. Tapping still opens the picker.
-2. **Waiting-panel slider:** nudged ~6px down — further from "Ripe date", closer to "CC CASE NUMBER". Same size and left alignment.
-3. **"Show:" button:** ~15% larger; right edge still flush with the "+"; still level with "Offline-ready".
-4. **GS Docket Type:** a GS file's dropdown no longer offers "Criminal Court". A CC file keeps it, and it's still their default for a new event.
-5. **CC seam:** no navy line between the bronze header and the bronze Next Event row on a CC file.
-6. **No slim Next Event bar anywhere:** a CC file with no event gets the full block ("No upcoming event", "+ Add") on bronze.
-7. **Judges:**
-   - the GS list is in division order I → XI;
-   - every judge is shown by full name + division, e.g. "Allegra Walker (IV)", "Steve Dozier (I)", in the dropdowns and the Next Event display;
-   - the stored values are unchanged.
+**4. All CC colours are one set of knobs** — the commented `--cc-*` block in `src/App.css` (see Color Palette). The CC seam has its own `--cc-seam`, so `--cc-accent` (the "CRIMINAL COURT" tag) never has to move to retune the line.
 
-#### ❓ Open questions
+**5. Judges:** `next_events.judge` stores the SHORT name ("J. Bell"). `src/judges.js` turns it into full name + division at display time ("Jodie Bell (VI)"). GS files get GS divisions I–XI, CC files get CC divisions I–VI. The legacy "R. Hayes (PRESIDING)" still resolves.
 
-1. ~~**Tap behaviour on the Personal Notes / Mailing Address bar.**~~ — **RESOLVED 10/19/2026: keep it as-is.** A tap collapses/expands the bar; the editor opens from the "edit" link.
-2. ~~**iPhone dropdown placeholder showing greyed out.**~~ — **RESOLVED 10/19/2026:** fixed by `ca7d334` item 4 and verified on Lucas's iPhone (see above).
-3. ~~**Slim empty Next Event bar for GS files too?**~~ — **RESOLVED 10/19/2026: no slim bar ANYWHERE.** It was removed from CC files too (`4cc4e7e` item 6); every file gets the full Next Event block.
-4. ~~**Data check — Sharpe's GS1126192 affidavit.**~~ — **RESOLVED 10/19/2026:** it is the correct document (see above). ⚠️ The standing rule still holds: when testing Replace Affidavit on real cases, **re-upload the same correct PDF, never a different file.**
+**6. The hours description picker has no placeholder `<option>`.** It is an overlay on an uncontrolled select held at `selectedIndex -1`. ⚠️ Don't "simplify" it back to a controlled `value=""` — React would pre-select "Texts with client", and that option could then never be picked.
 
-**No open questions remain.**
+#### CC file workflow — what "Create CC file" replaced
+
+**"Create CC file" replaces Lucas's old manual method.** He used to duplicate a client file and split its hours at a **"CRIMINAL COURT CUTOFF"** hours entry: everything above the cutoff billed to the CC claim, everything below to GS.
+
+A CC file is now created **on or near the day the case leaves General Sessions** ("Date case left General Sessions" in the Create dialog). So:
+- CC hours are logged in the CC file from the start;
+- GS hours stay in the GS file;
+- **no cutoff entry is needed.**
+
+The two files carry separate appointment orders and separate billing claims, which is the reason they are separate records at all.
 
 ### CC Seam Thinner + Darker (2026-10-19, commit `db4f327`)
 
-Follow-up to `abca80d` below, CC files only. ⏳ **Not yet verified on production.**
+Follow-up to `abca80d` below, CC files only. ✅ **VERIFIED on production by Lucas (10/19/2026)** — this is the current, final state of the seam.
 
 - The line is now **5px** (was 8px), in a new **`--cc-seam: #957a55`** — a hair darker than `--cc-accent` — added to the commented CC block in `src/App.css`.
 - `--cc-accent` itself is unchanged, so the "CRIMINAL COURT" tag and the other accents look exactly as before.
@@ -293,7 +315,7 @@ Follow-up to `abca80d` below, CC files only. ⏳ **Not yet verified on productio
 
 ### CC Divider Line Between Header and Next Event (2026-10-19, commit `abca80d`)
 
-One change, CC files only, replacing `4cc4e7e` item 5. ⏳ **Not yet verified on production.**
+One change, CC files only, replacing `4cc4e7e` item 5. ✅ **VERIFIED (10/19/2026)** — then refined by `db4f327` above (5px, `--cc-seam`), which is the current state.
 
 - `.nextEventWrapperCc` is now `margin-top: 0; border-top: 8px solid var(--cc-accent)`. The 8px margin that shows the navy page background on a GS file becomes an 8px border in the "CRIMINAL COURT" tag's colour, so the line sits exactly where the gap was, at the same thickness, and nothing moves.
 - The variable is used, not the hex. The CSS comment marks **the 8px thickness as the knob** if it reads too heavy.
@@ -303,7 +325,7 @@ Build clean; lint 19, unchanged. The built rule was read back from `dist/`.
 
 ### Panel Polish, "Show:" +15%, GS Docket List, Slim Bar Removed, Judge Full Names (2026-10-19, commit `4cc4e7e`)
 
-Eight changes requested after Lucas verified `ca7d334` (the eighth is this doc update). **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ✅ **VERIFIED on production (10/19/2026)** except item 5, the CC seam, which `abca80d` replaced with an 8px `var(--cc-accent)` line.
+Eight changes requested after Lucas verified `ca7d334` (the eighth is this doc update). **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ✅ **VERIFIED on production (10/19/2026).** Item 5 (the bronze seam) was then replaced by a line — `abca80d`, refined by `db4f327` — and that is verified too.
 
 1. **Waiting-panel date values — no underline.** `.ccDateValue` lost its dashed `border-bottom`, so Left General Sessions, Estimated first CC date and Ripe date are plain. The invisible date input laid over them still opens the picker on one tap.
    - ⚠️ **Judgment call:** the EMPTY-state prompt ("Add estimated CC date" / "Add date", `.ccDateEmpty`) keeps its underline. It isn't a date value, and the underline is its only tap affordance.
@@ -340,7 +362,7 @@ The built CSS was read back from `dist/` for `.nextEventWrapperCc`, `.ccDateValu
 
 ### CC Bronze Header/Next Event, Elongated Slider, iPhone Placeholder, Judge Divisions, CC Judges + Docket, "Show:" Moved, Phone-Collapsed Notes (2026-10-19, commit `ca7d334`)
 
-Nine changes. **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ✅ **VERIFIED on production (10/19/2026)** apart from the items changed again in `4cc4e7e` (the slim bar, the judge labels/order, the panel underlines and slider position, the Show size). See the status section above. The same commit also corrected the `2a65b89` code comments' date from 2026-10-16 to **2026-10-15**, the day that batch actually shipped. This file's entries were corrected the same way.
+Nine changes. **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ✅ **VERIFIED on production (10/19/2026)** — the items changed again in `4cc4e7e` (the slim bar, the judge labels/order, the panel underlines and slider position, the Show size) are verified in their `4cc4e7e` form. The same commit also corrected the `2a65b89` code comments' date from 2026-10-16 to **2026-10-15**, the day that batch actually shipped. This file's entries were corrected the same way.
 
 #### 1. CC file: bronze header and Next Event (single client view, CC files only)
 
@@ -416,7 +438,7 @@ The built CSS was read back from `dist/` for `.clientHeaderCc`, `.nextEventCc`, 
 
 ### Follow-Up Fixes to the 2026-10-15 Batch — "+" Alignment, Placeholder, Selectable Notes, CC Bronze, Slider-Only, Slim Next Event, Affidavit Paths (2026-10-15, commit `2a65b89`)
 
-Seven fixes after Lucas reviewed the 2026-10-15 batch on production. Everything else from that batch was confirmed working and was not touched. **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ✅ **ALL SEVEN VERIFIED ON PRODUCTION by Lucas (reported 10/19/2026)** — the hidden placeholder on desktop only; on iPhone it still showed greyed out, which `ca7d334` item 4 addresses. See "VERIFICATION STATUS — pick up here" above. *(Dates corrected 2026-10-19: this entry and its code comments originally said 2026-10-16, but the batch shipped 2026-10-15.)*
+Seven fixes after Lucas reviewed the 2026-10-15 batch on production. Everything else from that batch was confirmed working and was not touched. **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ✅ **ALL SEVEN VERIFIED ON PRODUCTION by Lucas (reported 10/19/2026)** — the hidden placeholder on desktop only; on iPhone it still showed greyed out, which `ca7d334` item 4 addresses. See "VERIFICATION STATUS" and the Session Summary above. *(Dates corrected 2026-10-19: this entry and its code comments originally said 2026-10-16, but the batch shipped 2026-10-15.)*
 
 #### 1. The "+" buttons never moved — ROOT CAUSE (two bugs, both read off the built CSS in `dist/`)
 
@@ -483,12 +505,12 @@ Class names were checked in the JSX: `addHeaderLabel` ×3 sites + the `bigAdd` b
 
 **Schema — all applied outside the app via MCP before this work; NO schema change was made from here:** `clients.client_type`, `clients.is_cc_file`, `clients.left_gs_date`, `clients.cc_estimated_first_date`, `clients.cc_case_number`, `cases.gs_case_number`, and the new **`mailing_addresses`** table (see Database Schema). **Dexie v4 → v5**, declaring ONLY `mailing_addresses: 'id, client_id'`; v1–v4 untouched. None of the new columns is indexed, so they needed no Dexie change.
 
-✅ **VERIFIED ON PRODUCTION by Lucas (10/15/2026)**, except for the items he flagged, which became the seven fixes in `2a65b89` (still pending). Confirmed:
+✅ **VERIFIED ON PRODUCTION by Lucas (10/15/2026)**, except for the items he flagged, which became the seven fixes in `2a65b89` (since verified, 10/19/2026). Confirmed:
 - the Hours presets and their defaults;
 - Create CC file, tested on Levi Sharpe's real CC file;
 - PDF path independence, confirmed in the DB via MCP.
 
-See "VERIFICATION STATUS — pick up here" above. Build clean; `npx eslint .` at **19** errors (baseline 20 — the drawer's old `set-state-in-effect` effect is gone; no new error anywhere, all 19 are the long-standing ones).
+See "VERIFICATION STATUS" and the Session Summary above. Build clean; `npx eslint .` at **19** errors (baseline 20 — the drawer's old `set-state-in-effect` effect is gone; no new error anywhere, all 19 are the long-standing ones).
 
 #### 1. Hours description dropdown + default hours
 
@@ -2120,8 +2142,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Scroll position is restored** on the client list (2026-09-02) — both on returning from a client file and across a full page reload, via `sessionStorage`. The client list is the only page that does this. ⚠️ **The Back path was broken on arrival and fixed 2026-09-03**: the effect cleanup re-read `window.scrollY` during teardown, after the route had already changed, and stored `0` over the good value. Refresh was unaffected because a reload never unmounts. The position is now captured synchronously before `navigate()`, and the restore retries until a wall-clock deadline so it can't be clamped by a document that hasn't finished growing.
 - ⚠️ **Every OTHER route resets scroll to the top on mount** (`useScrollToTopOnMount`, 2026-09-03) — `ClientFile`, `CaseView`, `NewClient`, `EditClient`. Mobile Safari carries the previous page's offset across an SPA route change, which was landing users at the *bottom* of a client file opened from a scrolled list. **The client list is deliberately excluded**: forward navigation into a detail page resets, returning to the list restores. Both directions share one driver in `scrollHold.js`, which holds the position for a settle window against Safari's own late scroll handling and abandons instantly on real user input.
 - Each section header shows a count badge (e.g. "Active 12") — counting only the clients the **"Show:"** filter is showing (2026-10-15)
-- **"Show:" pill (2026-10-15)** right of "Sorting by:" — cycles Appointed → Pro Bono → Retained on `clients.client_type`, applies to both sections. ⚠️ React state only: every mount starts at "Show: Appointed" — deliberate, do not persist it
-- **CC files (2026-10-15)** have a permanent blue-tinted row (`.rowCc`), charge-first case table with muted GS numbers, the CC case number as the first line once set, and — while waiting — "Left GS · N days · Ripe" + compact slider in the next-event spot
+- **"Show:" pill** — cycles Appointed → Pro Bono → Retained on `clients.client_type`, applies to both sections and their counts. ⚠️ React state only: every mount starts at "Show: Appointed" — deliberate, do not persist it. **Position (current):** beside the "Offline-ready" status line, directly above the "+", its right edge flush with the "+" (`.statusRow` / `.showToggle`), at a reduced size (8.3px font). *(It sat right of "Sorting by:" from 2026-10-15 until it was moved on 2026-10-19, because it kept getting hit by accident.)*
+- **CC files** have a permanent **muted bronze** row (`.rowCc` → `var(--cc-row-bg)`), a charge-first case table with muted GS numbers, and the CC case number as the first line once set. **While waiting**, the next-event spot shows ONLY the elongated ripe-date slider (182px) — nothing at all with no estimate. *(First shipped 2026-10-15 as a blue tint with "Left GS · N days · Ripe" text; bronze and slider-only since 2026-10-15.)*
 - Each row shows: name + OCA (no "#" prefix), next hearing (blue), case numbers + charge abbrevs, custody badge. **No prelim-hearing countdown** — that two-line block above the badge was removed 2026-08-10, so the badge is now centred for every client
 - **Same-incident bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a `[` in `#6b9fd4` (the case-number colour) drawn in the gutter to the left of the case table. ⚠️ The list is sorted purely on the numeric part of the case number with **no incident component**, so same-incident cases can interleave; a non-contiguous group is deliberately left unbracketed rather than drawn across a foreign case. See the 2026-08-10 entry and Open Items.
 - **Case table** in each row: flexbox column of rows (`caseNum` fixed at `56px`, charge takes remaining space), right-anchored so all case number left edges are flush. **As of 2026-08-09 it is an in-flow flex item on desktop, not `position: absolute`** — the absolute version was out of flow, so a row never grew and a client with 5+ cases bled into the neighbouring rows (see the 2026-08-09 entry; mobile was always in-flow and is unchanged). `charge_abbrev` shown if set, falls back to `charge`; if `classification` is set, it follows in parens (e.g. `Sex Offender Registration Viol (A MIS)`), styled to match the next-event info line (`#6b9fd4`, normal weight, 13px desktop / 11px mobile)
@@ -2131,19 +2153,22 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Mobile layout** (`max-width: 768px`): 3-line stacked layout — name, next event, case table + badge on same line. Desktop layout unchanged.
 
 ### Add Client (`/client/new`)
-- Fields (in order): **First Name**, **Last Name**, Gender, **Booked/Initial Appearance** (date + Hour + AM/PM dropdowns + Clear button), OCA #, Custody Status (In Custody / Bonded Out / Out)
+- Fields (in order): **First Name**, **Last Name**, Gender, **Booked/Initial Appearance** (date + Hour + AM/PM dropdowns + Clear button), OCA #, Custody Status (all six — see Custody Status), then **Retained / Pro Bono** checkboxes (2026-10-15; mutually exclusive, both unchecked = appointed → `clients.client_type`)
 - Inserts into `clients` table, redirects to client list
 
 ### Client File (`/client/:id`)
 - **Header case mini-list bracket (2026-08-10):** cases from one incident that land **contiguously** in this flat list get a `[` in `#6b9fd4`, drawn inside the list's 9px `padding-left` (which an equal negative margin cancels, so nothing moved at either breakpoint). Same contiguity guard as the client list, shared via `caseGrouping.js`
 - **Header (2026-08-09):** on **desktop** a 3-column grid — name / OCA / Total Bond on the left, **case mini-list centered in the row**, custody badge on the right. On **mobile** two columns, with the mini-list moved into the left text stack (left-aligned, directly under "Total Bond") and tighter case-line spacing; the badge is unchanged at both widths. The mini-list shows every case across every incident as `case number | full charge (CLASSIFICATION)` — the **full `charge`**, not the `charge_abbrev` the client list uses — ordered numerically like the client list and styled with the reused `ClientRow.module.css` classes. Everything is in normal flow, so the header grows with the case count; the mini-list is non-interactive
+- **CC file header (current):** the name / OCA / Total Bond / mini-list / badge row is on the CC bronze (`.clientHeaderCc`); a small "Criminal Court" tag under the name (`--cc-accent`); "CC Case: [number]" under the OCA once set; the mini-list shows each charge first with its GS number muted. GS files unchanged
+- **"Create CC file"** button (GS files only, above Close Case) — see the 2026-10-15 entries and the CC workflow note in the Session Summary
 - **Back button** navigates directly to `/` (not history-based)
 - **Edit button** navigates to `/client/:id/edit`
-- **Next Event block** (blue `#1E3A5F`): "NEXT EVENT" label + Edit button integrated into blue block
+- **Next Event block** (blue `#1E3A5F`; **on a CC file the CC bronze**, `.nextEventCc`): "NEXT EVENT" label + Edit button integrated into the block. Always the full block — the slim one-line bar CC files had briefly was removed 2026-10-19. On a CC file a **5px `var(--cc-seam)` line** (+3px bronze) separates it from the header, where a GS file shows its 8px navy gap
+  - **CC waiting panel** sits directly above it on a CC file with no CC number and no next event: left-GS date, estimated first CC date (both one-tap pickers, no underline), ripe date, the left-aligned elongated slider, and the bronze "CC case number" field
   - Docket type, reason (if set), date/time, courtroom (prefixed "Courtroom"), judge, and ADA (shown as "ADA: [name]" only when `ada_name` is set — single-client view only, never in the client list)
   - **Clear button** in the edit form — deletes the `next_events` row for this client, returns block to empty state
 - **Mailing Address (2026-10-15)** beside Personal Notes (80/20 above 768px, stacked beneath on phones) — the same `ClientTextBar` component, backed by `mailing_addresses`
-- **Personal Notes** section (between Next Event and Incidents): single bar that shows the note inline or a muted "Add a personal note…" placeholder; tap to edit, Save/Cancel/Delete controls; one note per client stored in `personal_notes` table. **Renders already expanded on load when the note is non-empty** (2026-08-09); an empty/absent note still starts collapsed. Click-to-toggle itself is unchanged
+- **Personal Notes** section (between Next Event and Incidents) — **current behaviour, shared with Mailing Address via `ClientTextBar`:** collapsed, the bar shows its label ("PERSONAL NOTES") and a "+" when empty; open, it shows the text (selectable — drag/double-click/long-press never trigger the tap) with an "edit" link and ×. **Tapping the bar toggles collapse/expand; the editor opens from "edit"** (kept by decision 10/19/2026). Save/Cancel/Delete in the editor; one note per client in `personal_notes`. **Initial state:** expanded on load when non-empty on wide screens (2026-08-09); **always collapsed on phones (≤768px, 2026-10-19)**. Wide-screen "+" sits in the shared label column (see Section headers)
 - **Incidents** section — **two-column grid, one row per incident, nothing collapsible** (2026-08-10; replaced the click-to-expand accordion):
   - Section header carries two controls (2026-08-10): an **"upload affidavit"** text control (affidavit-first creation — see the 2026-08-10 entry) and the existing `+` button, in that order. The `+` still creates a bare incident with no affidavit — needed for things like probation violations that have no incident date
   - **Left cell** (**22.2%** of the section, `minmax(246px, 2fr)` of a 2fr/7fr split — widened 2026-08-10 from 16.7% to fit the charge abbrev): incident date and location (both `#c8d0dc`, sizes 13px/12px, tight against each other), then each case as `{case number} {charge_abbrev}` — the abbrev in the muted bond styling, omitted entirely with no trailing space when null, and inside the number's span so it shares the click target — with **one** line beneath it reading `$0 Bond · Held without bond | Affidavit` — every segment dropping out independently, the line omitted entirely when nothing is set — then that incident's own "+ add a case". "Affidavit" is green `#5ecf90` at normal weight. **Both the case number and the bond line navigate to that case**; the number has an enlarged hit area (padding cancelled by negative margins, so its visual size is unchanged). Unnumbered cases fall back to the case `id` in the URL
@@ -2173,21 +2198,22 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - **Add/Edit Hours form field order is date → description → hours (2026-08-19)**, in both forms. Hours moved *below* description because picking a common description can now fill Hours in, so the field it drives has to come after it. Date and Hours no longer share a `formTwoCol` row — that pairing is what the reorder breaks; all three are full-width `formRow`s now.
   - ⚠️ **SUPERSEDED 2026-10-15 — `DESCRIPTION_OPTIONS` and `DEFAULT_HOURS_BY_DESCRIPTION` were replaced wholesale with 11 presets, every one with a default; see the 2026-10-15 entry for the current list. The two bullets below are the old state, kept for history.**
   - ~~**"Courtroom wait time" is pinned FIRST in `DESCRIPTION_OPTIONS`** (2026-08-19), ahead of every other option — the most-picked entry. Deliberately outside the alphabetical run that follows it; do not "restore" it to sort order~~
-  - **Description → default hours (2026-08-19).** Shared `DEFAULT_HOURS_BY_DESCRIPTION` map: picking one of these from the dropdown also sets the Hours field — Opened file `0.5`, Closed file `0.5`, Jail visit with client `0.4`, Initial client meeting `0.3`, Met with ADA `0.1`, Met, negotiated with ADA `0.1`, Rescheduled Appearance `0.1`, Draft, send email requesting client zoom visit `0.2`, Client zoom visit `0.3`, Guilty plea taken by judge `0.2`, Case dismissed `0.1`. **The field stays manually overridable**, exactly as before. Any description *not* in the map — including "Courtroom wait time" and anything typed by hand — gets **no forced default** and leaves Hours untouched. Keys must match the `DESCRIPTION_OPTIONS` strings **byte for byte** (plain case-sensitive lookup, not fuzzy); values are strings so they equal the `HOURS_OPTIONS` `<option>` values and the `<select>` stays controlled. Applied via a shared `applyDescriptionPick()` used by both forms, which sets description and hours in **one** state update.
-- **Section headers** (Incidents, Hours, Personal Notes, Criminal History, Courtroom Documents) use inline styles (`background: #0f1820`)
-- **Criminal History** section: Upload/Replace/View Criminal History PDF; drag-and-drop supported
+  - ~~**Description → default hours (2026-08-19).** Shared `DEFAULT_HOURS_BY_DESCRIPTION` map: picking one of these from the dropdown also sets the Hours field — Opened file `0.5`, Closed file `0.5`, Jail visit with client `0.4`, Initial client meeting `0.3`, Met with ADA `0.1`, Met, negotiated with ADA `0.1`, Rescheduled Appearance `0.1`, Draft, send email requesting client zoom visit `0.2`, Client zoom visit `0.3`, Guilty plea taken by judge `0.2`, Case dismissed `0.1`. **The field stays manually overridable**, exactly as before. Any description *not* in the map — including "Courtroom wait time" and anything typed by hand — gets **no forced default** and leaves Hours untouched. Keys must match the `DESCRIPTION_OPTIONS` strings **byte for byte** (plain case-sensitive lookup, not fuzzy); values are strings so they equal the `HOURS_OPTIONS` `<option>` values and the `<select>` stays controlled. Applied via a shared `applyDescriptionPick()` used by both forms, which sets description and hours in **one** state update.~~
+  - **Current (2026-10-15/19):** 11 presets in a deliberate order — Texts with client 0.1, Phone call with client 0.1, Met with ADA 0.1, Met with client 0.1, Courtroom wait time 0.1, Rescheduled appearance 0.1, Plea taken by judge 0.1, Draft, send email requesting client zoom visit 0.2, Client zoom visit 0.5, Opened file 0.5, Closed file 0.5. Picked through `DescriptionPicker`: "Pick a common description…" is an overlay on an uncontrolled select held at `selectedIndex -1` — no placeholder `<option>` (iPhone showed it). Still via `applyDescriptionPick()`, one state update
+- **Section headers:** Criminal History and Courtroom Documents use inline styles (`background: #0f1820`). **Incidents and Hours** use `.addHeaderRow`, and the collapsed **Personal Notes / Mailing Address** bars an inner `.addHeaderBar` (2026-10-15). On wide screens the Personal Notes, Incidents and Hours "+" are 32px and sit in one vertical column after a fixed 136px label (`.addHeaderLabel`); Mailing Address's "+" follows its own label. Phones: "+" at the right edge as before. Order is set explicitly per breakpoint — see the `2a65b89` entry for why
+- **Criminal History** section: Upload/Replace/View Criminal History PDF; drag-and-drop supported. View, Delete and re-upload act on the file the stored `criminal_history_url` points at (`criminalHistoryKey()`, 2026-10-15)
 - **Courtroom Documents** section: up to 5 documents; rename/delete per document; tappable tiles open via signed URL
 - **Edit Client** button → Edit Client form
-- **Close Case / Reopen Case / Delete Client** action buttons
+- **Create CC file** (GS files only) / **Close Case / Reopen Case / Delete Client** action buttons
 
 ### Edit Client (`/client/:id/edit`)
-- Fields (in order): Last Name, First Name, Gender, **Booked/Initial Appearance** (date + Hour + AM/PM dropdowns + Clear button), OCA #, Custody Status — same field set as Add Client except name order is Last then First (unchanged from original; only New Client swapped to First-then-Last)
+- Fields (in order): Last Name, First Name, Gender, **Booked/Initial Appearance** (date + Hour + AM/PM dropdowns + Clear button), OCA #, Custody Status, **Retained / Pro Bono** — same field set as Add Client except name order is Last then First (unchanged from original; only New Client swapped to First-then-Last). **On a CC file only** (2026-10-15) three more: "Date left General Sessions", "Estimated first CC date", "CC case number"
 - **Pre-populated from Dexie via `useLiveQuery`** (as of 2026-07-28, see the "`EditClient.jsx` Migrated to Dexie" entry above), including `booking_date`/`booking_time` parsed back into the dropdowns — works offline. Form state is seeded once from the first live value and does not get overwritten by later background-sync updates to the same client.
 - Save uses `navigate('/client/:id', { replace: true })` — edit page is replaced in history, so Back from client file returns to client list
 
 ### Next Event Block
 - **Display segment order (2026-07-23).** Formatting/separators/pipes unchanged — only segment order differs by view, and every blank segment drops out with its separator (built by filtering empties then joining, so no leading/dangling/doubled pipes). `reason`, `time`, and `courtroom` are all optional; `reason` is blank on most records.
-  - **Single-client view (ClientFile blue block), two lines:**
+  - **Single-client view (ClientFile blue block — CC bronze on a CC file), two lines:**
     - Line 1: `reason | day-of-week & date | time` — reason is now the FIRST segment and is usually blank (drops cleanly).
     - Line 2: `docket type | "Courtroom" + number | judge | ADA` (ADA still appended when set).
   - **Client list (ClientRow), one line:** `day-of-week → date → time → courtroom → reason`. **Docket type is NOT shown here** (removed); `reason` is now shown (threaded through `toRowProps`).
@@ -2200,10 +2226,13 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - **Docket Type** — ⚠️ **since 2026-10-19 a GS file is not offered "Criminal Court"** (`GS_DOCKET_OPTIONS`); a CC file is, and it is the CC default for a new event. `splitDocketType()` still recognises it. An off-list stored preset is kept as an extra option. Original description: edited as a native `<select>` (blank + "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket", "Criminal Court", **"PV"** — appended last 2026-08-19) plus a separate optional "Add'l text" `<input>` (moved to the bottom of the form 2026-08-19, see field order above); combined into the single `docket_type` column on save via `[preset, custom].filter(Boolean).join(' ').trim() || null`; split back on load (`splitDocketType()` peels a leading known preset into the select; any remainder or non-matching legacy value goes into the text box). "Criminal Court" added 2026-07-23 — added to **both** `DOCKET_PRESETS` (the dropdown) and, critically, the same list `splitDocketType()` reads, so a saved "Criminal Court [+ append]" round-trips back into the select rather than dumping into the free-text box.
 - **Reason** — `<select>`: blank + Review, Trial, Settlement, Discussion (this exact order, 2026-07-23), **plus "PV Hearing" appended at the bottom 2026-08-10**. Options live in the `REASON_OPTIONS` constant (extracted from inline `<option>` elements 2026-08-20). No enum validation; stored/displayed as-is. **Preserves an off-list stored value as an extra option at the top of the list, exactly like the Time dropdown** (2026-08-20 — it previously did not; see that entry). The extra option drops off once a listed value is picked.
 - **Courtroom** — `<select>`: blank + 3A, 3B, 3C, 4B, 4C, 4D, 5C, 5D, 6A, 6B, 6C, 6D (6A–6D added 2026-07-23 at the bottom).
-- **Judge** — ⚠️ **As of 2026-10-19 the lists live in `src/judges.js`** — `GS_JUDGES` (division order I–XI) on a GS file, `CC_JUDGES` (Criminal Court judges only, I–VI) on a CC file. Every judge is DISPLAYED by full name + division, e.g. "Jodie Bell (VI)", while the stored value stays the short name ("J. Bell"). An off-list stored judge is kept as an extra option at the top. See the 2026-10-19 entry. Earlier list (GS): `<select>`: blank + J. Bell, R. Bell, M. Blackburn, S. Coleman, A. Escobar, R. Hayes (PRESIDING) *(now plain "R. Hayes", displayed "R. Hayes (V)")*, **A. Holt**, L. Jones, M. Floyd, G. Robinson, A. Walker, Other. Picking "Other" reveals a free-text input. **"J. Holt" was corrected to "A. Holt" 2026-08-19** (first name Aaron) — label string only, same list position, no other entry touched. `next_events.judge` is free text, so the rename does not migrate saved rows; the live table was checked and held **zero** rows matching `%holt%`, so there was nothing to migrate.
+- **Judge** — ⚠️ **Current (2026-10-19): the lists live in `src/judges.js`.** Values are the stored SHORT names; labels are full name + division via `judgeLabel()`. Picking "Other" reveals a free-text input; an Other/unrecognised judge displays as typed; an off-list stored judge is kept as an extra option at the top.
+  - **GS files (`GS_JUDGES`, division order):** G. Robinson → Gale Robinson (I) · M. Blackburn → Melissa Blackburn (II) · A. Escobar → Ana Escobar (III) · A. Walker → Allegra Walker (IV) · R. Hayes → Robin Hayes (V) *(also the legacy "R. Hayes (PRESIDING)")* · J. Bell → Jodie Bell (VI) · M. Floyd → Marcus Floyd (VII) · R. Bell → Rachel Bell (VIII) · L. Jones → Lynda Jones (IX) · S. Coleman → Sam Coleman (X) · A. Holt → Aaron Holt (XI)
+  - **CC files only (`CC_JUDGES`):** S. Dozier → Steve Dozier (I) · A. Dalton → Angelita Dalton (II) · D. Deaner → Dawn Deaner (III) · J. Smith → Jennifer Smith (IV) · K. Babb → Khadija Babb (V) · C. Chappell → Cynthia Chappell (VI)
+  - ~~Earlier list (GS): `<select>`: blank + J. Bell, R. Bell, M. Blackburn, S. Coleman, A. Escobar, R. Hayes (PRESIDING), **A. Holt**, L. Jones, M. Floyd, G. Robinson, A. Walker, Other. Picking "Other" reveals a free-text input. **"J. Holt" was corrected to "A. Holt" 2026-08-19** (first name Aaron) — label string only, same list position, no other entry touched. `next_events.judge` is free text, so the rename does not migrate saved rows; the live table was checked and held **zero** rows matching `%holt%`, so there was nothing to migrate.~~ *(superseded by the lists above)*
 - **"NEXT EVENT" label** appears on both the blue display block and the top of the edit form (all-caps/bold `#5b9fd4`, shared `.nextEventLabel` class). Font size bumped 10px → **12px** (+20%, 2026-07-23) — one class change covers both sites.
 - **Edit/Close buttons (2026-07-23).** On the display block the top-right button reads **Edit** (opens the form). On the expanded edit form that same top-right slot shows a **Close** button, and the bottom action button (formerly "Cancel") is also renamed **Close**. Both Close buttons call the same `onCancel` (discard, no save) — identical behavior, by design.
-- **Time** — a `<select>` as of 2026-07-28, no longer a free `<input type="time">`. Blank + 144 chronological options (12 AM → 11:45 PM): 15-minute increments except the 8, 9 and 10 o'clock hours in **both** AM and PM, which step by 5. Stores `"h:MM AM/PM"` (unchanged format). An off-increment stored value is preserved as an extra option rather than being blanked on edit.
+- **Time** — a `<select>` as of 2026-07-28, no longer a free `<input type="time">`. **Current:** blank + **53 options, 8:00 AM → 3:00 PM** (5-minute steps at 8, 9 and 10 AM; 15-minute after; 3:00 PM closes the window — narrowed the same day). ~~Blank + 144 chronological options (12 AM → 11:45 PM): 15-minute increments except the 8, 9 and 10 o'clock hours in **both** AM and PM, which step by 5.~~ Stores `"h:MM AM/PM"` (unchanged format). An off-increment stored value is preserved as an extra option rather than being blanked on edit.
 - **Date is optional** as of 2026-07-28 (`event_date` is nullable) — the required-field check was removed, and a blank date drops out of the display line along with its separator.
 - Weekday derived from `event_date` via `new Date()` + `toLocaleDateString`
 - Time is optional — omitted from display if blank
@@ -2216,6 +2245,8 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 - Header shows client name (`LASTNAME, FIRSTNAME`) centered between Back and Edit buttons
 - **Upload Affidavit** / **Replace Affidavit** — drag-and-drop or tap; uploads PDF to Supabase Storage; "Replace Affidavit" button resized to match "View Affidavit" and "View Text" buttons
 - **View Affidavit** button when affidavit is on file
+- **Replace Affidavit overwrites the case's OWN stored file** (2026-10-15): it uploads to the existing `warrant_url`, which can name a different case number; only a case with no affidavit derives `warrants/${case_number || id}.pdf`
+- **CC-file case (2026-10-15):** the charge is the main label, the GS case number a small muted line above it (never the blue number style); the edit form's number field is "GS case number (reference)" and writes `gs_case_number`. `case_number` stays null, so the case is addressed by its id
 - **Notes** textarea with Save/Saved confirmation
 - **PV header display:** when `is_pv` is true the charge line reads **`PV`**. The `[case number] - ` prefix used by the client list and both mini-lists is dropped **here only** — the case number is already the large label directly above it, so repeating it would print the number twice within four lines.
 - ⚠️ **A PV case (`is_pv`) gets a stripped-down page (2026-08-20).** **Removed**, all gated on `is_pv`: the Upload/Replace/View Affidavit row, the affidavit + bond meta line, the **Notes** section (`pv_special_info` replaces it), and the top-right **Edit** button with the case-number/charge/classification/bond/status form it opens. **Kept:** the "PV" label, client-name header, Back, Delete Case, and **Disposition**. A normal case is completely unaffected — every branch is gated
@@ -2280,7 +2311,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 |---|---|
 | Page background | `#1E2A3A` |
 | Dark section strips / header blocks | `#16212F` |
-| Next event block | `#1E3A5F` |
+| Next event block | `#1E3A5F` (CC files: `--cc-row-bg`) |
 | Inline forms | `#16212F` |
 | html/body outer background | `#3B4657` |
 | Root side borders | `#2C3A4F` |
@@ -2301,7 +2332,14 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 | Section headers (client list) | background `#0f1820`, text `#c8d0db` |
 | Delete buttons | muted red `#7a3a30` border / `#c97060` text |
 | Close/Reopen Case button | yellow `#c8a84b` |
-| CC file accents (2026-10-15) | muted bronze — `--cc-row-bg #302e29` (client-list row, and since 2026-10-19 the CC header + Next Event rows), `--cc-panel-bg #36322a`, `--cc-accent #a68a62`, `--cc-accent-soft #c2ad8c`, `--cc-field-bg #2a2722` / `--cc-field-border` (CC case number input, 2026-10-19); all in the `:root` block in `src/App.css` |
+| **CC file theme** — all in the commented `:root` block in `src/App.css` (the knobs) | muted bronze, kept clear of the indigent gold `#FFD700` and the Close/Reopen yellow `#c8a84b` |
+| `--cc-row-bg` | `#302e29` — client-list CC row; CC header row; CC Next Event block (+ its 3px padding under the seam) |
+| `--cc-panel-bg` | `#36322a` — waiting-panel background |
+| `--cc-accent` | `#a68a62` — "CRIMINAL COURT" tag, panel heading, CC-number field label + focus border, Create CC file text, "No upcoming event" on a CC file |
+| `--cc-accent-soft` | `#c2ad8c` — panel line keys, empty-date prompt |
+| `--cc-accent-border` / `--cc-accent-press` | `#a68a62` at 40% / 10% — Create CC file outline / pressed |
+| `--cc-field-bg` / `--cc-field-border` | `#2a2722` / `#a68a62` at 35% — CC case number input |
+| `--cc-seam` | `#957a55` — the 5px line between the CC header and Next Event rows |
 
 ---
 
@@ -2311,7 +2349,7 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
 src/
   App.jsx                  # Routes + AuthProvider + SyncProvider
   main.jsx                 # BrowserRouter wrapper
-  App.css                  # Global reset + body bg
+  App.css                  # Global reset + body bg + the commented --cc-* CC theme variables (2026-10-15/19)
   index.css                # Vite entry-point stylesheet (minimal resets)
   AuthContext.jsx          # Supabase auth session context
   PWAContext.jsx           # useRegisterSW wrapper — exposes offlineReady, needRefresh, controlled
@@ -2340,7 +2378,7 @@ src/
     ClientList.jsx / .module.css
     ClientFile.jsx / .module.css
     NewClient.jsx / .module.css
-    EditClient.jsx          # Reuses NewClient.module.css
+    EditClient.jsx          # Reuses NewClient.module.css (New + Edit Client also borrow ClientFile.module.css's checkbox classes for Retained / Pro Bono)
     CaseView.jsx / .module.css
 
   components/
