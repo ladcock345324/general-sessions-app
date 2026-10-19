@@ -215,7 +215,7 @@ Three reasons, in order of weight:
 
 ### ⏸ VERIFICATION STATUS — pick up here (as of 10/19/2026)
 
-Three batches are live on production: `2d8dd31` (the six-change batch), `2a65b89` (its seven follow-up fixes) and `ca7d334` (nine further changes, 2026-10-19).
+Four batches are live on production: `2d8dd31` (the six-change batch), `2a65b89` (its seven follow-up fixes), `ca7d334` (nine further changes) and `4cc4e7e` (eight follow-ups to those), the last two on 2026-10-19. Everything up to and including `ca7d334` is verified; `4cc4e7e` is pending.
 
 #### ✅ Verified by Lucas on production
 
@@ -234,34 +234,88 @@ Three batches are live on production: `2d8dd31` (the six-change batch), `2a65b89
 4. Selectable note/address text.
 5. The bronze CC row and "Criminal Court" tag.
 6. The slider-only client-list row.
-7. The slim Next Event bar and the waiting-panel behaviour.
+7. The slim Next Event bar *(since removed — see `4cc4e7e`)* and the waiting-panel behaviour.
 
 **Data check:** Lucas confirmed **GS1126192's affidavit is the correct document**. Its `warrant_url` is `warrants/GS1126191.pdf` — a file named after a different case number, but holding the right PDF. Leave it.
 
-#### ⏳ NOT YET VERIFIED — batch `ca7d334` (the 9 changes of 2026-10-19)
+#### ✅ Batch `ca7d334` — VERIFIED (reported 10/19/2026), except the items changed again in `4cc4e7e`
+
+Verified:
+- the CC bronze header row;
+- the CC case number input;
+- the slider sizes;
+- the CC judge list and the CC docket default;
+- the moved "Show:" button;
+- phone-collapsed notes and address.
+
+**iPhone hours dropdown — works as Lucas wants.** No "Done" button appears. With nothing picked it stays "Pick a common description…" and won't save, which he considers correct.
+
+The items that changed again (panel underlines, slider position, "Show:" size, the CC header/Next Event seam, the slim bar, judge order and labels, the GS docket list) are now batch `4cc4e7e`, pending below.
+
+#### ⏳ NOT YET VERIFIED — batch `4cc4e7e` (8 changes, 2026-10-19)
 
 All pending; see that entry below.
 
-1. **CC bronze header + Next Event:** the name/OCA/bond/mini-list/badge row and the Next Event row (slim bar and full block) on a CC file are bronze. GS files are unchanged.
-2. **CC case number input:** about 20% wide, flush left under its label, bronze field.
-3. **Slider sizes:** the client-list slider is ~30% longer (same thickness). The waiting-panel slider is identical to it and left-aligned under "Ripe date".
-4. **iPhone description placeholder:** "Pick a common description…" no longer appears in the opened list on iPhone. Picking ANY option — including the first, "Texts with client" — fills description and hours. Desktop looks the same.
-5. **Judge divisions:** every judge shows its division in both the dropdown and the Next Event display, e.g. "J. Bell (VI)". The legacy "R. Hayes (PRESIDING)" shows "R. Hayes (V)".
-6. **CC judge list:** a CC file's Next Event form lists only the six Criminal Court judges. A stored judge that isn't on the list is kept as an extra option at the top.
-7. **CC docket default:** a NEW next event on a CC file defaults to "Criminal Court".
-8. **"Show:" button:** moved beside the Offline-ready line, ~60% size, its right edge flush with the "+".
-9. **Phones:** Personal Notes and Mailing Address start collapsed.
+1. **Waiting-panel dates:** no dashed underline under the date values. Tapping still opens the picker.
+2. **Waiting-panel slider:** nudged ~6px down — further from "Ripe date", closer to "CC CASE NUMBER". Same size and left alignment.
+3. **"Show:" button:** ~15% larger; right edge still flush with the "+"; still level with "Offline-ready".
+4. **GS Docket Type:** a GS file's dropdown no longer offers "Criminal Court". A CC file keeps it, and it's still their default for a new event.
+5. **CC seam:** no navy line between the bronze header and the bronze Next Event row on a CC file.
+6. **No slim Next Event bar anywhere:** a CC file with no event gets the full block ("No upcoming event", "+ Add") on bronze.
+7. **Judges:**
+   - the GS list is in division order I → XI;
+   - every judge is shown by full name + division, e.g. "Allegra Walker (IV)", "Steve Dozier (I)", in the dropdowns and the Next Event display;
+   - the stored values are unchanged.
 
 #### ❓ Open questions
 
 1. ~~**Tap behaviour on the Personal Notes / Mailing Address bar.**~~ — **RESOLVED 10/19/2026: keep it as-is.** A tap collapses/expands the bar; the editor opens from the "edit" link.
-2. ~~**iPhone dropdown placeholder showing greyed out.**~~ — **Addressed by `ca7d334` item 4** (the placeholder is no longer an `<option>` at all). Pending verification on an iPhone.
-3. **Slim empty Next Event bar for GS files too? — STILL OPEN, unchanged.** It is CC files only; do not change it until Lucas decides.
+2. ~~**iPhone dropdown placeholder showing greyed out.**~~ — **RESOLVED 10/19/2026:** fixed by `ca7d334` item 4 and verified on Lucas's iPhone (see above).
+3. ~~**Slim empty Next Event bar for GS files too?**~~ — **RESOLVED 10/19/2026: no slim bar ANYWHERE.** It was removed from CC files too (`4cc4e7e` item 6); every file gets the full Next Event block.
 4. ~~**Data check — Sharpe's GS1126192 affidavit.**~~ — **RESOLVED 10/19/2026:** it is the correct document (see above). ⚠️ The standing rule still holds: when testing Replace Affidavit on real cases, **re-upload the same correct PDF, never a different file.**
+
+**No open questions remain.**
+
+### Panel Polish, "Show:" +15%, GS Docket List, Slim Bar Removed, Judge Full Names (2026-10-19, commit `4cc4e7e`)
+
+Eight changes requested after Lucas verified `ca7d334` (the eighth is this doc update). **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ⏳ **Not yet verified on production.**
+
+1. **Waiting-panel date values — no underline.** `.ccDateValue` lost its dashed `border-bottom`, so Left General Sessions, Estimated first CC date and Ripe date are plain. The invisible date input laid over them still opens the picker on one tap.
+   - ⚠️ **Judgment call:** the EMPTY-state prompt ("Add estimated CC date" / "Add date", `.ccDateEmpty`) keeps its underline. It isn't a date value, and the underline is its only tap affordance.
+2. **Panel slider nudged 6px down** with `position: relative; top: 6px` on `.ccPanelSlider`, rather than more padding. Nothing around it moves; the slider is simply 6px further from "Ripe date" and 6px closer to "CC CASE NUMBER". Size and left alignment are unchanged.
+3. **"Show:" pill +15%:** font 7.2 → 8.3px, padding 2.4/7.2 → 2.8/8.3px. Its right edge is set by `.statusRow`'s 16px right padding, not by its size, so it stays flush with the "+". It is still vertically centred on the Offline-ready line.
+4. **GS files: no "Criminal Court" docket type.**
+   - `GS_DOCKET_OPTIONS` (every preset except "Criminal Court") and `CC_DOCKET_OPTIONS` (all presets) are what the dropdown offers.
+   - `DOCKET_PRESETS` is unchanged and still drives `splitDocketType()`, so "Criminal Court [+ text]" round-trips on CC files.
+   - The Docket select gained the TIME/REASON/judge off-list guard: a stored preset the file isn't offered is kept as an extra option at the top rather than blanked. The DB was checked by Lucas: no GS next event holds "Criminal Court" today.
+5. **CC file: no navy seam.** The gap was `.nextEventWrapper`'s 8px top margin showing the navy page background. On a CC file `.nextEventWrapperCc` makes it 8px of bronze padding (`var(--cc-row-bg)`), so the spacing is unchanged and the header and Next Event rows meet seamlessly.
+   - Also, so no navy line runs between CC rows at all: the waiting panel's bottom rule changed from navy `#16212F` to a darker shade of its own bronze (`rgba(0, 0, 0, 0.22)` over the panel).
+   - GS files are unchanged.
+6. **Slim Next Event bar REMOVED**, along with its JSX branch and the `.nextEventSlim` CSS.
+   - A CC file with no next event gets the same full block as a GS file ("NEXT EVENT", "No upcoming event", "+ Add") on the CC bronze.
+   - "No upcoming event" is `#3a6ea8`, only ~2.6:1 on bronze, so on a CC file it takes `--cc-accent` (~4:1) via `.nextEventCc .nextEventEmpty`.
+7. **Judges — division order and full names** (`src/judges.js`):
+   - **GS order:** `GS_JUDGES` is now in division order I → XI (Robinson, Blackburn, Escobar, Walker, Hayes, J. Bell, Floyd, R. Bell, Jones, Coleman, Holt), "Other" last. The CC list was already I → VI.
+   - **Labels:** `JUDGES` maps each stored short name → `{ full, division }`, and `judgeLabel()` returns e.g. **"Jodie Bell (VI)"**, **"Steve Dozier (I)"**. It is used for every dropdown label and the Next Event display.
+   - **Values:** option values and stored values stay the short names (`"J. Bell"`). The legacy `"R. Hayes (PRESIDING)"` resolves to "Robin Hayes (V)". An "Other"/unrecognised judge displays as typed.
+   - `JUDGE_DIVISION` was replaced by `JUDGES`.
+8. **This PROGRESS.md update.**
+
+**Verification:** build clean; lint 19. The `src/judges.js` assertions were rewritten for the new labels and order and **37/37 pass**:
+- all 17 full-name labels;
+- the legacy Hayes alias;
+- free text, the literal "Other", blank and null;
+- both list orders, with their divisions strictly ascending;
+- no overlap between the lists;
+- all 7 stored GS names still on the list.
+
+⚠️ Like every test in this project, these are run ad hoc against the shipped module and are **not committed** — there is no test runner in the repo.
+
+The built CSS was read back from `dist/` for `.nextEventWrapperCc`, `.ccDateValue` (no border), `.ccPanelSlider`, `.showToggle` and `.ccPanel`, and `.nextEventSlim` is confirmed gone.
 
 ### CC Bronze Header/Next Event, Elongated Slider, iPhone Placeholder, Judge Divisions, CC Judges + Docket, "Show:" Moved, Phone-Collapsed Notes (2026-10-19, commit `ca7d334`)
 
-Nine changes. **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ⏳ **Not yet verified on production** — see the status section above. The same commit also corrected the `2a65b89` code comments' date from 2026-10-16 to **2026-10-15**, the day that batch actually shipped. This file's entries were corrected the same way.
+Nine changes. **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ✅ **VERIFIED on production (10/19/2026)** apart from the items changed again in `4cc4e7e` (the slim bar, the judge labels/order, the panel underlines and slider position, the Show size). See the status section above. The same commit also corrected the `2a65b89` code comments' date from 2026-10-16 to **2026-10-15**, the day that batch actually shipped. This file's entries were corrected the same way.
 
 #### 1. CC file: bronze header and Next Event (single client view, CC files only)
 
@@ -2118,10 +2172,10 @@ Followed a critical production regression (commit 42dc61b, reverted same day) th
   - **No stored flag.** Purely derived at render, so it clears itself the moment the next event is updated — nothing to backfill, migrate, or reset. It also does **not** re-evaluate on a timer: a row flips to red on its next render (navigation, or any Dexie change via `useLiveQuery`). That is the accepted trade for having no stored state, not an oversight.
   - `.pipe` sets no color of its own, so one `color` override on the parent span carries every separator with it. The class also bumps weight to 600: this crimson sits at ~3.1:1 on the `#1E2A3A` row against the ~5.2:1 of the blue it replaces, and the line drops to 11px on mobile — `.badgeRed` already pairs this exact hue with weight 600, so it matches existing usage rather than inventing a treatment.
 - Legacy display format for reference: `Jail Docket  |  Thursday 7/16/2026  |  9:00 AM`
-- **Docket Type** — edited as a native `<select>` (blank + "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket", "Criminal Court", **"PV"** — appended last 2026-08-19) plus a separate optional "Add'l text" `<input>` (moved to the bottom of the form 2026-08-19, see field order above); combined into the single `docket_type` column on save via `[preset, custom].filter(Boolean).join(' ').trim() || null`; split back on load (`splitDocketType()` peels a leading known preset into the select; any remainder or non-matching legacy value goes into the text box). "Criminal Court" added 2026-07-23 — added to **both** `DOCKET_PRESETS` (the dropdown) and, critically, the same list `splitDocketType()` reads, so a saved "Criminal Court [+ append]" round-trips back into the select rather than dumping into the free-text box.
+- **Docket Type** — ⚠️ **since 2026-10-19 a GS file is not offered "Criminal Court"** (`GS_DOCKET_OPTIONS`); a CC file is, and it is the CC default for a new event. `splitDocketType()` still recognises it. An off-list stored preset is kept as an extra option. Original description: edited as a native `<select>` (blank + "Jail Docket", "Bond Docket", "Review Docket", "Settlement Docket", "Criminal Court", **"PV"** — appended last 2026-08-19) plus a separate optional "Add'l text" `<input>` (moved to the bottom of the form 2026-08-19, see field order above); combined into the single `docket_type` column on save via `[preset, custom].filter(Boolean).join(' ').trim() || null`; split back on load (`splitDocketType()` peels a leading known preset into the select; any remainder or non-matching legacy value goes into the text box). "Criminal Court" added 2026-07-23 — added to **both** `DOCKET_PRESETS` (the dropdown) and, critically, the same list `splitDocketType()` reads, so a saved "Criminal Court [+ append]" round-trips back into the select rather than dumping into the free-text box.
 - **Reason** — `<select>`: blank + Review, Trial, Settlement, Discussion (this exact order, 2026-07-23), **plus "PV Hearing" appended at the bottom 2026-08-10**. Options live in the `REASON_OPTIONS` constant (extracted from inline `<option>` elements 2026-08-20). No enum validation; stored/displayed as-is. **Preserves an off-list stored value as an extra option at the top of the list, exactly like the Time dropdown** (2026-08-20 — it previously did not; see that entry). The extra option drops off once a listed value is picked.
 - **Courtroom** — `<select>`: blank + 3A, 3B, 3C, 4B, 4C, 4D, 5C, 5D, 6A, 6B, 6C, 6D (6A–6D added 2026-07-23 at the bottom).
-- **Judge** — ⚠️ **As of 2026-10-19 the lists live in `src/judges.js`** — `GS_JUDGES` on a GS file, `CC_JUDGES` (Criminal Court judges only) on a CC file. Every judge is DISPLAYED with its division, e.g. "J. Bell (VI)", while the stored value stays the plain name. An off-list stored judge is kept as an extra option at the top. See the 2026-10-19 entry. Earlier list (GS): `<select>`: blank + J. Bell, R. Bell, M. Blackburn, S. Coleman, A. Escobar, R. Hayes (PRESIDING) *(now plain "R. Hayes", displayed "R. Hayes (V)")*, **A. Holt**, L. Jones, M. Floyd, G. Robinson, A. Walker, Other. Picking "Other" reveals a free-text input. **"J. Holt" was corrected to "A. Holt" 2026-08-19** (first name Aaron) — label string only, same list position, no other entry touched. `next_events.judge` is free text, so the rename does not migrate saved rows; the live table was checked and held **zero** rows matching `%holt%`, so there was nothing to migrate.
+- **Judge** — ⚠️ **As of 2026-10-19 the lists live in `src/judges.js`** — `GS_JUDGES` (division order I–XI) on a GS file, `CC_JUDGES` (Criminal Court judges only, I–VI) on a CC file. Every judge is DISPLAYED by full name + division, e.g. "Jodie Bell (VI)", while the stored value stays the short name ("J. Bell"). An off-list stored judge is kept as an extra option at the top. See the 2026-10-19 entry. Earlier list (GS): `<select>`: blank + J. Bell, R. Bell, M. Blackburn, S. Coleman, A. Escobar, R. Hayes (PRESIDING) *(now plain "R. Hayes", displayed "R. Hayes (V)")*, **A. Holt**, L. Jones, M. Floyd, G. Robinson, A. Walker, Other. Picking "Other" reveals a free-text input. **"J. Holt" was corrected to "A. Holt" 2026-08-19** (first name Aaron) — label string only, same list position, no other entry touched. `next_events.judge` is free text, so the rename does not migrate saved rows; the live table was checked and held **zero** rows matching `%holt%`, so there was nothing to migrate.
 - **"NEXT EVENT" label** appears on both the blue display block and the top of the edit form (all-caps/bold `#5b9fd4`, shared `.nextEventLabel` class). Font size bumped 10px → **12px** (+20%, 2026-07-23) — one class change covers both sites.
 - **Edit/Close buttons (2026-07-23).** On the display block the top-right button reads **Edit** (opens the form). On the expanded edit form that same top-right slot shows a **Close** button, and the bottom action button (formerly "Cancel") is also renamed **Close**. Both Close buttons call the same `onCancel` (discard, no save) — identical behavior, by design.
 - **Time** — a `<select>` as of 2026-07-28, no longer a free `<input type="time">`. Blank + 144 chronological options (12 AM → 11:45 PM): 15-minute increments except the 8, 9 and 10 o'clock hours in **both** AM and PM, which step by 5. Stores `"h:MM AM/PM"` (unchanged format). An off-increment stored value is preserved as an extra option rather than being blanked on edit.
@@ -2242,7 +2296,7 @@ src/
   localDB.js               # Dexie IndexedDB schema — mirrors 8 Supabase tables + sync_queue (v5 added mailing_addresses, 2026-10-15)
   syncManager.js           # fullSync, processSyncQueue, addToSyncQueue, startBackgroundSync
   extractPdfText.js        # PDF text extraction utility — pdfjs-dist v6 + CDN worker
-  judges.js                # JUDGE_DIVISION (GS + CC divisions), judgeLabel(), canonicalJudge() (legacy "R. Hayes (PRESIDING)" alias), GS_JUDGES, CC_JUDGES (2026-10-19)
+  judges.js                # JUDGES (short name → full name + division, GS + CC), judgeLabel() → "Jodie Bell (VI)", canonicalJudge() (legacy "R. Hayes (PRESIDING)" alias), GS_JUDGES (division order I–XI), CC_JUDGES (2026-10-19)
   caseGrouping.js          # bracketBlocks() — same-incident "[" grouping + contiguity guard, shared by ClientRow and ClientFile
   ccFile.js                # Criminal Court file helpers (2026-10-15) — isCcWaiting, ccWaitingInfo (ripe date / days / slider %), CC_SLIDER_STOPS colour ramp + ccSliderColor, ccChargeLabel/ccChargeShort, caseSortNumber, caseNumericKey, formatMonthDay
   dateUtils.js             # Shared "M/D/YYYY" helpers — dateKey, todayString, toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, shiftDate
