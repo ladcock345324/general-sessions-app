@@ -16,6 +16,14 @@
   background: #16212F;
 }
 
+/* CC file (2026-10-19): the name / OCA / Total Bond / mini-list / badge row on
+   the same muted bronze as the client-list CC row. The back/edit row inside
+   (.header) keeps its own background. Text colours are unchanged — the light
+   name/OCA text and the blue case numbers all read fine on it. */
+.clientHeaderCc {
+  background: var(--cc-row-bg);
+}
+
 .stickyNameBar {
   position: sticky;
   top: 0;
@@ -349,6 +357,33 @@
 }
 
 .formInput::placeholder { color: #3a4a5e; }
+
+/* Hours "Pick a common description…" (2026-10-19) — the placeholder is an
+   overlay on the closed select, not an <option> (see DescriptionPicker in
+   ClientFile.jsx for why). It mirrors the select's own text exactly: same
+   14px size and #f0f2f5 colour, starting at the select's 10px padding + 1px
+   border, vertically centred — so the closed control looks as it did. It
+   ignores the pointer, so every tap lands on the select underneath. The 6px
+   top margin is the one the select itself used to carry. */
+.descPickWrap {
+  position: relative;
+  margin-top: 6px;
+}
+
+.descPickPlaceholder {
+  position: absolute;
+  left: 11px;
+  right: 11px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #f0f2f5;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+}
 .formInput:focus, .formSelect:focus { border-color: rgba(94, 150, 200, 0.45); }
 
 /* Native date/time pickers — restore appearance so the picker icons show,
@@ -469,6 +504,15 @@
   margin-bottom: 0;
 }
 
+/* CC file (2026-10-19): the Next Event row — slim bar AND full block — on the
+   same muted bronze as the client-list CC row instead of the blue. Its text
+   (white detail, #5b9fd4 label/meta/Edit) stays readable on it; the dim
+   "No upcoming event" text never appears here because a CC file with no event
+   gets the slim bar. */
+.nextEventCc {
+  background: var(--cc-row-bg);
+}
+
 .nextEventLabel {
   font-size: 12px;
   font-weight: 700;
@@ -544,10 +588,13 @@
   line-height: 1.6;
 }
 
-/* Waiting-panel slider: ~40% of the panel's width, right-aligned. */
+/* Waiting-panel slider (2026-10-19): the SAME elongated slider as the client
+   list (its size is defined once, in CcSlider.module.css) and LEFT-aligned, so
+   its left edge sits flush with the "R" of "Ripe date" above and the "C" of
+   "CC CASE NUMBER" below — all three start at the panel's 16px padding. This
+   wrapper only adds vertical breathing room; it sets no width. */
 .ccPanelSlider {
-  width: 40%;
-  margin-left: auto;
+  padding: 5px 0 3px;
 }
 
 .ccPanelKey {
@@ -587,6 +634,23 @@
   border: 0;
   padding: 0;
   cursor: pointer;
+}
+
+/* CC case number input (2026-10-19): ~20% of the old full-width box, flush
+   left (the .formRow column starts it at the label's left edge), on the CC
+   bronze field colours from src/App.css. The min-width keeps a number like
+   "2026-I-760" from being clipped on a phone, where 20% would be ~70px.
+   Compound selectors so they beat .formInput and its :focus rule. */
+.formInput.ccNumberInput {
+  width: 20%;
+  min-width: 120px;
+  align-self: flex-start;
+  background: var(--cc-field-bg);
+  border-color: var(--cc-field-border);
+}
+
+.formInput.ccNumberInput:focus {
+  border-color: var(--cc-accent);
 }
 
 .ccFieldLabel {
@@ -817,7 +881,7 @@
   margin-top: 0;
 }
 
-/* Wide screens (2026-10-16 fix): the two bars are the SAME height and share a
+/* Wide screens (2026-10-15 fix): the two bars are the SAME height and share a
    top edge. The grid stretches both cells to the taller one, each section
    becomes a column whose bar fills it, and the bar's content sits at the top
    (flex-start) — so a short collapsed Mailing Address bar beside a long open

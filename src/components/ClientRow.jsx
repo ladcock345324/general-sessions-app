@@ -165,11 +165,11 @@ export default function ClientRow({ client, relieved = false, onClick, onNavigat
             ? (
               /* A waiting CC file has no next event by definition, so the
                  next-event line's spot holds its compact ripe-date slider —
-                 the slider ONLY, no text (2026-10-16). With no estimate there
+                 the slider ONLY, no text (2026-10-15). With no estimate there
                  is no slider, and the spot is the same empty spacer as any
                  client without a next event. */
               <span className={styles.ccWaitBlock}>
-                <CcSlider pct={ccWaiting.pct} compact />
+                <CcSlider pct={ccWaiting.pct} />
               </span>
             )
             : <span className={styles.nextEmpty}>&nbsp;</span>

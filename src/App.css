@@ -11,13 +11,14 @@ body {
 }
 
 /* ── Criminal Court (CC) file theme ─────────────────────────────────────────
-   ⚠️ THE KNOBS for every CC accent in the app (2026-10-16). One muted
+   ⚠️ THE KNOBS for every CC accent in the app (2026-10-15). One muted
    gold/bronze set, deliberately desaturated and dark so it sits calmly on the
    #1E2A3A page — and kept well clear of the two existing golds/yellows it must
    never be confused with: the bright indigent-circle gold (#FFD700) and the
    yellow Close/Reopen button (#c8a84b). Used by ClientRow.module.css (the CC row
-   tint), ClientFile.module.css (the "Criminal Court" tag, the waiting panel,
-   "Create CC file") and CcSlider.module.css (the knob ring on the panel). */
+   tint) and ClientFile.module.css (the CC header and Next Event rows, the
+   "Criminal Court" tag, the waiting panel and its CC-number field, "Create CC
+   file"). */
 :root {
   --cc-row-bg: #302e29;         /* client-list row tint, Active and Closed alike */
   --cc-panel-bg: #36322a;       /* waiting-panel background (single client view) */
@@ -25,4 +26,6 @@ body {
   --cc-accent-soft: #c2ad8c;    /* panel line keys, date values' underline */
   --cc-accent-border: rgba(166, 138, 98, 0.4);  /* "Create CC file" outline */
   --cc-accent-press: rgba(166, 138, 98, 0.1);   /* "Create CC file" pressed */
+  --cc-field-bg: #2a2722;       /* CC case number input background (2026-10-19) */
+  --cc-field-border: rgba(166, 138, 98, 0.35);  /* CC case number input border */
 }

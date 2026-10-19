@@ -460,7 +460,17 @@ export default function ClientList() {
         <button className={styles.signOutBtn} onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
       <SyncStatusBar />
-      <OfflineStatus />
+      {/* "Show:" lives up here, beside the Offline-ready line and directly above
+          the "+" (2026-10-19) — moved out of the "Sorting by" row because it
+          kept getting hit by accident there. Its right edge lines up with the
+          "+" button's: both rows have the same 16px right padding. Behaviour
+          is unchanged (see showType above). */}
+      <div className={styles.statusRow}>
+        <OfflineStatus />
+        <button className={styles.showToggle} onClick={() => setShowType(t => SHOW_CYCLE[t])}>
+          Show: {SHOW_LABEL[showType]}
+        </button>
+      </div>
       <header className={styles.header}>
         <h1 className={styles.title}>Clients</h1>
         <button className={styles.addClientBtn} onClick={openNewClient}>+</button>
@@ -479,9 +489,6 @@ export default function ClientList() {
           <div className={styles.sortToggleRow}>
             <button className={styles.sortToggle} onClick={toggleSort}>
               Sorting by: {sortMode === 'event' ? 'Next Event' : 'Name'}
-            </button>
-            <button className={styles.sortToggle} onClick={() => setShowType(t => SHOW_CYCLE[t])}>
-              Show: {SHOW_LABEL[showType]}
             </button>
             <button className={`${styles.sortToggle} ${styles.hoursToggle}`} onClick={() => setShowHours(true)}>
               Hours

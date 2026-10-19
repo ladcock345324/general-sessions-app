@@ -18,6 +18,7 @@ import { INDIGENT_CYCLE, INDIGENT_COLOR, normalizeIndigent } from '../indigentSt
 import TextViewerDrawer from '../components/TextViewerDrawer'
 import CcSlider from '../components/CcSlider'
 import { ccWaitingInfo, ccChargeLabel, caseSortNumber, caseNumericKey } from '../ccFile'
+import { GS_JUDGES, CC_JUDGES, canonicalJudge, judgeLabel } from '../judges'
 import { toDateInput, fromDateInput, formatDateDisplay, pickerHandlers, todayString, dateKey } from '../dateUtils'
 import {
   DndContext,
@@ -137,14 +138,18 @@ function bondReleaseText(bondAmount, releaseStatus) {
 
 // ─── Next Event block ────────────────────────────────────────────────────────
 
-// `slim` (2026-10-16): a CC file with no next event gets a slim bar the height
-// of a section header — just the "NEXT EVENT" label and its "+ Add" control —
-// instead of the full blue block with "No upcoming event". Once a next event
-// exists the full block renders exactly as before; GS files never pass slim.
-function NextEventBlock({ event, onEdit, slim = false }) {
-  if (slim && !event) {
+// `isCcFile` — CC files only, GS files never pass it:
+//  • (2026-10-15) with no next event, a slim bar the height of a section header
+//    — just the "NEXT EVENT" label and its "+ Add" control — instead of the full
+//    block with "No upcoming event". Once a next event exists the full block
+//    renders exactly as before.
+//  • (2026-10-19) both the slim bar and the full block sit on the CC bronze
+//    (.nextEventCc → var(--cc-row-bg)) instead of the blue.
+function NextEventBlock({ event, onEdit, isCcFile = false }) {
+  const ccClass = isCcFile ? ` ${styles.nextEventCc}` : ''
+  if (isCcFile && !event) {
     return (
-      <div className={`${styles.nextEvent} ${styles.nextEventSlim}`}>
+      <div className={`${styles.nextEvent} ${styles.nextEventSlim}${ccClass}`}>
         <div className={styles.nextEventTopRow}>
           <span className={styles.nextEventLabel}>Next Event</span>
           {onEdit && <button className={styles.nextEventEditBtn} onClick={onEdit}>+ Add</button>}
@@ -153,7 +158,7 @@ function NextEventBlock({ event, onEdit, slim = false }) {
     )
   }
   return (
-    <div className={styles.nextEvent}>
+    <div className={`${styles.nextEvent}${ccClass}`}>
       <div className={styles.nextEventTopRow}>
         <span className={styles.nextEventLabel}>Next Event</span>
         {onEdit && <button className={styles.nextEventEditBtn} onClick={onEdit}>{event ? 'Edit' : '+ Add'}</button>}
@@ -188,7 +193,9 @@ function NextEventBlock({ event, onEdit, slim = false }) {
               const segments = [
                 ...(event.docket_type ? [event.docket_type] : []),
                 ...(event.courtroom ? [`Courtroom ${event.courtroom}`] : []),
-                ...(event.judge ? [event.judge] : []),
+                // Judge shown with its division, e.g. "J. Bell (VI)" — added at
+                // display time; the stored value is the plain name.
+                ...(event.judge ? [judgeLabel(event.judge)] : []),
                 ...(event.ada_name ? [`ADA: ${event.ada_name}`] : []),
               ]
               return segments.map((s, i) => (
@@ -238,21 +245,8 @@ const COURTROOMS = ['', '3A', '3B', '3C', '4B', '4C', '4D', '5C', '5D', '6A', '6
 // in real data.
 const REASON_OPTIONS = ['Review', 'Trial', 'Settlement', 'Discussion', 'PV Hearing']
 
-const JUDGES = [
-  '',
-  'J. Bell',
-  'R. Bell',
-  'M. Blackburn',
-  'S. Coleman',
-  'A. Escobar',
-  'R. Hayes (PRESIDING)',
-  'A. Holt',
-  'L. Jones',
-  'M. Floyd',
-  'G. Robinson',
-  'A. Walker',
-  'Other',
-]
+// Judge lists and divisions live in src/judges.js (2026-10-19): GS_JUDGES on a
+// General Sessions file, CC_JUDGES (Criminal Court judges only) on a CC file.
 
 // Event time is a dropdown rather than free entry, covering 8:00 AM → 3:00 PM
 // inclusive — the span the docket actually runs. 15-minute increments, except
@@ -277,9 +271,11 @@ const TIME_OPTIONS = HOUR_SLOTS.flatMap(([h, period]) => {
   return slots
 })
 
-function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
-  const existingJudge = existing?.judge ?? ''
-  const judgeInList = JUDGES.includes(existingJudge)
+// isCcFile (2026-10-19): a Criminal Court file gets the CC judge list only, and
+// a NEW event defaults its Docket Type to "Criminal Court". Editing an existing
+// event keeps whatever docket type it has stored.
+function NextEventForm({ clientId, existing, isCcFile = false, onSaved, onCancel, onCleared }) {
+  const judgeList = isCcFile ? CC_JUDGES : GS_JUDGES
 
   const [form, setForm] = useState(
     existing
@@ -289,10 +285,15 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
           event_date:  existing.event_date,
           event_time:  existing.event_time,
           courtroom:   existing.courtroom,
-          judge:       judgeInList ? existingJudge : 'Other',
-          judgeOther:  judgeInList ? '' : existingJudge,
+          // The stored judge as-is — the legacy "R. Hayes (PRESIDING)" resolves
+          // to plain "R. Hayes" so it selects the listed entry. Anything else
+          // not on this court's list (a free-text "Other" judge, or a judge
+          // from the other court) is kept by the off-list guard below rather
+          // than being blanked or turned into "Other".
+          judge:       canonicalJudge(existing.judge ?? ''),
+          judgeOther:  '',
         }
-      : { ...EMPTY_EVENT, judgeOther: '' }
+      : { ...EMPTY_EVENT, ...(isCcFile ? { docketPreset: 'Criminal Court' } : {}), judgeOther: '' }
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -318,6 +319,16 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
   const reasonOptions = storedReason && !REASON_OPTIONS.includes(storedReason)
     ? [storedReason, ...REASON_OPTIONS]
     : REASON_OPTIONS
+
+  // Same off-list guard for the judge (2026-10-19). A stored judge that isn't
+  // on this court's list is kept as an extra option at the top — so editing
+  // never silently blanks it — and drops off once a listed judge is picked.
+  // (Before this, an unlisted judge was shown as "Other" + its text, which
+  // preserved it too; the guard makes every unlisted value behave the same way.)
+  const storedJudge = form.judge ?? ''
+  const judgeOptions = storedJudge && !judgeList.includes(storedJudge)
+    ? [storedJudge, ...judgeList]
+    : judgeList
 
   async function clear() {
     setSaving(true)
@@ -393,7 +404,7 @@ function NextEventForm({ clientId, existing, onSaved, onCancel, onCleared }) {
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Judge</label>
         <select className={styles.formSelect} value={form.judge} onChange={e => set('judge', e.target.value)}>
-          {JUDGES.map(j => <option key={j} value={j}>{j || '—'}</option>)}
+          {judgeOptions.map(j => <option key={j} value={j}>{j ? judgeLabel(j) : '—'}</option>)}
         </select>
         {form.judge === 'Other' && (
           <input
@@ -1311,12 +1322,21 @@ function ClientTextBar({ clientId, initialRecord, table, field, title, placehold
   // worth reading without a tap. An empty/absent record keeps the collapsed
   // default. Click-to-toggle behavior itself is unchanged. The parent holds this
   // render behind its own loading guard, so initialRecord is already resolved.
-  const [open, setOpen] = useState(() => !!initialRecord?.[field]?.trim())
+  //
+  // PHONES (≤768px) always start COLLAPSED (2026-10-19), content or not; wide
+  // screens keep the expanded-on-load default above. Decided ONCE at mount by
+  // matchMedia — deliberately no resize listener, so rotating or resizing never
+  // opens or closes a bar on its own. Only the initial state differs; tapping,
+  // editing and everything else are identical at both breakpoints.
+  const [open, setOpen] = useState(() => {
+    const isPhone = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 768px)').matches
+    return !isPhone && !!initialRecord?.[field]?.trim()
+  })
   const [mode, setMode] = useState('idle') // 'idle' | 'add' | 'edit' | 'confirmDelete'
   const [draftText, setDraftText] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // ── Selection-safe tap (2026-10-16) ──────────────────────────────────────
+  // ── Selection-safe tap (2026-10-15) ──────────────────────────────────────
   // The displayed note/address must be selectable for copying without the tap
   // action firing. Same rule the Hours rows use: a tap is suppressed when text
   // is selected or the pointer moved more than 8px between down and up; on
@@ -1604,6 +1624,43 @@ function applyDescriptionPick(form, description) {
   return { ...form, description, ...(preset ? { hours: preset } : {}) }
 }
 
+// The "Pick a common description…" dropdown, shared by AddHoursForm and
+// EditHoursForm (2026-10-19).
+//
+// ⚠️ There is deliberately NO placeholder <option>. iPhone Safari ignores
+// `hidden` on an <option> and showed the old disabled placeholder greyed out at
+// the top of the opened list. Instead:
+//  • the placeholder text is a visual overlay on the CLOSED select
+//    (.descPickPlaceholder, pointer-events: none, so taps go straight through),
+//    styled to look exactly like the select's own text did;
+//  • the select is UNCONTROLLED and held at selectedIndex = -1 — no option
+//    selected — by the ref callback, which re-runs after every render, and
+//    again in onChange right after a pick.
+// Why not a controlled value="": with no matching option, React falls back to
+// selecting the FIRST option ("Texts with client"), and picking an option that
+// is already selected fires no change event, so the first preset could never be
+// picked. With selectedIndex at -1, picking ANY option — the first included —
+// is a real change, fires onChange, and fills description + default hours
+// exactly as before.
+function DescriptionPicker({ onPick }) {
+  return (
+    <div className={styles.descPickWrap}>
+      <select
+        ref={el => { if (el) el.selectedIndex = -1 }}
+        className={styles.formSelect}
+        onChange={e => {
+          const picked = e.target.value
+          e.target.selectedIndex = -1
+          if (picked) onPick(picked)
+        }}
+      >
+        {DESCRIPTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+      </select>
+      <span className={styles.descPickPlaceholder} aria-hidden="true">Pick a common description…</span>
+    </div>
+  )
+}
+
 // Incidents render oldest-first (earliest incident_date at top). incident_date is
 // TEXT, so compare the parsed numeric key — never new Date() or a string compare.
 // Rows with a missing/unparseable date sort to the end instead of blowing up.
@@ -1671,15 +1728,7 @@ function AddHoursForm({ clientId, computeSortOrder, onSaved, onCancel }) {
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Description</label>
         <input className={styles.formInput} value={form.description} onChange={e => set('description', e.target.value)} placeholder="e.g. Court appearance" />
-        <select
-          className={styles.formSelect}
-          style={{ marginTop: 6 }}
-          value=""
-          onChange={e => { if (e.target.value) setForm(f => applyDescriptionPick(f, e.target.value)) }}
-        >
-          <option value="" disabled hidden>Pick a common description…</option>
-          {DESCRIPTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-        </select>
+        <DescriptionPicker onPick={d => setForm(f => applyDescriptionPick(f, d))} />
       </div>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Hours</label>
@@ -1755,15 +1804,7 @@ function EditHoursForm({ entry, onSaved, onCancel }) {
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Description</label>
         <input className={styles.formInput} value={form.description} onChange={e => set('description', e.target.value)} placeholder="e.g. Court appearance" />
-        <select
-          className={styles.formSelect}
-          style={{ marginTop: 6 }}
-          value=""
-          onChange={e => { if (e.target.value) setForm(f => applyDescriptionPick(f, e.target.value)) }}
-        >
-          <option value="" disabled hidden>Pick a common description…</option>
-          {DESCRIPTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-        </select>
+        <DescriptionPicker onPick={d => setForm(f => applyDescriptionPick(f, d))} />
       </div>
       <div className={styles.formRow}>
         <label className={styles.formLabel}>Hours</label>
@@ -2010,7 +2051,7 @@ function HoursSection({ clientId, hours }) {
 // The Storage key of a client's criminal-history PDF. clients.criminal_history_url
 // stores the PUBLIC URL (…/object/public/warrants/<key>), so the key is read back
 // out of it: View, Delete, a re-upload and the CC-file copy all act on the file
-// this client's row actually points at (2026-10-16 — the same principle as the
+// this client's row actually points at (2026-10-15 — the same principle as the
 // affidavit fix in CaseView), never on a path re-derived from the id. Only a
 // client with no stored URL (or one that can't be parsed) derives the original
 // criminal-history/<client id>.pdf. Nothing stored is moved or rewritten.
@@ -2429,8 +2470,10 @@ function CcCaseNumberField({ clientId, value }) {
   return (
     <div className={styles.formRow} style={{ marginTop: 10 }}>
       <label className={styles.ccFieldLabel}>CC case number</label>
+      {/* ~20% of the old full width, flush left under the label, on the CC
+          bronze field colours (.ccNumberInput). Behaviour unchanged. */}
       <input
-        className={styles.formInput}
+        className={`${styles.formInput} ${styles.ccNumberInput}`}
         value={draft}
         placeholder="e.g. 2026-I-760"
         onChange={e => setDraft(e.target.value)}
@@ -2487,7 +2530,7 @@ function CcWaitingPanel({ client, info }) {
           <span className={styles.ccDateValue}>{formatDateDisplay(info.ripe)}</span>
         </div>
       )}
-      {/* ~40% of the panel's width and right-aligned (2026-10-16). */}
+      {/* The shared elongated slider, left-aligned under "Ripe date" (2026-10-19). */}
       {info.pct != null && <div className={styles.ccPanelSlider}><CcSlider pct={info.pct} /></div>}
       <CcCaseNumberField clientId={client.id} value={client.cc_case_number} />
     </div>
@@ -2944,7 +2987,11 @@ function ClientFilePage() {
       <div className={styles.stickyNameBar}>{stickyName}</div>
 
       {/* ── Client header ── */}
-      <div className={styles.clientHeader}>
+      {/* A CC file's header sits on the CC bronze instead of the dark strip
+          (.clientHeaderCc, 2026-10-19). The back/edit row keeps its own
+          background, so only the name / OCA / bond / mini-list / badge row
+          changes. GS files are untouched. */}
+      <div className={`${styles.clientHeader}${isCcFile ? ` ${styles.clientHeaderCc}` : ''}`}>
         <header className={styles.header}>
           <button className={styles.back} onClick={() => navigate('/')}>‹ Back</button>
           <button className={styles.editBtn} onClick={() => navigate(`/client/${id}/edit`)}>Edit</button>
@@ -3032,7 +3079,7 @@ function ClientFilePage() {
         {!showEventForm && (
           <NextEventBlock
             event={nextEvent}
-            slim={isCcFile}
+            isCcFile={isCcFile}
             onEdit={() => setShowEventForm(true)}
           />
         )}
@@ -3040,6 +3087,7 @@ function ClientFilePage() {
           <NextEventForm
             clientId={id}
             existing={nextEvent}
+            isCcFile={isCcFile}
             onSaved={() => { setShowEventForm(false); refetch() }}
             onCancel={() => setShowEventForm(false)}
             onCleared={() => { setShowEventForm(false); refetch() }}

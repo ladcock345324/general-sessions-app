@@ -90,12 +90,13 @@
   font-size: 13px;
 }
 
-/* Waiting CC file: the compact ripe-date slider alone in the next-event line's
-   spot (the "Left GS · N days · Ripe" text was removed 2026-10-16). Same
-   height as that line on desktop (13px × ~1.3) so the row doesn't change
-   height; the slider itself is a fixed 140px (max 100%), so it can never push
-   into the case table or the badge. Not overflow: hidden — that would clip the
-   knob, which overhangs the 3px track. */
+/* Waiting CC file: the ripe-date slider alone in the next-event line's spot
+   (the "Left GS · N days · Ripe" text was removed 2026-10-15). Same height as
+   that line on desktop (13px × ~1.3) so the row doesn't change height. The
+   slider is the shared "elongated" size (182px, max-width 100% — see
+   CcSlider.module.css), so it can never push into the case table or the badge
+   at either breakpoint. Not overflow: hidden — that would clip the knob, which
+   overhangs the 3px track. */
 .ccWaitBlock {
   display: flex;
   align-items: center;

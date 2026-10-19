@@ -292,7 +292,7 @@ export default function CaseView() {
   async function uploadWarrantFile(file) {
     setUploading(true)
     setUploadError(null)
-    // ⚠️ REPLACE OVERWRITES THIS CASE'S OWN FILE (2026-10-16). A case that
+    // ⚠️ REPLACE OVERWRITES THIS CASE'S OWN FILE (2026-10-15). A case that
     // already has an affidavit uploads to its EXISTING warrant_url, never to a
     // path re-derived from the current case number. Real data has cases whose
     // file is named after a DIFFERENT case number (numbers edited after upload —

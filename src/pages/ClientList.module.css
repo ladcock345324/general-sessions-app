@@ -95,10 +95,10 @@
 }
 
 /* ── Sort toggle ── */
-/* "Sorting by:" and "Show:" sit together on the left; "Hours" is pushed to the
-   right edge by its own margin-left: auto (it used to get there via
-   space-between, which with three items would centre the middle one). Wraps
-   rather than overflowing on the narrowest phones. */
+/* "Sorting by:" on the left; "Hours" is pushed to the right edge by its own
+   margin-left: auto. ("Show:" sat between them until it moved up beside the
+   Offline-ready line, 2026-10-19.) Wraps rather than overflowing on the
+   narrowest phones. */
 .sortToggleRow {
   display: flex;
   flex-wrap: wrap;
@@ -109,6 +109,42 @@
 
 .hoursToggle {
   margin-left: auto;
+}
+
+/* Offline-ready line + the "Show:" pill on one row (2026-10-19). OfflineStatus
+   keeps its own 16px left padding and grows to fill; the pill sits at the right
+   with this row's 16px right padding — the same right inset the header gives
+   the "+" button, so their right edges line up exactly at both breakpoints.
+   align-items: center puts the pill on the status line's vertical centre. The
+   iPhone safe-area inset is applied once, by .screen, above all of this. */
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 16px;
+}
+
+.statusRow > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* "Show:" pill — .sortToggle's look at ~60% of its size (font 12 → 7.2px,
+   padding 4/12 → 2.4/7.2px), so it reads as secondary and is hard to hit by
+   accident. Same border, colour and pill radius. */
+.showToggle {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #f0f2f5;
+  font-size: 7.2px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  border-radius: 999px;
+  padding: 2.4px 7.2px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .sortToggle {
