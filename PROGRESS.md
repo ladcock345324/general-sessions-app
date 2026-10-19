@@ -215,7 +215,7 @@ Three reasons, in order of weight:
 
 ### ⏸ VERIFICATION STATUS — pick up here (as of 10/19/2026)
 
-Four batches are live on production: `2d8dd31` (the six-change batch), `2a65b89` (its seven follow-up fixes), `ca7d334` (nine further changes) and `4cc4e7e` (eight follow-ups to those), the last two on 2026-10-19. Everything up to and including `ca7d334` is verified; `4cc4e7e` is pending.
+Four batches are live on production: `2d8dd31` (the six-change batch), `2a65b89` (its seven follow-up fixes), `ca7d334` (nine further changes) and `4cc4e7e` (eight follow-ups to those), the last two on 2026-10-19. Everything up to and including `4cc4e7e` is verified, except its CC-seam change, which was replaced by `abca80d` (pending).
 
 #### ✅ Verified by Lucas on production
 
@@ -252,9 +252,15 @@ Verified:
 
 The items that changed again (panel underlines, slider position, "Show:" size, the CC header/Next Event seam, the slim bar, judge order and labels, the GS docket list) are now batch `4cc4e7e`, pending below.
 
-#### ⏳ NOT YET VERIFIED — batch `4cc4e7e` (8 changes, 2026-10-19)
+#### ✅ Batch `4cc4e7e` — VERIFIED (reported 10/19/2026), except item 5 (the CC seam)
 
-All pending; see that entry below.
+Item 5 made the 8px gap between the bronze header and the bronze Next Event row bronze, so the rows met with no line. Lucas does want a line there, just not navy, so it was replaced by `abca80d` below.
+
+#### ⏳ NOT YET VERIFIED — `abca80d` (one change, 2026-10-19)
+
+- **CC divider line:** on a CC file, an **8px line in `var(--cc-accent)`** (the "CRIMINAL COURT" tag's colour) sits exactly where the old navy gap was, between the header row and the Next Event row. GS files are unchanged.
+
+The items of `4cc4e7e`, all verified except item 5:
 
 1. **Waiting-panel dates:** no dashed underline under the date values. Tapping still opens the picker.
 2. **Waiting-panel slider:** nudged ~6px down — further from "Ripe date", closer to "CC CASE NUMBER". Same size and left alignment.
@@ -276,9 +282,19 @@ All pending; see that entry below.
 
 **No open questions remain.**
 
+### CC Divider Line Between Header and Next Event (2026-10-19, commit `abca80d`)
+
+One change, CC files only, replacing `4cc4e7e` item 5. ⏳ **Not yet verified on production.**
+
+- `.nextEventWrapperCc` is now `margin-top: 0; border-top: 8px solid var(--cc-accent)`. The 8px margin that shows the navy page background on a GS file becomes an 8px border in the "CRIMINAL COURT" tag's colour, so the line sits exactly where the gap was, at the same thickness, and nothing moves.
+- The variable is used, not the hex. The CSS comment marks **the 8px thickness as the knob** if it reads too heavy.
+- GS files are unchanged. The waiting panel's bottom border is unchanged.
+
+Build clean; lint 19, unchanged. The built rule was read back from `dist/`.
+
 ### Panel Polish, "Show:" +15%, GS Docket List, Slim Bar Removed, Judge Full Names (2026-10-19, commit `4cc4e7e`)
 
-Eight changes requested after Lucas verified `ca7d334` (the eighth is this doc update). **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ⏳ **Not yet verified on production.**
+Eight changes requested after Lucas verified `ca7d334` (the eighth is this doc update). **No schema change, no Dexie change, no stored data changed.** Build clean; `npx eslint .` still **19** (all pre-existing). ✅ **VERIFIED on production (10/19/2026)** except item 5, the CC seam, which `abca80d` replaced with an 8px `var(--cc-accent)` line.
 
 1. **Waiting-panel date values — no underline.** `.ccDateValue` lost its dashed `border-bottom`, so Left General Sessions, Estimated first CC date and Ripe date are plain. The invisible date input laid over them still opens the picker on one tap.
    - ⚠️ **Judgment call:** the EMPTY-state prompt ("Add estimated CC date" / "Add date", `.ccDateEmpty`) keeps its underline. It isn't a date value, and the underline is its only tap affordance.
