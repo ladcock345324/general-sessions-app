@@ -506,13 +506,16 @@
 
 /* CC file: the dividing line between the bronze header and the bronze Next
    Event row (2026-10-19). On a GS file the wrapper's 8px top margin shows the
-   navy page background there; on a CC file that same 8px slot is a line in
-   the "CRIMINAL COURT" tag's colour, var(--cc-accent), instead of navy. The
-   margin becomes the border, so the line sits exactly where the gap was and
-   nothing moves. ⚠️ KNOB: the 8px thickness — lower it if it reads too heavy. */
+   navy page background there; on a CC file that same 8px slot holds a 5px line
+   in var(--cc-seam) (a hair darker than the "CRIMINAL COURT" tag's
+   --cc-accent), directly under the header, plus 3px of bronze padding beneath
+   it — so no navy shows anywhere in the slot and nothing below moves.
+   ⚠️ KNOB: the 5px thickness. Keep border + padding-top = 8px if you change it. */
 .nextEventWrapperCc {
   margin-top: 0;
-  border-top: 8px solid var(--cc-accent);
+  border-top: 5px solid var(--cc-seam);
+  padding-top: 3px;
+  background: var(--cc-row-bg);
 }
 
 .nextEventLabel {

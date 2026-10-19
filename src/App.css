@@ -28,4 +28,5 @@ body {
   --cc-accent-press: rgba(166, 138, 98, 0.1);   /* "Create CC file" pressed */
   --cc-field-bg: #2a2722;       /* CC case number input background (2026-10-19) */
   --cc-field-border: rgba(166, 138, 98, 0.35);  /* CC case number input border */
+  --cc-seam: #957a55;           /* line between the CC header and Next Event rows — a hair darker than --cc-accent (2026-10-19) */
 }
