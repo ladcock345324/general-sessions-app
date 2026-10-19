@@ -138,25 +138,13 @@ function bondReleaseText(bondAmount, releaseStatus) {
 
 // ─── Next Event block ────────────────────────────────────────────────────────
 
-// `isCcFile` — CC files only, GS files never pass it:
-//  • (2026-10-15) with no next event, a slim bar the height of a section header
-//    — just the "NEXT EVENT" label and its "+ Add" control — instead of the full
-//    block with "No upcoming event". Once a next event exists the full block
-//    renders exactly as before.
-//  • (2026-10-19) both the slim bar and the full block sit on the CC bronze
-//    (.nextEventCc → var(--cc-row-bg)) instead of the blue.
+// `isCcFile` (2026-10-19): a CC file's block sits on the CC bronze
+// (.nextEventCc → var(--cc-row-bg)) instead of the blue. Otherwise identical —
+// with no next event it is the same full block every file gets ("No upcoming
+// event" + "+ Add"). The slim one-line bar CC files briefly had was removed
+// 2026-10-19 by request.
 function NextEventBlock({ event, onEdit, isCcFile = false }) {
   const ccClass = isCcFile ? ` ${styles.nextEventCc}` : ''
-  if (isCcFile && !event) {
-    return (
-      <div className={`${styles.nextEvent} ${styles.nextEventSlim}${ccClass}`}>
-        <div className={styles.nextEventTopRow}>
-          <span className={styles.nextEventLabel}>Next Event</span>
-          {onEdit && <button className={styles.nextEventEditBtn} onClick={onEdit}>+ Add</button>}
-        </div>
-      </div>
-    )
-  }
   return (
     <div className={`${styles.nextEvent}${ccClass}`}>
       <div className={styles.nextEventTopRow}>
@@ -213,7 +201,15 @@ function NextEventBlock({ event, onEdit, isCcFile = false }) {
 
 // ─── Next Event form ─────────────────────────────────────────────────────────
 
+// Every preset splitDocketType() recognises — including "Criminal Court", so a
+// CC file's events (and any GS event that ever held it) always round-trip back
+// into the select instead of falling through to the free-text box.
 const DOCKET_PRESETS = ['Jail Docket', 'Bond Docket', 'Review Docket', 'Settlement Docket', 'Criminal Court', 'PV']
+
+// What each kind of file is OFFERED (2026-10-19): a GS file's dropdown no longer
+// lists "Criminal Court"; a CC file keeps it (and defaults a new event to it).
+const GS_DOCKET_OPTIONS = DOCKET_PRESETS.filter(p => p !== 'Criminal Court')
+const CC_DOCKET_OPTIONS = DOCKET_PRESETS
 
 // docket_type is one column but edited as a preset <select> + optional append text.
 // Split a stored value back into { docketPreset, docketCustom }: if it begins with
@@ -325,6 +321,15 @@ function NextEventForm({ clientId, existing, isCcFile = false, onSaved, onCancel
   // never silently blanks it — and drops off once a listed judge is picked.
   // (Before this, an unlisted judge was shown as "Other" + its text, which
   // preserved it too; the guard makes every unlisted value behave the same way.)
+  // Docket Type gets the same off-list guard: a stored preset this file isn't
+  // offered (e.g. "Criminal Court" on a GS event, should one ever exist) is kept
+  // as an extra option at the top rather than blanked.
+  const docketList = isCcFile ? CC_DOCKET_OPTIONS : GS_DOCKET_OPTIONS
+  const storedDocket = form.docketPreset ?? ''
+  const docketOptions = storedDocket && !docketList.includes(storedDocket)
+    ? [storedDocket, ...docketList]
+    : docketList
+
   const storedJudge = form.judge ?? ''
   const judgeOptions = storedJudge && !judgeList.includes(storedJudge)
     ? [storedJudge, ...judgeList]
@@ -428,7 +433,7 @@ function NextEventForm({ clientId, existing, isCcFile = false, onSaved, onCancel
           <label className={styles.formLabel}>Docket Type</label>
           <select className={styles.formSelect} value={form.docketPreset} onChange={e => set('docketPreset', e.target.value)}>
             <option value="">—</option>
-            {DOCKET_PRESETS.map(p => <option key={p} value={p}>{p}</option>)}
+            {docketOptions.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
         <div className={styles.formRow}>
@@ -3074,7 +3079,7 @@ function ClientFilePage() {
 
       {/* ── Next Event ── (with the CC waiting panel directly above it while a
           CC file has neither a CC case number nor a next event) */}
-      <div className={styles.nextEventWrapper}>
+      <div className={`${styles.nextEventWrapper}${isCcFile ? ` ${styles.nextEventWrapperCc}` : ''}`}>
         {ccWaiting && <CcWaitingPanel client={client} info={ccWaiting} />}
         {!showEventForm && (
           <NextEventBlock

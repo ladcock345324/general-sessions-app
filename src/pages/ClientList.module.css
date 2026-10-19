@@ -129,20 +129,22 @@
   min-width: 0;
 }
 
-/* "Show:" pill — .sortToggle's look at ~60% of its size (font 12 → 7.2px,
-   padding 4/12 → 2.4/7.2px), so it reads as secondary and is hard to hit by
-   accident. Same border, colour and pill radius. */
+/* "Show:" pill — .sortToggle's look at a reduced size, so it reads as
+   secondary and is hard to hit by accident. Same border, colour and pill
+   radius. Was ~60% of .sortToggle (font 7.2px, padding 2.4/7.2px); made 15%
+   larger 2026-10-19 → font 8.3px, padding 2.8/8.3px. The right edge doesn't
+   move — it is set by .statusRow's padding, not by the pill's size. */
 .showToggle {
   flex-shrink: 0;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.35);
   color: #f0f2f5;
-  font-size: 7.2px;
+  font-size: 8.3px;
   font-weight: 500;
   letter-spacing: 0.01em;
   line-height: 1.2;
   border-radius: 999px;
-  padding: 2.4px 7.2px;
+  padding: 2.8px 8.3px;
   cursor: pointer;
   white-space: nowrap;
 }

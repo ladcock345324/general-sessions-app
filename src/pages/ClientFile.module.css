@@ -489,27 +489,28 @@
   margin-bottom: 6px;
 }
 
-/* Slim empty Next Event bar — CC files only, while there is no next event.
-   Same blue, but only a section-header's height: one row, no "No upcoming
-   event" line. */
-.nextEventSlim {
-  display: flex;
-  align-items: center;
-  min-height: 34px;
-  padding: 5px 16px;
-}
-
-.nextEventSlim .nextEventTopRow {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-/* CC file (2026-10-19): the Next Event row — slim bar AND full block — on the
-   same muted bronze as the client-list CC row instead of the blue. Its text
-   (white detail, #5b9fd4 label/meta/Edit) stays readable on it; the dim
-   "No upcoming event" text never appears here because a CC file with no event
-   gets the slim bar. */
+/* CC file (2026-10-19): the Next Event block on the same muted bronze as the
+   client-list CC row instead of the blue. Its text (white detail, #5b9fd4
+   label/meta/Edit) stays readable on it. (The slim one-line bar a CC file used
+   to get with no event was removed 2026-10-19 — every file now gets this full
+   block, "No upcoming event" included.) */
 .nextEventCc {
+  background: var(--cc-row-bg);
+}
+
+/* "No upcoming event" is #3a6ea8, which is only ~2.6:1 on the bronze — so on a
+   CC file it takes the CC accent instead (~4:1). */
+.nextEventCc .nextEventEmpty {
+  color: var(--cc-accent);
+}
+
+/* CC file: no navy seam between the bronze header and the bronze Next Event
+   row (2026-10-19). The wrapper's 8px top margin showed the navy page
+   background between them; on a CC file it becomes 8px of bronze padding
+   instead, so the spacing is unchanged and the two rows meet seamlessly. */
+.nextEventWrapperCc {
+  margin-top: 0;
+  padding-top: 8px;
   background: var(--cc-row-bg);
 }
 
@@ -575,11 +576,13 @@
 
 /* Waiting panel — directly above the Next Event block and in its visual family
    (same shape and label type), in the CC bronze theme (--cc-* in src/App.css).
-   The bottom rule separates the two blocks. */
+   The bottom rule separates it from the Next Event block below. It was navy
+   (#16212F) until 2026-10-19; it is now a darker shade of the panel's own
+   bronze (translucent black over it), so no navy line runs between CC rows. */
 .ccPanel {
   background: var(--cc-panel-bg);
   padding: 10px 16px 14px;
-  border-bottom: 2px solid #16212F;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.22);
 }
 
 .ccPanelLine {
@@ -592,9 +595,15 @@
    list (its size is defined once, in CcSlider.module.css) and LEFT-aligned, so
    its left edge sits flush with the "R" of "Ripe date" above and the "C" of
    "CC CASE NUMBER" below — all three start at the panel's 16px padding. This
-   wrapper only adds vertical breathing room; it sets no width. */
+   wrapper only adds vertical breathing room; it sets no width.
+
+   Nudged 6px DOWN (2026-10-19) with a relative offset rather than more
+   padding, so the layout around it doesn't move: it sits 6px further from
+   "Ripe date" and 6px closer to "CC CASE NUMBER". */
 .ccPanelSlider {
   padding: 5px 0 3px;
+  position: relative;
+  top: 6px;
 }
 
 .ccPanelKey {
@@ -613,10 +622,12 @@
   display: inline-block;
 }
 
+/* The date values (Left General Sessions, Estimated first CC date, Ripe date)
+   carry no underline (removed 2026-10-19); tapping still opens the picker via
+   the invisible input laid over them. */
 .ccDateValue {
   font-weight: 600;
   color: #f0f2f5;
-  border-bottom: 1px dashed var(--cc-accent-soft);
 }
 
 .ccDateEmpty {
