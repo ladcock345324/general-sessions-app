@@ -282,6 +282,15 @@ The items of `4cc4e7e`, all verified except item 5:
 
 **No open questions remain.**
 
+### CC Seam Thinner + Darker (2026-10-19, commit `db4f327`)
+
+Follow-up to `abca80d` below, CC files only. ⏳ **Not yet verified on production.**
+
+- The line is now **5px** (was 8px), in a new **`--cc-seam: #957a55`** — a hair darker than `--cc-accent` — added to the commented CC block in `src/App.css`.
+- `--cc-accent` itself is unchanged, so the "CRIMINAL COURT" tag and the other accents look exactly as before.
+- The other 3px of the original 8px slot is bronze padding (`var(--cc-row-bg)`) under the line, so no navy shows. Line + padding still total 8px, so nothing below moves.
+- GS files are unchanged. Build clean; lint 19.
+
 ### CC Divider Line Between Header and Next Event (2026-10-19, commit `abca80d`)
 
 One change, CC files only, replacing `4cc4e7e` item 5. ⏳ **Not yet verified on production.**
