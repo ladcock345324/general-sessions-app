@@ -1,0 +1,200 @@
+[
+  {
+    "id": "02880a71-9747-46ce-925c-9edaae8072d4",
+    "client_id": "60836fc6-9077-4b3b-bf2a-b07134a3754f",
+    "docket_type": "Bond Docket",
+    "event_date": "1/14/2027",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "A. Holt",
+    "reason": "Trial",
+    "ada_name": null
+  },
+  {
+    "id": "1d91588e-e179-493c-949a-041637aaaf71",
+    "client_id": "b05dea7a-c597-4e45-bd1e-feebe9de19f6",
+    "docket_type": "Review Docket SCE-21 ONLY",
+    "event_date": "11/9/2026",
+    "event_time": "9:15 AM",
+    "courtroom": "3C",
+    "judge": "G. Robinson",
+    "reason": "Review",
+    "ada_name": ""
+  },
+  {
+    "id": "25f63d25-e462-41b6-9226-83bfd3ac6896",
+    "client_id": "adc883c0-ffbc-4ea2-a838-868d377b2516",
+    "docket_type": "Criminal Court",
+    "event_date": "11/10/2026",
+    "event_time": "10:00 AM",
+    "courtroom": "6B",
+    "judge": "A. Dalton",
+    "reason": "Discussion",
+    "ada_name": null
+  },
+  {
+    "id": "39b5aab2-75a7-4abe-a00c-347eb86b0845",
+    "client_id": "d64d82b8-dc57-4885-877a-de3f1a60968f",
+    "docket_type": "Jail Docket",
+    "event_date": "12/1/2026",
+    "event_time": "9:15 AM",
+    "courtroom": "3A",
+    "judge": "A. Holt",
+    "reason": "Review",
+    "ada_name": null
+  },
+  {
+    "id": "3c1d84a4-0ff2-444d-8a29-43a8029624bd",
+    "client_id": "f5e218ea-5d66-4bb7-8e54-3dd7d64dde8d",
+    "docket_type": "Review Docket",
+    "event_date": "1/7/2027",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "J. Bell",
+    "reason": "Review",
+    "ada_name": null
+  },
+  {
+    "id": "44f49853-0d7f-4ad7-a0db-17933b18725f",
+    "client_id": "1d777a6e-cb05-4a2d-a2a4-387dc2ea3e56",
+    "docket_type": "Bond Docket",
+    "event_date": "2/4/2027",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "M. Blackburn",
+    "reason": "Trial",
+    "ada_name": null
+  },
+  {
+    "id": "4c2edc2e-c132-47fe-98d2-ba3a72da3ddd",
+    "client_id": "2180cddc-566c-4ce3-8b74-61beb9b9a48a",
+    "docket_type": "Bond Docket",
+    "event_date": "11/3/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "L. Jones",
+    "reason": "Trial",
+    "ada_name": null
+  },
+  {
+    "id": "5f50bc3a-2ff0-49b9-8b60-5e25a91d0b93",
+    "client_id": "2ad02591-81c6-434e-8ac3-853f6d96c729",
+    "docket_type": "Bond Docket",
+    "event_date": "11/4/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "M. Blackburn",
+    "reason": "Trial",
+    "ada_name": null
+  },
+  {
+    "id": "70a3b7d8-38ae-4dd0-865a-dfbcbe2e5adb",
+    "client_id": "c1d1146e-6467-4ae9-920c-0539ebb2c491",
+    "docket_type": "Bond Docket",
+    "event_date": "11/12/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "J. Bell",
+    "reason": "Trial",
+    "ada_name": null
+  },
+  {
+    "id": "78f27ed8-ebfc-4296-bf38-8d5e87807c93",
+    "client_id": "45ea3e60-a558-4ef5-8ee4-ca83677d655e",
+    "docket_type": "Bond Docket",
+    "event_date": "11/10/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "J. Bell",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "7d77e9cd-0094-4824-9d25-c2ed976de8af",
+    "client_id": "55450c49-ea81-40ae-95f4-44f84c39d211",
+    "docket_type": "Bond Docket",
+    "event_date": "1/28/2027",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "A. Walker",
+    "reason": "Trial",
+    "ada_name": null
+  },
+  {
+    "id": "882531d6-2b1d-43e3-9652-3afbc4cb8af7",
+    "client_id": "556903af-9ca6-4852-b602-c55e2fdc0dea",
+    "docket_type": "Bond Docket",
+    "event_date": "1/28/2027",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "A. Walker",
+    "reason": "Trial",
+    "ada_name": null
+  },
+  {
+    "id": "90d16de4-af3f-4646-9bb8-c9eca99b82cf",
+    "client_id": "7d311078-5e35-439d-b8bc-d79b471330dc",
+    "docket_type": "Settlement Docket GS-76 ONLY",
+    "event_date": "11/6/2026",
+    "event_time": "8:30 AM",
+    "courtroom": "5C",
+    "judge": "L. Jones",
+    "reason": "Settlement",
+    "ada_name": ""
+  },
+  {
+    "id": "92622120-c72f-4bde-9e65-b485de198062",
+    "client_id": "323ea9a1-1636-426f-a1ba-d490cfb183fe",
+    "docket_type": "Bond Docket",
+    "event_date": "11/12/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "J. Bell",
+    "reason": "Trial",
+    "ada_name": null
+  },
+  {
+    "id": "c8d78fc1-2e51-433a-9f91-b30ab5524b6d",
+    "client_id": "f6b1acb3-c5d4-4a77-8c30-97937942600c",
+    "docket_type": "Bond Docket",
+    "event_date": "11/23/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "L. Jones",
+    "reason": "Trial",
+    "ada_name": null
+  },
+  {
+    "id": "e078245d-0b65-4aaa-acaa-d63e91a2a40b",
+    "client_id": "c5e4b0ff-8b78-4bef-b8aa-05fd4eb66b3b",
+    "docket_type": "Bond Docket",
+    "event_date": "11/30/2026",
+    "event_time": "9:00 AM",
+    "courtroom": "5C",
+    "judge": "M. Floyd",
+    "reason": "Trial",
+    "ada_name": ""
+  },
+  {
+    "id": "e77de87b-52d0-4f09-8c5d-8b48510e2ccb",
+    "client_id": "5166dbf8-f1bc-4a6a-9ac3-1d6267c434a5",
+    "docket_type": "Bond Docket no subs",
+    "event_date": "1/4/2027",
+    "event_time": "9:00 AM",
+    "courtroom": "5D",
+    "judge": "J. Bell",
+    "reason": "Review",
+    "ada_name": null
+  },
+  {
+    "id": "fa2ab846-5d9e-47ca-9d6a-41773529fb20",
+    "client_id": "2c3b9e46-d4b8-4d6e-a25c-febf61f742bc",
+    "docket_type": "Jail Docket (no subs)",
+    "event_date": "12/1/2026",
+    "event_time": "9:15 AM",
+    "courtroom": "3A",
+    "judge": "A. Holt",
+    "reason": "Trial",
+    "ada_name": ""
+  }
+]
